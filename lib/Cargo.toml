@@ -6,3 +6,7 @@ edition = "2018"
 
 [dependencies]
 ssi = { path = "../../ssi" }
+jni = "0.17"
+
+[lib]
+crate-type = ["lib", "cdylib"]

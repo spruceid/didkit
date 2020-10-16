@@ -3,4 +3,5 @@ members = [
   "http",
   "cli",
   "lib",
+  "lib/cbindings"
 ]

@@ -38,7 +38,7 @@ jobs:
           ~/.cargo/registry
           ~/.cargo/git
           target
-        key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.toml', '**.rs') }}
+        key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.toml', 'lib/Makefile', '**.rs') }}
         restore-keys: |
           ${{ runner.os }}-cargo-
 
@@ -47,3 +47,45 @@ jobs:
 
     - name: Test
       run: cargo test --verbose --workspace
+
+    - name: Install Rust Android targets
+      run: make -C lib install-rustup-android
+
+    - name: Install JDK
+      uses: actions/setup-java@v1
+      with:
+        java-version: 1.8
+
+    - name: Install Flutter
+      uses: subosito/flutter-action@v1
+
+    - name: Opt out of Dart/Flutter analytics
+      run: |
+        dart --disable-analytics
+        flutter --suppress-analytics config --no-analytics
+
+    - name: Install Android SDK
+      uses: android-actions/setup-android@v2
+
+    - name: Cache Android NDK
+      id: ndk-cache
+      uses: actions/cache@v2
+      with:
+        path: ${{ env.ANDROID_SDK_ROOT }}/ndk-bundle
+        key: ${{ runner.os }}-ndk-bundle
+
+    - name: Install Android NDK
+      if: steps.ndk-cache.outputs.cache-hit != 'true'
+      run: $ANDROID_SDK_ROOT/tools/bin/sdkmanager ndk-bundle
+
+    - name: Test C FFI
+      run: make -C lib ../target/test/c.stamp
+
+    - name: Test JNI
+      run: make -C lib ../target/test/java.stamp
+
+    - name: Test Dart/Flutter plugin
+      run: make -C lib ../target/test/flutter.stamp
+
+    - name: Build Android Archive
+      run: make -C lib ../target/test/aar.stamp

@@ -1,0 +1,10 @@
+[package]
+name = "didkit-cbindings"
+version = "0.1.0"
+authors = ["Charles E. Lehner <charles.lehner@spruceid.com>"]
+edition = "2018"
+publish = false
+
+[build-dependencies]
+#didkit = { path = "../" }
+cbindgen = "0.14"
