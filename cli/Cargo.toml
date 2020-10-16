@@ -1,0 +1,13 @@
+[package]
+name = "didkit-cli"
+version = "0.0.1"
+authors = ["Charles E. Lehner <charles.lehner@spruceid.com>"]
+edition = "2018"
+
+[dependencies]
+didkit = { path = "../lib" }
+structopt = "0.3"
+
+[[bin]]
+path = "src/main.rs"
+name = "didkit"
