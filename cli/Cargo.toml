@@ -1,11 +1,13 @@
 [package]
-name = "didkit-cli"
+name = "didkit_cli"
 version = "0.0.1"
 authors = ["Charles E. Lehner <charles.lehner@spruceid.com>"]
 edition = "2018"
 
 [dependencies]
+chrono = { version = "0.4", features = ["serde"] }
 didkit = { path = "../lib" }
+serde_json = "1.0"
 structopt = "0.3"
 
 [[bin]]

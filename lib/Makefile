@@ -18,7 +18,7 @@ android/res $(TARGET)/test $(TARGET)/jvm:
 RUST_SRC=Cargo.toml $(wildcard src/*.rs src/*/*.rs src/*/*/*.rs)
 
 $(TARGET)/didkit.h: cbindgen.toml cbindings/build.rs cbindings/Cargo.toml $(RUST_SRC)
-	cargo build -p didkit-cbindings
+	cargo build -p didkit_cbindings
 	test -s $@ && touch $@
 
 $(TARGET)/release/libdidkit.so: $(RUST_SRC)
@@ -28,11 +28,11 @@ $(TARGET)/release/libdidkit.so: $(RUST_SRC)
 ## C
 
 $(TARGET)/test/c.stamp: $(TARGET)/cabi-test $(TARGET)/release/libdidkit.so | $(TARGET)/test
-	$(TARGET)/cabi-test
+	LD_LIBRARY_PATH=$(TARGET)/release $(TARGET)/cabi-test
 	touch $@
 
-$(TARGET)/cabi-test: c/test.c $(TARGET)/didkit.h
-	$(CC) -I$(TARGET) $< -ldl -o $@
+$(TARGET)/cabi-test: c/test.c $(TARGET)/release/libdidkit.so $(TARGET)/didkit.h
+	$(CC) -I$(TARGET) -L$(TARGET)/release $< -ldl -ldidkit -o $@
 
 ## Java
 
@@ -90,7 +90,7 @@ $(TARGET)/%/release/libdidkit.so: $(RUST_SRC)
 
 ## Flutter
 
-$(TARGET)/test/flutter.stamp: flutter/lib/didkit.dart $(TARGET)/release/libdidkit.so | $(TARGET)/test
+$(TARGET)/test/flutter.stamp: flutter/lib/didkit.dart flutter/test/didkit_test.dart $(TARGET)/release/libdidkit.so | $(TARGET)/test
 	cd flutter && LD_LIBRARY_PATH=$$PWD \
 		flutter --suppress-analytics test
 	touch $@

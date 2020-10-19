@@ -12,5 +12,5 @@ fn verify_credential() {
             "id": "did:example:d23dd687a7dc6787646f2eb98d0"
         }
     }"###;
-    let cred = VerifiableCredential::from_json_unsigned(vc_str).unwrap();
+    let _cred = VerifiableCredential::from_json_unsigned(vc_str).unwrap();
 }
