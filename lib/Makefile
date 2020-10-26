@@ -38,7 +38,9 @@ $(TARGET)/cabi-test: c/test.c $(TARGET)/release/libdidkit.so $(TARGET)/didkit.h
 
 JAVA_SRC=$(wildcard java/*/*/*.java java/*/*/*/*.java java/*/*/*/*/*.java)
 
-$(TARGET)/test/java.stamp: $(TARGET)/jvm/com/spruceid/DIDKit.class \
+$(TARGET)/test/java.stamp: \
+	$(TARGET)/jvm/com/spruceid/DIDKit.class \
+	$(TARGET)/jvm/com/spruceid/DIDKitException.class \
 	$(TARGET)/jvm/com/spruceid/DIDKitTest.class \
 	$(TARGET)/release/libdidkit.so | $(TARGET)/test
 	java -Djava.class.path=$(TARGET)/jvm \
@@ -55,8 +57,10 @@ $(TARGET)/jvm/%.class: java/test/%.java | $(TARGET)/jvm
 $(TARGET)/com_spruceid_DIDKit.h: java/main/com/spruceid/DIDKit.java
 	javac -h $(TARGET) $<
 
-$(TARGET)/didkit.jar: $(TARGET)/jvm/com/spruceid/DIDKit.class
-	jar -cf $@ -C $(TARGET)/jvm $(patsubst $(TARGET)/jvm/%,%,$^)
+$(TARGET)/didkit.jar: \
+	$(TARGET)/jvm/com/spruceid/DIDKit.class \
+	$(TARGET)/jvm/com/spruceid/DIDKitException.class
+	jar -cf $@ $(patsubst $(TARGET)/jvm/%,-C $(TARGET)/jvm %,$^)
 
 ## Android
 
