@@ -36,18 +36,23 @@ $(TARGET)/cabi-test: c/test.c $(TARGET)/release/libdidkit.so $(TARGET)/didkit.h
 
 ## Java
 
-JAVA_SRC=$(wildcard java/*/*.java java/*/*/*.java java/*/*/*/*.java)
+JAVA_SRC=$(wildcard java/*/*/*.java java/*/*/*/*.java java/*/*/*/*/*.java)
 
-$(TARGET)/test/java.stamp: $(TARGET)/jvm/com/spruceid/DIDKit.class $(TARGET)/release/libdidkit.so | $(TARGET)/test
+$(TARGET)/test/java.stamp: $(TARGET)/jvm/com/spruceid/DIDKit.class \
+	$(TARGET)/jvm/com/spruceid/DIDKitTest.class \
+	$(TARGET)/release/libdidkit.so | $(TARGET)/test
 	java -Djava.class.path=$(TARGET)/jvm \
 		-Djava.library.path=$(TARGET)/release \
-		com.spruceid.DIDKit
+		com.spruceid.DIDKitTest
 	touch $@
 
-$(TARGET)/jvm/com/spruceid/DIDKit.class: java/com/spruceid/DIDKit.java | $(TARGET)/jvm
-	javac $^ -d $(TARGET)/jvm -source 1.7 -target 1.7
+$(TARGET)/jvm/%.class: java/main/%.java | $(TARGET)/jvm
+	javac $^ -d $(TARGET)/jvm -cp java/main -source 1.7 -target 1.7
 
-$(TARGET)/com_spruceid_DIDKit.h: java/com/spruceid/DIDkit.java
+$(TARGET)/jvm/%.class: java/test/%.java | $(TARGET)/jvm
+	javac $^ -d $(TARGET)/jvm -cp java/main -source 1.7 -target 1.7
+
+$(TARGET)/com_spruceid_DIDKit.h: java/main/com/spruceid/DIDKit.java
 	javac -h $(TARGET) $<
 
 $(TARGET)/didkit.jar: $(TARGET)/jvm/com/spruceid/DIDKit.class
