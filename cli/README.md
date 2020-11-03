@@ -104,6 +104,10 @@ Corresponds to [/verify/presentations](https://w3c-ccg.github.io/vc-http-api/#/V
 
 Options and output format are the same as for [didkit vc-verify-credential](#didkit-vc-verify-credential).
 
+## Examples
+
+See the included [shell script](tests/example.sh).
+
 [JWK]: https://tools.ietf.org/html/rfc7517
 [ld-proofs]: https://w3c-ccg.github.io/ld-proofs/
 [vc-http-api]: https://w3c-ccg.github.io/vc-http-api/

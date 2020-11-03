@@ -1,0 +1,6 @@
+credential-signed.jsonld
+credential-verify-result.json
+key.jwk
+presentation-signed.jsonld
+presentation-unsigned-constructed.jsonld
+presentation-verify-result.json

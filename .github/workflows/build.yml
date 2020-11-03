@@ -48,6 +48,9 @@ jobs:
     - name: Test
       run: cargo test --verbose --workspace
 
+    - name: Test CLI
+      run: cli/tests/example.sh
+
     - name: Install Rust Android targets
       run: make -C lib install-rustup-android
 
