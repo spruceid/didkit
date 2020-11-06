@@ -1,5 +1,4 @@
-use std::fs::File;
-use std::io::{BufReader, Write};
+use std::io::Write;
 use std::process::{Command, Stdio};
 
 static BIN: &str = env!("CARGO_BIN_EXE_didkit");
@@ -21,11 +20,21 @@ fn issue_verify_credential_presentation() {
         .output()
         .unwrap();
     assert!(did_output.status.success());
-    let did = String::from_utf8(did_output.stdout).unwrap();
+    let mut did = String::from_utf8(did_output.stdout).unwrap();
+    did = did.trim().to_string();
 
     // Issue credential
-    let credential_file = File::open("tests/credential-unsigned.jsonld").unwrap();
-    let issue_credential = Command::new(BIN)
+    let vc = format!(r#"{{
+       "@context": "https://www.w3.org/2018/credentials/v1",
+       "id": "http://example.org/credentials/3731",
+       "type": ["VerifiableCredential"],
+       "issuer": "{}",
+       "issuanceDate": "2020-08-19T21:41:50Z",
+       "credentialSubject": {{
+           "id": "did:example:d23dd687a7dc6787646f2eb98d0"
+       }}
+    }}"#, did);
+    let mut issue_credential = Command::new(BIN)
         .args(&[
             "vc-issue-credential",
             "-k",
@@ -35,12 +44,16 @@ fn issue_verify_credential_presentation() {
             "-p",
             "assertionMethod",
         ])
-        .stdin(Stdio::from(credential_file))
+        .stdin(Stdio::piped())
+        .stdout(Stdio::piped())
         .stderr(Stdio::inherit())
-        .output()
+        .spawn()
         .unwrap();
-    assert!(issue_credential.status.success());
-    let vc = issue_credential.stdout;
+    let issue_stdin = issue_credential.stdin.as_mut().unwrap();
+    issue_stdin.write_all(vc.as_bytes()).unwrap();
+    let issue_output = issue_credential.wait_with_output().unwrap();
+    assert!(issue_output.status.success());
+    let vc = issue_output.stdout;
 
     // Verify credential
     let mut verify_credential = Command::new(BIN)
@@ -56,10 +69,15 @@ fn issue_verify_credential_presentation() {
     assert!(verify_output.status.success());
 
     // Issue presentation with credential
-    let presentation_file = File::open("tests/presentation-unsigned.jsonld").unwrap();
+    let presentation_str = r#"{
+       "@context": ["https://www.w3.org/2018/credentials/v1"],
+       "id": "http://example.org/presentations/3731",
+       "type": ["VerifiablePresentation"]
+    }"#;
     let mut presentation: serde_json::Value =
-        serde_json::from_reader(BufReader::new(presentation_file)).unwrap();
+        serde_json::from_str(presentation_str).unwrap();
     let vc_value = serde_json::from_slice(&vc).unwrap();
+    presentation["holder"] = did.to_string().into();
     presentation["verifiableCredential"] = vc_value;
     let mut issue_presentation = Command::new(BIN)
         .args(&[

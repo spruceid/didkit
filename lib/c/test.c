@@ -28,16 +28,17 @@ int main() {
     if (key == NULL) errx(1, "key to did: %s", didkit_error_message());
 
     // Issue Credential
-    const char *credential = "{"
+    char credential[0x1000];
+    snprintf(credential, sizeof(credential), "{"
         "   \"@context\": \"https://www.w3.org/2018/credentials/v1\","
         "   \"id\": \"http://example.org/credentials/3731\","
         "   \"type\": [\"VerifiableCredential\"],"
-        "   \"issuer\": \"did:example:30e07a529f32d234f6181736bd3\","
+        "   \"issuer\": \"%s\","
         "   \"issuanceDate\": \"2020-08-19T21:41:50Z\","
         "   \"credentialSubject\": {"
         "       \"id\": \"did:example:d23dd687a7dc6787646f2eb98d0\""
         "   }"
-        "}";
+        "}", did);
     char vc_options[0x1000];
     snprintf(vc_options, sizeof vc_options, "{"
             "  \"type\":\"Ed25519VerificationKey2018\","
@@ -60,10 +61,9 @@ int main() {
         "   \"@context\": [\"https://www.w3.org/2018/credentials/v1\"],"
         "   \"id\": \"http://example.org/presentations/3731\","
         "   \"type\": [\"VerifiablePresentation\"],"
-        "   \"issuer\": \"did:example:30e07a529f32d234f6181736bd3\","
-        "   \"issuanceDate\": \"2020-10-19T11:41:50Z\","
+        "   \"holder\": \"%s\","
         "   \"verifiableCredential\": %s"
-        "}", vc);
+        "}", did, vc);
     char vp_options[0x1000];
     snprintf(vp_options, sizeof vp_options, "{"
             "  \"type\":\"Ed25519VerificationKey2018\","
