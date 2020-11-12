@@ -16,7 +16,7 @@ Generate a Ed25519 keypair and output it in [JWK format](https://tools.ietf.org/
 
 Given a [JWK][], output the corresponding [did:key][].
 
-Currently, this only supports [Ed25519][https://tools.ietf.org/html/rfc8037#appendix-A.2] keys.
+Currently, this only supports [Ed25519](https://tools.ietf.org/html/rfc8037#appendix-A.2) keys.
 
 #### Options
 
