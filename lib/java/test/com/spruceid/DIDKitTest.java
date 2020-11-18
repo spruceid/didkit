@@ -51,7 +51,7 @@ class DIDKitTest {
             + "   \"@context\": [\"https://www.w3.org/2018/credentials/v1\"],"
             + "   \"id\": \"http://example.org/presentations/3731\","
             + "   \"type\": [\"VerifiablePresentation\"],"
-            + "   \"issuer\": \"" + did + "\","
+            + "   \"holder\": \"" + did + "\","
             + "   \"verifiableCredential\": " + vc
             + "}";
         String vpOptions = "{"
