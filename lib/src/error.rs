@@ -119,9 +119,9 @@ mod tests {
     fn errors() {
         use crate::c::didkit_vc_issue_presentation;
         use std::ffi::CStr;
-        let presentation = CString::new("{}").unwrap().as_ptr();
-        let options = CString::new("{}").unwrap().as_ptr();
-        let key = CString::new("{}").unwrap().as_ptr();
+        let presentation = "{}\0".as_ptr() as *const c_char;
+        let options = "{}\0".as_ptr() as *const c_char;
+        let key = "{}\0".as_ptr() as *const c_char;
         let vp = didkit_vc_issue_presentation(presentation, options, key);
         assert_eq!(vp, ptr::null());
         let msg = unsafe { CStr::from_ptr(didkit_error_message()) }
