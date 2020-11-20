@@ -21,7 +21,7 @@ print_json() {
 cd "$(dirname "$0")"
 
 # Build didkit CLI
-cargo build -p didkit_cli
+cargo build -p didkit-cli
 
 # Get didkit in $PATH
 export PATH=$PWD/../../target/debug:$PATH
