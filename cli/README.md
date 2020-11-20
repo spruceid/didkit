@@ -2,6 +2,17 @@
 
 DIDKit offers its functionality in a command-line program, `didkit`.
 
+## Build
+
+```sh
+$ cargo build
+```
+
+## Install
+```sh
+$ cargo install --path .
+```
+
 ## Commands
 
 ### `didkit help`

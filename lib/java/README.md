@@ -4,19 +4,25 @@ Java bindings for DIDKit, using [JNI][]. The [JAR][] file includes Java class fi
 
 ## Build
 
-In the parent directory, run:
-```
-make ../target/didkit.jar
+Run:
+```sh
+$ make -C ../ ../target/didkit.jar
 ```
 
-To build the shared library:
+To build the shared library for your current platform/architecture:
+```sh
+$ make -C ../ ../target/release/libdidkit.so
 ```
-make ../target/release/libdidkit.so
+
+## Test
+
+```sh
+$ make -C ../ ../target/tests/java.stamp
 ```
 
 ## Android
 
-For Android, you can use the separate [Android library (AAR file)](../android/) which includes the Java class files and compiled shared libraries.
+For Android, build the separate [Android library (AAR file)](../android/) which includes the Java class files and shared libraries for all Android targets.
 
 [JAR]: https://en.wikipedia.org/wiki/JAR_(file_format)
 [JNI]: https://en.wikipedia.org/wiki/Java_Native_Interface

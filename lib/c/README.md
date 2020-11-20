@@ -4,9 +4,14 @@ Shared Library for DIDKit. Intended to be compatible with C.
 
 ## Build
 
-In the parent directory, run:
+```sh
+$ make -C ../ ../target/release/libdidkit.so
 ```
-make ../target/release/libdidkit.so
+
+## Test
+
+```sh
+$ make -C ../ ../target/test/c.stamp
 ```
 
 ## Android
