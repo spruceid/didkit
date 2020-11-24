@@ -4,7 +4,8 @@ use std::str::FromStr;
 use std::task::{Context, Poll};
 
 use didkit::{
-    LinkedDataProofOptions, VerifiableCredential, VerifiablePresentation, VerificationResult, JWK,
+    LinkedDataProofOptions, ProofPurpose, VerifiableCredential, VerifiablePresentation,
+    VerificationResult, JWK,
 };
 
 pub mod accept;
@@ -17,6 +18,7 @@ use hyper::header::{ACCEPT, CONTENT_TYPE};
 use hyper::{Body, Response};
 use hyper::{Method, Request, StatusCode};
 use serde::{Deserialize, Serialize};
+use serde_json::json;
 use tower_service::Service;
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -24,7 +26,7 @@ use tower_service::Service;
 #[serde(deny_unknown_fields)]
 pub struct IssueCredentialRequest {
     pub credential: VerifiableCredential,
-    pub options: LinkedDataProofOptions,
+    pub options: Option<LinkedDataProofOptions>,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -32,7 +34,7 @@ pub struct IssueCredentialRequest {
 #[serde(deny_unknown_fields)]
 pub struct VerifyCredentialRequest {
     pub verifiable_credential: VerifiableCredential,
-    pub options: LinkedDataProofOptions,
+    pub options: Option<LinkedDataProofOptions>,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -40,7 +42,7 @@ pub struct VerifyCredentialRequest {
 #[serde(deny_unknown_fields)]
 pub struct ProvePresentationRequest {
     pub presentation: VerifiablePresentation,
-    pub options: LinkedDataProofOptions,
+    pub options: Option<LinkedDataProofOptions>,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -48,7 +50,7 @@ pub struct ProvePresentationRequest {
 #[serde(deny_unknown_fields)]
 pub struct VerifyPresentationRequest {
     pub verifiable_presentation: VerifiablePresentation,
-    pub options: LinkedDataProofOptions,
+    pub options: Option<LinkedDataProofOptions>,
 }
 
 pub type IssueCredentialResponse = VerifiableCredential;
@@ -70,9 +72,12 @@ impl DIDKitHTTPSvc {
         text: String,
     ) -> Pin<Box<dyn Future<Output = Result<Response<Body>, Error>> + Send>> {
         Box::pin(async move {
+            let value = json!(text);
+            let body = Body::from(serde_json::to_vec_pretty(&value)?);
             Response::builder()
                 .status(status_code)
-                .body(Body::from(text))
+                .header(CONTENT_TYPE, "application/json")
+                .body(body)
                 .map_err(|err| err.into())
         })
     }
@@ -126,21 +131,18 @@ impl DIDKitHTTPSvc {
     ) -> Pin<Box<dyn Future<Output = Result<Response<Body>, Error>> + Send>> {
         Self::response(
             StatusCode::METHOD_NOT_ALLOWED,
-            "Method not allowed\n".to_string(),
+            "Method not allowed".to_string(),
         )
     }
 
     pub fn not_found(&self) -> Pin<Box<dyn Future<Output = Result<Response<Body>, Error>> + Send>> {
-        Self::response(StatusCode::NOT_FOUND, "Not found\n".to_owned())
+        Self::response(StatusCode::NOT_FOUND, "Not found".to_owned())
     }
 
     pub fn missing_key(
         &self,
     ) -> Pin<Box<dyn Future<Output = Result<Response<Body>, Error>> + Send>> {
-        Self::response(
-            StatusCode::INTERNAL_SERVER_ERROR,
-            "Missing key\n".to_string(),
-        )
+        Self::response(StatusCode::INTERNAL_SERVER_ERROR, "Missing key".to_string())
     }
 
     pub fn issue_credentials(
@@ -169,14 +171,13 @@ impl DIDKitHTTPSvc {
                     return Self::response(StatusCode::BAD_REQUEST, err.to_string()).await;
                 }
             };
-            let options = issue_req.options;
+            let options = issue_req.options.unwrap_or_default();
             let mut credential = issue_req.credential;
             let options = LinkedDataProofOptions::from(options);
             let proof = match credential.generate_proof(&key, &options) {
                 Ok(reader) => reader,
                 Err(err) => {
-                    return Self::response(StatusCode::INTERNAL_SERVER_ERROR, err.to_string())
-                        .await;
+                    return Self::response(StatusCode::BAD_REQUEST, err.to_string()).await;
                 }
             };
             credential.add_proof(proof);
@@ -210,14 +211,13 @@ impl DIDKitHTTPSvc {
                     return Self::response(StatusCode::BAD_REQUEST, err.to_string()).await;
                 }
             };
-            let options = verify_req.options;
             let credential = verify_req.verifiable_credential;
-            let result = credential.verify(Some(options));
+            let result = credential.verify(verify_req.options);
             let body = Body::from(serde_json::to_vec_pretty(&result)?);
             Response::builder()
                 .status(match result.errors.is_empty() {
                     true => StatusCode::OK,
-                    false => StatusCode::INTERNAL_SERVER_ERROR,
+                    false => StatusCode::BAD_REQUEST,
                 })
                 .header(CONTENT_TYPE, "application/json")
                 .body(body)
@@ -251,14 +251,17 @@ impl DIDKitHTTPSvc {
                     return Self::response(StatusCode::BAD_REQUEST, err.to_string()).await;
                 }
             };
-            let options = issue_req.options;
+            let options = issue_req.options.unwrap_or_else(|| {
+                let mut options = LinkedDataProofOptions::default();
+                options.proof_purpose = Some(ProofPurpose::Authentication);
+                options
+            });
             let mut presentation = issue_req.presentation;
             let options = LinkedDataProofOptions::from(options);
             let proof = match presentation.generate_proof(&key, &options) {
                 Ok(reader) => reader,
                 Err(err) => {
-                    return Self::response(StatusCode::INTERNAL_SERVER_ERROR, err.to_string())
-                        .await;
+                    return Self::response(StatusCode::BAD_REQUEST, err.to_string()).await;
                 }
             };
             presentation.add_proof(proof);
@@ -292,15 +295,14 @@ impl DIDKitHTTPSvc {
                     return Self::response(StatusCode::BAD_REQUEST, err.to_string()).await;
                 }
             };
-            let options = verify_req.options;
             let presentation = verify_req.verifiable_presentation;
-            let result = presentation.verify(Some(options));
+            let result = presentation.verify(verify_req.options);
             let body = Body::from(serde_json::to_vec_pretty(&result)?);
             Response::builder()
                 .header(CONTENT_TYPE, "application/json")
                 .status(match result.errors.is_empty() {
                     true => StatusCode::OK,
-                    false => StatusCode::INTERNAL_SERVER_ERROR,
+                    false => StatusCode::BAD_REQUEST,
                 })
                 .body(body)
                 .map_err(|err| err.into())
