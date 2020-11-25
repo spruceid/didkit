@@ -4,7 +4,6 @@ on:
   push:
     branches:
       - main
-      - dockerisation
   release:
       types: [published, created, edited]
 

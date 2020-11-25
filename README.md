@@ -2,6 +2,17 @@
 
 ## Install
 
+### Container
+
+Both the CLI and HTTP server are containerised and available under
+`ghcr.io/spruceid/didkit-(cli|http)`. You can use the images like CLIs:
+```bash
+$ docker run ghcr.io/spruceid/didkit-cli:latest --help
+$ docker run -p 8080 ghcr.io/spruceid/didkit-http:latest --port 8080
+```
+
+### Manual
+
 DIDKit is written in [Rust][]. To get Rust, you can use [Rustup][].
 
 We depend on some Rust nightly features. When installing with Rustup, pick the nightly release channel. Or run `rustup default nightly` to switch to it.
