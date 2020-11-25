@@ -41,7 +41,6 @@ int main() {
         "}", did);
     char vc_options[0x1000];
     snprintf(vc_options, sizeof vc_options, "{"
-            "  \"type\":\"Ed25519VerificationKey2018\","
             "  \"proofPurpose\": \"assertionMethod\","
             "  \"verificationMethod\": \"%s\""
             "}", did);
@@ -66,7 +65,6 @@ int main() {
         "}", did, vc);
     char vp_options[0x1000];
     snprintf(vp_options, sizeof vp_options, "{"
-            "  \"type\":\"Ed25519VerificationKey2018\","
             "  \"proofPurpose\": \"authentication\","
             "  \"verificationMethod\": \"%s\""
             "}", did);

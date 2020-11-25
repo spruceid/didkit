@@ -33,7 +33,6 @@ class DIDKitTest {
             + "   }"
             + "}";
         String vcOptions = "{"
-            + "  \"type\":\"Ed25519VerificationKey2018\","
             + "  \"proofPurpose\": \"assertionMethod\","
             + "  \"verificationMethod\": \"" + did + "\""
             + "}";
@@ -55,7 +54,6 @@ class DIDKitTest {
             + "   \"verifiableCredential\": " + vc
             + "}";
         String vpOptions = "{"
-            + "  \"type\":\"Ed25519VerificationKey2018\","
             + "  \"proofPurpose\": \"authentication\","
             + "  \"verificationMethod\": \"" + did + "\""
             + "}";

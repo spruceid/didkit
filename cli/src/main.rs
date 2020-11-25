@@ -99,6 +99,7 @@ impl From<ProofOptions> for LinkedDataProofOptions {
             created: options.created,
             challenge: options.challenge,
             domain: options.domain,
+            checks: None,
         }
     }
 }

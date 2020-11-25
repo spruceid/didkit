@@ -28,7 +28,6 @@ void main() {
     final key = DIDKit.generateEd25519Key();
     final did = DIDKit.keyToDIDKey(key);
     final options = {
-        "type": "Ed25519VerificationKey2018",
         "proofPurpose": "assertionMethod",
         "verificationMethod": did
     };
@@ -55,7 +54,6 @@ void main() {
     final key = DIDKit.generateEd25519Key();
     final did = DIDKit.keyToDIDKey(key);
     final options = {
-        "type": "Ed25519VerificationKey2018",
         "proofPurpose": "authentication",
         "verificationMethod": did
     };
