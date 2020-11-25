@@ -40,9 +40,13 @@ fn assert_is_jsonld(resp: &Response<Body>) {
     }
 }
 
-fn serve() -> (String, impl FnOnce() -> ()) {
+fn serve(other_keys: Option<Vec<JWK>>) -> (String, impl FnOnce() -> ()) {
     let key: JWK = serde_json::from_str(DID_KEY_JSON).unwrap();
-    let makesvc = DIDKitHTTPMakeSvc::new(Some(key));
+    let mut keys = vec![key];
+    if let Some(mut other_keys) = other_keys {
+        keys.append(&mut other_keys);
+    }
+    let makesvc = DIDKitHTTPMakeSvc::new(keys);
     let addr = ([127, 0, 0, 1], 0).into();
     let server = Server::bind(&addr).serve(makesvc);
     let url = "http://".to_string() + &server.local_addr().to_string();
@@ -59,7 +63,7 @@ fn serve() -> (String, impl FnOnce() -> ()) {
 
 #[tokio::test]
 async fn not_found() {
-    let (base, shutdown) = serve();
+    let (base, shutdown) = serve(None);
     let client = Client::builder().build_http::<Body>();
 
     let uri = Uri::from_str(&(base + "/nonexistent-path")).unwrap();
@@ -71,7 +75,7 @@ async fn not_found() {
 
 #[tokio::test]
 async fn credential_presentation_issue_verify() {
-    let (base, shutdown) = serve();
+    let (base, shutdown) = serve(None);
     let client = Client::builder().build_http::<Body>();
 
     // Issue credential
@@ -193,8 +197,63 @@ async fn credential_presentation_issue_verify() {
 }
 
 #[tokio::test]
+async fn credential_issue_verify_other_key() {
+    let key = JWK::generate_ed25519().unwrap();
+    let did = key.to_did().unwrap();
+    let (base, shutdown) = serve(Some(vec![key]));
+    let client = Client::builder().build_http::<Body>();
+    // Issue credential
+    let uri = Uri::from_str(&(base.to_string() + "/issue/credentials")).unwrap();
+    let mut cred_req: Value = serde_json::from_str(ISSUE_CRED_REQ).unwrap();
+    cred_req["credential"]["issuer"] = json!(did);
+    cred_req["options"]["verificationMethod"] = json!(did);
+    let body = Body::from(serde_json::to_string(&cred_req).unwrap());
+    let req = Request::builder()
+        .method("POST")
+        .uri(uri)
+        .body(body)
+        .unwrap();
+    let resp = client.request(req).await.unwrap();
+    assert_eq!(resp.status(), 201);
+    assert_is_jsonld(&resp);
+    let body_reader = hyper::body::aggregate(resp).await.unwrap().reader();
+    let vc: Value = serde_json::from_reader(body_reader).unwrap();
+    eprintln!("issue credential response: {:?}", vc);
+    // Do a small check here and then full verification via HTTP
+    assert!(!vc["proof"].is_null());
+    assert_eq!(vc["issuer"], did);
+    assert_eq!(vc["proof"]["verificationMethod"], did);
+
+    // Verify credential
+    let uri = Uri::from_str(&(base.to_string() + "/verify/credentials")).unwrap();
+    let verify_cred_req = json!({
+      "verifiableCredential": vc,
+      "options": {
+          "verificationMethod": did,
+          "proofPurpose": "assertionMethod",
+          "domain": "example.net",
+          "challenge": "c16239ed-9775-4cf5-8f7a-65fc07e0d379"
+      }
+    });
+    let req_str = serde_json::to_string(&verify_cred_req).unwrap();
+    let req = Request::builder()
+        .method("POST")
+        .uri(uri)
+        .body(Body::from(req_str))
+        .unwrap();
+    let resp = client.request(req).await.unwrap();
+    assert_eq!(resp.status(), 200);
+    assert_is_jsonld(&resp);
+    let body_reader = hyper::body::aggregate(resp).await.unwrap().reader();
+    let response: VerifyCredentialResponse = serde_json::from_reader(body_reader).unwrap();
+    assert!(response.errors.is_empty());
+    eprintln!("verify credential response: {:?}", response);
+    shutdown()
+}
+
+#[tokio::test]
 async fn invalid_input() {
-    let (base, shutdown) = serve();
+    let (base, shutdown) = serve(None);
     let client = Client::builder().build_http::<Body>();
 
     let uri = Uri::from_str(&(base + "/issue/credentials")).unwrap();
@@ -211,7 +270,7 @@ async fn invalid_input() {
 
 #[tokio::test]
 async fn non_json_input() {
-    let (base, shutdown) = serve();
+    let (base, shutdown) = serve(None);
     let client = Client::builder().build_http::<Body>();
 
     let uri = Uri::from_str(&(base + "/issue/credentials")).unwrap();
@@ -230,7 +289,7 @@ async fn non_json_input() {
 
 #[tokio::test]
 async fn non_json_accept() {
-    let (base, shutdown) = serve();
+    let (base, shutdown) = serve(None);
     let client = Client::builder().build_http::<Body>();
 
     let uri = Uri::from_str(&(base + "/issue/credentials")).unwrap();

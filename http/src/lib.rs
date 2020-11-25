@@ -1,3 +1,4 @@
+use std::collections::HashMap;
 use std::future::Future;
 use std::pin::Pin;
 use std::str::FromStr;
@@ -58,13 +59,26 @@ pub type VerifyCredentialResponse = VerificationResult;
 pub type ProvePresentationResponse = VerifiablePresentation;
 pub type VerifyPresentationResponse = VerificationResult;
 
+type KeyMap = HashMap<String, JWK>;
+
 pub struct DIDKitHTTPSvc {
-    key: Option<JWK>,
+    keys: KeyMap,
+}
+
+pub fn pick_key<'a>(keys: &'a KeyMap, options: &LinkedDataProofOptions) -> Option<&'a JWK> {
+    if keys.len() <= 1 {
+        keys.values().next()
+    } else {
+        match options.verification_method {
+            Some(ref verification_method) => keys.get(verification_method),
+            None => keys.values().next(),
+        }
+    }
 }
 
 impl DIDKitHTTPSvc {
-    pub fn new(key: Option<JWK>) -> Self {
-        Self { key }
+    pub fn new(keys: KeyMap) -> Self {
+        Self { keys }
     }
 
     pub fn response(
@@ -139,9 +153,7 @@ impl DIDKitHTTPSvc {
         Self::response(StatusCode::NOT_FOUND, "Not found".to_owned())
     }
 
-    pub fn missing_key(
-        &self,
-    ) -> Pin<Box<dyn Future<Output = Result<Response<Body>, Error>> + Send>> {
+    pub fn missing_key() -> Pin<Box<dyn Future<Output = Result<Response<Body>, Error>> + Send>> {
         Self::response(StatusCode::INTERNAL_SERVER_ERROR, "Missing key".to_string())
     }
 
@@ -158,11 +170,7 @@ impl DIDKitHTTPSvc {
         if let Some(resp) = self.ensure_accept_json(&req) {
             return resp;
         };
-        let key = match &self.key {
-            Some(key) => key,
-            None => return self.missing_key(),
-        }
-        .clone();
+        let keys = self.keys.clone();
         Box::pin(async move {
             let body_reader = hyper::body::aggregate(req).await?.reader();
             let issue_req: IssueCredentialRequest = match serde_json::from_reader(body_reader) {
@@ -172,9 +180,12 @@ impl DIDKitHTTPSvc {
                 }
             };
             let options = issue_req.options.unwrap_or_default();
+            let key = match pick_key(&keys, &options) {
+                Some(key) => key,
+                None => return Self::missing_key().await,
+            };
             let mut credential = issue_req.credential;
-            let options = LinkedDataProofOptions::from(options);
-            let proof = match credential.generate_proof(&key, &options) {
+            let proof = match credential.generate_proof(key, &options) {
                 Ok(reader) => reader,
                 Err(err) => {
                     return Self::response(StatusCode::BAD_REQUEST, err.to_string()).await;
@@ -238,11 +249,7 @@ impl DIDKitHTTPSvc {
         if let Some(resp) = self.ensure_accept_json(&req) {
             return resp;
         };
-        let key = match &self.key {
-            Some(key) => key,
-            None => return self.missing_key(),
-        }
-        .clone();
+        let keys = self.keys.clone();
         Box::pin(async move {
             let body_reader = hyper::body::aggregate(req).await?.reader();
             let issue_req: ProvePresentationRequest = match serde_json::from_reader(body_reader) {
@@ -258,7 +265,11 @@ impl DIDKitHTTPSvc {
             });
             let mut presentation = issue_req.presentation;
             let options = LinkedDataProofOptions::from(options);
-            let proof = match presentation.generate_proof(&key, &options) {
+            let key = match pick_key(&keys, &options) {
+                Some(key) => key,
+                None => return Self::missing_key().await,
+            };
+            let proof = match presentation.generate_proof(key, &options) {
                 Ok(reader) => reader,
                 Err(err) => {
                     return Self::response(StatusCode::BAD_REQUEST, err.to_string()).await;
@@ -332,12 +343,17 @@ impl Service<Request<Body>> for DIDKitHTTPSvc {
 }
 
 pub struct DIDKitHTTPMakeSvc {
-    key: Option<JWK>,
+    keys: KeyMap,
 }
 
 impl DIDKitHTTPMakeSvc {
-    pub fn new(key: Option<JWK>) -> Self {
-        Self { key }
+    pub fn new(keys: Vec<JWK>) -> Self {
+        Self {
+            keys: keys.into_iter().fold(KeyMap::new(), |mut map, key| {
+                map.insert(key.to_did().unwrap(), key);
+                map
+            }),
+        }
     }
 }
 
@@ -351,8 +367,8 @@ impl<T> Service<T> for DIDKitHTTPMakeSvc {
     }
 
     fn call(&mut self, _: T) -> Self::Future {
-        let key = self.key.clone();
-        let fut = async move { Ok(DIDKitHTTPSvc::new(key)) };
+        let keys = self.keys.clone();
+        let fut = async move { Ok(DIDKitHTTPSvc::new(keys)) };
         Box::pin(fut)
     }
 }

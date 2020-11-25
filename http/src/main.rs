@@ -19,23 +19,26 @@ pub struct DIDKitHttpOpts {
     host: Option<std::net::IpAddr>,
     /// JWK to use for issuing
     #[structopt(short, long, parse(from_os_str))]
-    key: Option<PathBuf>,
+    key: Option<Vec<PathBuf>>,
+}
+
+fn read_key(path: &PathBuf) -> JWK {
+    let file = File::open(path).unwrap();
+    let reader = BufReader::new(file);
+    serde_json::from_reader(reader).unwrap()
 }
 
 #[tokio::main]
 async fn main() -> Result<(), Error> {
     let opt = DIDKitHttpOpts::from_args();
 
-    let key = match opt.key {
-        Some(key_path) => {
-            let key_file = File::open(key_path).unwrap();
-            let key_reader = BufReader::new(key_file);
-            let key: JWK = serde_json::from_reader(key_reader).unwrap();
-            Some(key)
-        }
-        None => None,
-    };
-    let makesvc = DIDKitHTTPMakeSvc::new(key);
+    let keys = opt
+        .key
+        .unwrap_or_default()
+        .iter()
+        .map(|filename| read_key(filename))
+        .collect();
+    let makesvc = DIDKitHTTPMakeSvc::new(keys);
     let host = opt.host.unwrap_or([127, 0, 0, 1].into());
     let addr = (host, opt.port.unwrap_or(0)).into();
 
