@@ -30,6 +30,7 @@ jobs:
         repository: spruceid/ssi
         token: ${{ secrets.GH_ACCESS_TOKEN_CEL }}
         path: ssi
+        ref: aadc6ea425674c68abeb6b1cbb1cd37144a1de42
 
     - name: Cache Cargo registry and build artifacts
       uses: actions/cache@v2
@@ -50,6 +51,20 @@ jobs:
 
     - name: Test CLI
       run: cli/tests/example.sh
+
+    - name: Checkout vc-http-api
+      uses: actions/checkout@v2
+      with:
+        repository: spruceid/vc-http-api
+        token: ${{ secrets.GH_ACCESS_TOKEN_CEL }}
+        path: vc-http-api
+        ref: spruce
+
+    - name: Run vc-http-api test suite
+      working-directory: vc-http-api/packages/plugfest-2020
+      run: |
+        npm i
+        ./vendors/spruce/test.sh
 
     - name: Install Rust Android targets
       run: make -C lib install-rustup-android
