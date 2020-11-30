@@ -25,7 +25,11 @@ int main() {
 
     // Get did:key for key
     const char *did = didkit_key_to_did(key);
-    if (key == NULL) errx(1, "key to did: %s", didkit_error_message());
+    if (did == NULL) errx(1, "key to did: %s", didkit_error_message());
+
+    // Get verificationMethod for key
+    const char *verification_method = didkit_key_to_verification_method(key);
+    if (verification_method == NULL) errx(1, "key to did: %s", didkit_error_message());
 
     // Issue Credential
     char credential[0x1000];
@@ -43,7 +47,7 @@ int main() {
     snprintf(vc_options, sizeof vc_options, "{"
             "  \"proofPurpose\": \"assertionMethod\","
             "  \"verificationMethod\": \"%s\""
-            "}", did);
+            "}", verification_method);
     const char *vc = didkit_vc_issue_credential(credential, vc_options, key);
     if (vc == NULL) errx(1, "issue credential: %s", didkit_error_message());
 
@@ -67,7 +71,7 @@ int main() {
     snprintf(vp_options, sizeof vp_options, "{"
             "  \"proofPurpose\": \"authentication\","
             "  \"verificationMethod\": \"%s\""
-            "}", did);
+            "}", verification_method);
     vp = didkit_vc_issue_presentation(presentation, vp_options, key);
     if (vp == NULL) errx(1, "issue presentation: %s", didkit_error_message());
 
@@ -80,6 +84,7 @@ int main() {
 
     didkit_free_string(vp);
     didkit_free_string(vc);
+    didkit_free_string(verification_method);
     didkit_free_string(did);
     didkit_free_string(key);
 }

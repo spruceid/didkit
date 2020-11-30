@@ -350,7 +350,7 @@ impl DIDKitHTTPMakeSvc {
     pub fn new(keys: Vec<JWK>) -> Self {
         Self {
             keys: keys.into_iter().fold(KeyMap::new(), |mut map, key| {
-                map.insert(key.to_did().unwrap(), key);
+                map.insert(key.to_verification_method().unwrap(), key);
                 map
             }),
         }

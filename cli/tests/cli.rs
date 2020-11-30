@@ -23,8 +23,19 @@ fn issue_verify_credential_presentation() {
     let mut did = String::from_utf8(did_output.stdout).unwrap();
     did = did.trim().to_string();
 
+    // Get verificationMethod for key
+    let vm_output = Command::new(BIN)
+        .args(&["key-to-verification-method", "-k", "tests/ed25519-key.jwk"])
+        .stderr(Stdio::inherit())
+        .output()
+        .unwrap();
+    assert!(vm_output.status.success());
+    let mut verification_method = String::from_utf8(vm_output.stdout).unwrap();
+    verification_method = verification_method.trim().to_string();
+
     // Issue credential
-    let vc = format!(r#"{{
+    let vc = format!(
+        r#"{{
        "@context": "https://www.w3.org/2018/credentials/v1",
        "id": "http://example.org/credentials/3731",
        "type": ["VerifiableCredential"],
@@ -33,14 +44,16 @@ fn issue_verify_credential_presentation() {
        "credentialSubject": {{
            "id": "did:example:d23dd687a7dc6787646f2eb98d0"
        }}
-    }}"#, did);
+    }}"#,
+        did
+    );
     let mut issue_credential = Command::new(BIN)
         .args(&[
             "vc-issue-credential",
             "-k",
             "tests/ed25519-key.jwk",
             "-v",
-            &did.trim(),
+            &verification_method.trim(),
             "-p",
             "assertionMethod",
         ])
@@ -74,8 +87,7 @@ fn issue_verify_credential_presentation() {
        "id": "http://example.org/presentations/3731",
        "type": ["VerifiablePresentation"]
     }"#;
-    let mut presentation: serde_json::Value =
-        serde_json::from_str(presentation_str).unwrap();
+    let mut presentation: serde_json::Value = serde_json::from_str(presentation_str).unwrap();
     let vc_value = serde_json::from_slice(&vc).unwrap();
     presentation["holder"] = did.to_string().into();
     presentation["verifiableCredential"] = vc_value;
@@ -85,7 +97,7 @@ fn issue_verify_credential_presentation() {
             "-k",
             "tests/ed25519-key.jwk",
             "-v",
-            &did.trim(),
+            &verification_method.trim(),
             "-p",
             "authentication",
         ])

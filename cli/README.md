@@ -29,6 +29,10 @@ Given a [JWK][], output the corresponding [did:key][].
 
 Currently, this only supports [Ed25519](https://tools.ietf.org/html/rfc8037#appendix-A.2) keys.
 
+### `didkit key-to-verification-method`
+
+Given a Ed25519 [JWK][], output the corresponding [did:key][] [verificationMethod][].
+
 #### Options
 
 - `-k, --key <file>` (required) - Name of JWK file

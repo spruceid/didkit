@@ -18,6 +18,11 @@ pub enum DIDKit {
         #[structopt(short, long, parse(from_os_str))]
         key: PathBuf,
     },
+    /// Output a verificationMethod for a JWK
+    KeyToVerificationMethod {
+        #[structopt(short, long, parse(from_os_str))]
+        key: PathBuf,
+    },
 
     /*
     // DID Functionality
@@ -123,6 +128,12 @@ fn main() {
         DIDKit::KeyToDIDKey { key: key_path } => {
             let key = read_key(key_path);
             let did = key.to_did().unwrap();
+            println!("{}", did);
+        }
+
+        DIDKit::KeyToVerificationMethod { key: key_path } => {
+            let key = read_key(key_path);
+            let did = key.to_verification_method().unwrap();
             println!("{}", did);
         }
 

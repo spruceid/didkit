@@ -12,6 +12,7 @@ use serde_json::{json, Value};
 
 const DID_KEY_JSON: &'static str = include_str!("../../cli/tests/ed25519-key.jwk");
 const DID_KEY: &'static str = "did:key:z6MkiVpwA241guqtKWAkohHpcAry7S94QQb6ukW3GcCsugbK";
+const VERIFICATION_METHOD: &'static str = "did:key:z6MkiVpwA241guqtKWAkohHpcAry7S94QQb6ukW3GcCsugbK#z6MkiVpwA241guqtKWAkohHpcAry7S94QQb6ukW3GcCsugbK";
 
 const ISSUE_CRED_REQ: &str = r#"{
     "credential": {
@@ -25,7 +26,7 @@ const ISSUE_CRED_REQ: &str = r#"{
         }
     },
     "options": {
-        "verificationMethod": "did:key:z6MkiVpwA241guqtKWAkohHpcAry7S94QQb6ukW3GcCsugbK",
+        "verificationMethod": "did:key:z6MkiVpwA241guqtKWAkohHpcAry7S94QQb6ukW3GcCsugbK#z6MkiVpwA241guqtKWAkohHpcAry7S94QQb6ukW3GcCsugbK",
         "proofPurpose": "assertionMethod",
         "created": "2020-11-18T20:50:10Z",
         "domain": "example.net",
@@ -100,7 +101,7 @@ async fn credential_presentation_issue_verify() {
     let verify_cred_req = json!({
       "verifiableCredential": vc,
       "options": {
-          "verificationMethod": DID_KEY,
+          "verificationMethod": VERIFICATION_METHOD,
           "proofPurpose": "assertionMethod",
           "domain": "example.net",
           "challenge": "c16239ed-9775-4cf5-8f7a-65fc07e0d379"
@@ -132,7 +133,7 @@ async fn credential_presentation_issue_verify() {
           "verifiableCredential": vc
       },
       "options": {
-          "verificationMethod": DID_KEY,
+          "verificationMethod": VERIFICATION_METHOD,
           "proofPurpose": "authentication",
           "domain": "example.org",
           "challenge": challenge
@@ -156,7 +157,7 @@ async fn credential_presentation_issue_verify() {
     let verify_pres_req = json!({
       "verifiablePresentation": vp,
       "options": {
-          "verificationMethod": DID_KEY,
+          "verificationMethod": VERIFICATION_METHOD,
           "proofPurpose": "authentication",
           "domain": "example.org",
           "challenge": challenge
@@ -200,13 +201,14 @@ async fn credential_presentation_issue_verify() {
 async fn credential_issue_verify_other_key() {
     let key = JWK::generate_ed25519().unwrap();
     let did = key.to_did().unwrap();
+    let verification_method = key.to_verification_method().unwrap();
     let (base, shutdown) = serve(Some(vec![key]));
     let client = Client::builder().build_http::<Body>();
     // Issue credential
     let uri = Uri::from_str(&(base.to_string() + "/issue/credentials")).unwrap();
     let mut cred_req: Value = serde_json::from_str(ISSUE_CRED_REQ).unwrap();
     cred_req["credential"]["issuer"] = json!(did);
-    cred_req["options"]["verificationMethod"] = json!(did);
+    cred_req["options"]["verificationMethod"] = json!(verification_method);
     let body = Body::from(serde_json::to_string(&cred_req).unwrap());
     let req = Request::builder()
         .method("POST")
@@ -222,14 +224,14 @@ async fn credential_issue_verify_other_key() {
     // Do a small check here and then full verification via HTTP
     assert!(!vc["proof"].is_null());
     assert_eq!(vc["issuer"], did);
-    assert_eq!(vc["proof"]["verificationMethod"], did);
+    assert_eq!(vc["proof"]["verificationMethod"], verification_method);
 
     // Verify credential
     let uri = Uri::from_str(&(base.to_string() + "/verify/credentials")).unwrap();
     let verify_cred_req = json!({
       "verifiableCredential": vc,
       "options": {
-          "verificationMethod": did,
+          "verificationMethod": verification_method,
           "proofPurpose": "assertionMethod",
           "domain": "example.net",
           "challenge": "c16239ed-9775-4cf5-8f7a-65fc07e0d379"

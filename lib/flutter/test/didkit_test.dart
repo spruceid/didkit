@@ -27,9 +27,10 @@ void main() {
   test('issueCredential, verifyCredential', () async {
     final key = DIDKit.generateEd25519Key();
     final did = DIDKit.keyToDIDKey(key);
+    final verificationMethod = DIDKit.keyToVerificationMethod(key);
     final options = {
         "proofPurpose": "assertionMethod",
-        "verificationMethod": did
+        "verificationMethod": verificationMethod
     };
     final credential = {
         "@context": "https://www.w3.org/2018/credentials/v1",
@@ -53,9 +54,10 @@ void main() {
   test('issuePresentation, verifyPresentation', () async {
     final key = DIDKit.generateEd25519Key();
     final did = DIDKit.keyToDIDKey(key);
+    final verificationMethod = DIDKit.keyToVerificationMethod(key);
     final options = {
         "proofPurpose": "authentication",
-        "verificationMethod": did
+        "verificationMethod": verificationMethod
     };
     final presentation = {
         "@context": ["https://www.w3.org/2018/credentials/v1"],

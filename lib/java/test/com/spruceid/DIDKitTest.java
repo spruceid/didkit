@@ -12,6 +12,9 @@ class DIDKitTest {
         // Convert key to DID
         String did = DIDKit.keyToDID(jwk);
 
+        // Get verificationMethod for DID
+        String verificationMethod = DIDKit.keyToVerificationMethod(jwk);
+
         // Trigger Exception
         boolean threw = false;
         try {
@@ -34,7 +37,7 @@ class DIDKitTest {
             + "}";
         String vcOptions = "{"
             + "  \"proofPurpose\": \"assertionMethod\","
-            + "  \"verificationMethod\": \"" + did + "\""
+            + "  \"verificationMethod\": \"" + verificationMethod + "\""
             + "}";
         String vc = DIDKit.issueCredential(credential, vcOptions, jwk);
 
@@ -55,7 +58,7 @@ class DIDKitTest {
             + "}";
         String vpOptions = "{"
             + "  \"proofPurpose\": \"authentication\","
-            + "  \"verificationMethod\": \"" + did + "\""
+            + "  \"verificationMethod\": \"" + verificationMethod + "\""
             + "}";
         String vp = DIDKit.issuePresentation(presentation, vpOptions, jwk);
 

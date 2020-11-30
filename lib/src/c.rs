@@ -51,6 +51,18 @@ pub extern "C" fn didkit_key_to_did(jwk: *const c_char) -> *const c_char {
     ccchar_or_error(key_to_did(jwk))
 }
 
+// Convert JWK to did:key DID URI for verificationMethod
+fn key_to_verification_method(key_json_ptr: *const c_char) -> Result<*const c_char, Error> {
+    let key_json = unsafe { CStr::from_ptr(key_json_ptr) }.to_str()?;
+    let key: JWK = serde_json::from_str(key_json)?;
+    let did = key.to_verification_method()?;
+    Ok(CString::new(did)?.into_raw())
+}
+#[no_mangle]
+pub extern "C" fn didkit_key_to_verification_method(jwk: *const c_char) -> *const c_char {
+    ccchar_or_error(key_to_verification_method(jwk))
+}
+
 // Issue Credential
 fn issue_credential(
     credential_json_ptr: *const c_char,

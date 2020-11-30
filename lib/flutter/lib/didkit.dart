@@ -24,6 +24,9 @@ final generate_ed25519_key = lib
 final key_to_did_key = lib
   .lookupFunction<Pointer<Utf8> Function(Pointer<Utf8>), Pointer<Utf8> Function(Pointer<Utf8>)>('didkit_key_to_did');
 
+final key_to_verification_method = lib
+  .lookupFunction<Pointer<Utf8> Function(Pointer<Utf8>), Pointer<Utf8> Function(Pointer<Utf8>)>('didkit_key_to_verification_method');
+
 final issue_credential = lib
   .lookupFunction<Pointer<Utf8> Function(Pointer<Utf8>, Pointer<Utf8>, Pointer<Utf8>), Pointer<Utf8> Function(Pointer<Utf8>, Pointer<Utf8>, Pointer<Utf8>)>('didkit_vc_issue_credential');
 
@@ -78,6 +81,14 @@ class DIDKit {
     final did_key_string = Utf8.fromUtf8(did_key);
     free_string(did_key);
     return did_key_string;
+  }
+
+  static String keyToVerificationMethod(String key) {
+    final vm = key_to_verification_method(Utf8.toUtf8(key));
+    if (vm.address == nullptr.address) throw lastError();
+    final vm_string = Utf8.fromUtf8(vm);
+    free_string(vm);
+    return vm_string;
   }
 
   static String issueCredential(String credential, String options, String key) {

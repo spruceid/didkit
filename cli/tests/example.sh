@@ -39,6 +39,10 @@ echo
 did=$(didkit key-to-did-key -k key.jwk)
 printf 'DID: %s\n\n' "$did"
 
+# Get verificationMethod for keypair
+verification_method=$(didkit key-to-verification-method -k key.jwk)
+printf 'verificationMethod: %s\n\n' "$verification_method"
+
 # Prepare credential for issuing
 cat > credential-unsigned.jsonld <<EOF
 {
@@ -56,7 +60,7 @@ EOF
 # Issue verifiable credential
 didkit vc-issue-credential \
 	-k key.jwk \
-	-v "$did" \
+	-v "$verification_method" \
 	-p assertionMethod \
 	< credential-unsigned.jsonld \
 	> credential-signed.jsonld
@@ -66,7 +70,7 @@ echo
 
 # Verify verifiable credential
 if ! didkit vc-verify-credential \
-	-v "$did" \
+	-v "$verification_method" \
 	-p assertionMethod \
 	< credential-signed.jsonld \
 	> credential-verify-result.json
@@ -93,7 +97,7 @@ EOF
 # Issue verifiable presentation
 didkit vc-issue-presentation \
 	-k key.jwk \
-	-v "$did" \
+	-v "$verification_method" \
 	-p authentication \
 	< presentation-unsigned.jsonld \
 	> presentation-signed.jsonld
@@ -103,7 +107,7 @@ echo
 
 # Verify verifiable presentation
 if ! didkit vc-verify-presentation \
-	-v "$did" \
+	-v "$verification_method" \
 	-p authentication \
 	< presentation-signed.jsonld \
 	> presentation-verify-result.json
