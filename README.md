@@ -5,10 +5,18 @@
 ### Container
 
 Both the CLI and HTTP server are containerised and available under
-`ghcr.io/spruceid/didkit-(cli|http)`. You can use the images like CLIs:
+`ghcr.io/spruceid/didkit-(cli|http)`.
+
+The image are private for now, so a [Personal Access Token](https://docs.github.com/en/free-pro-team@latest/github/authenticating-to-github/creating-a-personal-access-token)
+is required. Once created you can login like so:
+```bash
+$ docker login ghcr.io -u USERNAME --password-stdin
+```
+
+You can use the images like CLIs:
 ```bash
 $ docker run ghcr.io/spruceid/didkit-cli:latest --help
-$ docker run -p 8080 ghcr.io/spruceid/didkit-http:latest --port 8080
+$ docker run --init -p 8080 ghcr.io/spruceid/didkit-http:latest --port 8080
 ```
 
 ### Manual
