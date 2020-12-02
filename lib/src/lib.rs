@@ -1,6 +1,8 @@
+#[cfg(not(feature = "wasm"))]
 pub mod c;
 mod did_methods;
 pub mod error;
+#[cfg(not(feature = "wasm"))]
 pub mod jni;
 
 #[macro_use]

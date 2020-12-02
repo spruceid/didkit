@@ -50,10 +50,10 @@ jobs:
         default: true
 
     - name: Build
-      run: cargo build --verbose --workspace
+      run: cargo build --verbose --workspace --exclude didkit-wasm
 
     - name: Test
-      run: cargo test --verbose --workspace
+      run: cargo build --verbose --workspace --exclude didkit-wasm
 
     - name: Test CLI
       run: cli/tests/example.sh
@@ -76,6 +76,9 @@ jobs:
 
     - name: Install Rust Android targets
       run: make -C lib install-rustup-android
+
+    - name: Install wasm-pack
+      run: make -C lib install-wasm-pack
 
     - name: Install JDK
       uses: actions/setup-java@v1
@@ -109,6 +112,9 @@ jobs:
 
     - name: Test Node.js package
       run: make -C lib ../target/test/node.stamp
+
+    - name: Test WASM package
+      run: make -C lib ../target/test/wasm.stamp 
 
     - name: Test JNI
       run: make -C lib ../target/test/java.stamp

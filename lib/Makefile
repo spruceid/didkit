@@ -7,7 +7,8 @@ test: $(TARGET)/test/c.stamp \
 	$(TARGET)/test/java.stamp \
 	$(TARGET)/test/aar.stamp \
 	$(TARGET)/test/flutter.stamp \
-	$(TARGET)/test/node.stamp
+	$(TARGET)/test/node.stamp \
+	$(TARGET)/test/wasm.stamp
 
 ## Setup
 
@@ -136,6 +137,20 @@ $(TARGET)/test/node.stamp: $(NODE_SRC) | $(TARGET)/test
 	cd node && npm run build
 	cd node && npm run test
 	touch $@
+
+## WASM
+
+WASM_SRC=wasm/Cargo.toml wasm/loader/package.json wasm/loader/webpack.config.js wasm/loader/didkit-loader.js $(wildcard wasm/src/*.rs)
+
+.PHONY: install-wasm-pack
+install-wasm-pack:
+	 curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh 
+
+$(TARGET)/test/wasm.stamp: $(WASM_SRC) | $(TARGET)/test
+	cd wasm && wasm-pack build --target web
+	cd wasm/loader && npm install
+	cd wasm/loader && npm run build
+	touch $@ 
 
 ## Cleanup
 
