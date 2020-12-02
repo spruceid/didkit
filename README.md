@@ -19,6 +19,8 @@ $ docker run ghcr.io/spruceid/didkit-cli:latest --help
 $ docker run --init -p 8080 ghcr.io/spruceid/didkit-http:latest --port 8080
 ```
 
+> You can pass JWKs either by sharing a volume with `docker run --volume`, or by passing the JWK directly with `docker run -e JWK=$MY_JWK` or `docker run didkit-http --jwk $MY_JWK`.
+
 ### Manual
 
 DIDKit is written in [Rust][]. To get Rust, you can use [Rustup][].
