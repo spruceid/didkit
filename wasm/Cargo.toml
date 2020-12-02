@@ -1,0 +1,25 @@
+[package]
+name = "didkit-wasm"
+version = "0.1.0"
+authors = ["Tiago Nascimento <tiago.nascimento@spruceid.com>"]
+edition = "2018"
+
+[dependencies]
+ssi = { path = "../../ssi" } 
+wasm-bindgen = "0.2"
+serde_json = "1.0"
+
+[lib]
+crate-type = ["cdylib"]
+
+[package.metadata.wasm-pack.profile.release]
+wasm-opt = false
+
+[features]
+default = ["generate", "issue", "verify"]
+
+generate = []
+issue = []
+verify = []
+credential = []
+presentation = []

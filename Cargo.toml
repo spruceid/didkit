@@ -3,5 +3,6 @@ members = [
   "http",
   "cli",
   "lib",
-  "lib/cbindings"
+  "lib/cbindings",
+  "wasm"
 ]
