@@ -35,8 +35,8 @@ Given a Ed25519 [JWK][], output the corresponding [did:key][] [verificationMetho
 
 #### Options
 
-- `-k, --key-path <file>` (required) - Filename of JWK file
-- `-j, --jwk <jwk>` (required) - JWK.
+- `-k, --key-path <file>` (required, conflicts with jwk) - Filename of JWK file
+- `-j, --jwk <jwk>` (required, conflicts with key-path) - JWK.
 
 ### `didkit vc-issue-credential`
 
