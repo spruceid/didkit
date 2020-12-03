@@ -99,14 +99,7 @@ pub struct ProofOptions {
 #[derive(StructOpt, Debug)]
 #[structopt(group = ArgGroup::with_name("key_group").required(true))]
 pub struct KeyArg {
-    #[structopt(
-        env,
-        short,
-        long,
-        parse(from_os_str),
-        conflicts_with = "jwk",
-        group = "key_group"
-    )]
+    #[structopt(env, short, long, parse(from_os_str), group = "key_group")]
     key_path: Option<PathBuf>,
     #[structopt(
         env,
@@ -114,7 +107,8 @@ pub struct KeyArg {
         long,
         parse(try_from_str = serde_json::from_str),
         conflicts_with = "key_path",
-        group = "key_group"
+        group = "key_group",
+        help = "WARNING: you should not use this through the CLI in a production environment, prefer its environment variable."
     )]
     jwk: Option<JWK>,
 }
