@@ -107,6 +107,9 @@ jobs:
     - name: Test C FFI
       run: make -C lib ../target/test/c.stamp
 
+    - name: Test Node.js package
+      run: make -C lib ../target/test/node.stamp
+
     - name: Test JNI
       run: make -C lib ../target/test/java.stamp
 
