@@ -1,6 +1,6 @@
 {
-  "name": "didkit-node",
-  "version": "0.1.0",
+  "name": "didkit",
+  "version": "0.0.1",
   "description": "",
   "main": "lib/index.js",
   "author": "Tiago Nascimento <tiago.nascimento@spruceid.com>",
@@ -8,7 +8,56 @@
   "dependencies": {
     "neon-cli": "^0.5.3"
   },
+  "devDependencies": {
+    "eslint": "^7.14.0",
+    "eslint-config-prettier": "^7.0.0",
+    "eslint-plugin-prettier": "^3.2.0",
+    "jest": "^26.6.3",
+    "prettier": "2.2.1"
+  },
   "scripts": {
-    "install": "neon build"
+    "build": "neon build",
+    "build-release": "neon build --release",
+    "install": "node-pre-gyp install --fallback-to-build=false || neon build",
+    "lint": "eslint .",
+    "package": "node-pre-gyp package",
+    "spec": "jest",
+    "test": "npm run build && npm run spec",
+    "upload-binary": "npm run build-release && node-pre-gyp package && node-pre-gyp-github publish",
+    "version": "npm run build-release"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/spruceid/didkit.git"
+  },
+  "files": [
+    "native/index.node",
+    "lib"
+  ],
+  "binary": {
+    "module_name": "index",
+    "host": "https://github.com/spruceid/didkit/releases/download/",
+    "remote_path": "{version}",
+    "package_name": "node-{node_abi}-{platform}-{arch}.tar.gz",
+    "module_path": "./native",
+    "pkg_path": "."
+  },
+  "jest": {
+    "testEnvironment": "node"
+  },
+  "eslintConfig": {
+    "extends": [
+      "plugin:prettier/recommended"
+    ],
+    "plugins": [
+      "prettier"
+    ],
+    "rules": {
+      "prettier/prettier": "error"
+    },
+    "env": {
+      "es6": true,
+      "node": true
+    }
   }
 }
