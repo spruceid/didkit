@@ -1,0 +1,21 @@
+[package]
+name = "didkit-node"
+version = "0.1.0"
+authors = ["Tiago Nascimento <tiago.nascimento@spruceid.com>"]
+license = "MIT"
+build = "build.rs"
+edition = "2018"
+exclude = ["artifacts.json", "index.node"]
+
+[lib]
+name = "didkit_node"
+crate-type = ["cdylib"]
+
+[build-dependencies]
+neon-build = "0.5.3"
+
+[dependencies]
+ssi = { path = "../../../ssi" }
+neon = "0.5.3"
+neon-serde = { path = "../../../neon-serde" }
+serde = "1.0"
