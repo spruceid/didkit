@@ -3,7 +3,7 @@ use std::io::{stdin, stdout, BufReader, BufWriter};
 use std::path::PathBuf;
 
 use chrono::prelude::*;
-use structopt::StructOpt;
+use structopt::{clap::ArgGroup, StructOpt};
 
 use didkit::{
     LinkedDataProofOptions, ProofPurpose, VerifiableCredential, VerifiablePresentation, JWK,
@@ -15,13 +15,13 @@ pub enum DIDKit {
     GenerateEd25519Key,
     /// Output a did:key DID for a JWK
     KeyToDIDKey {
-        #[structopt(short, long, parse(from_os_str))]
-        key: PathBuf,
+        #[structopt(flatten)]
+        key: KeyArg,
     },
     /// Output a verificationMethod for a JWK
     KeyToVerificationMethod {
-        #[structopt(short, long, parse(from_os_str))]
-        key: PathBuf,
+        #[structopt(flatten)]
+        key: KeyArg,
     },
 
     /*
@@ -44,8 +44,8 @@ pub enum DIDKit {
     // VC Functionality
     /// Issue Credential
     VCIssueCredential {
-        #[structopt(short, long, parse(from_os_str))]
-        key: PathBuf,
+        #[structopt(flatten)]
+        key: KeyArg,
         #[structopt(flatten)]
         proof_options: ProofOptions,
     },
@@ -56,8 +56,8 @@ pub enum DIDKit {
     },
     /// Issue Presentation
     VCIssuePresentation {
-        #[structopt(short, long, parse(from_os_str))]
-        key: PathBuf,
+        #[structopt(flatten)]
+        key: KeyArg,
         #[structopt(flatten)]
         proof_options: ProofOptions,
     },
@@ -84,16 +84,46 @@ pub enum DIDKit {
 
 #[derive(StructOpt, Debug)]
 pub struct ProofOptions {
-    #[structopt(short, long)]
+    #[structopt(env, short, long)]
     pub verification_method: Option<String>,
-    #[structopt(short, long)]
+    #[structopt(env, short, long)]
     pub proof_purpose: Option<ProofPurpose>,
-    #[structopt(short, long)]
+    #[structopt(env, short, long)]
     pub created: Option<DateTime<Utc>>,
-    #[structopt(short = "C", long)]
+    #[structopt(env, short = "C", long)]
     pub challenge: Option<String>,
-    #[structopt(short, long)]
+    #[structopt(env, short, long)]
     pub domain: Option<String>,
+}
+
+#[derive(StructOpt, Debug)]
+#[structopt(group = ArgGroup::with_name("key_group").required(true))]
+pub struct KeyArg {
+    #[structopt(env, short, long, parse(from_os_str), group = "key_group")]
+    key_path: Option<PathBuf>,
+    #[structopt(
+        env,
+        short,
+        long,
+        parse(try_from_str = serde_json::from_str),
+        conflicts_with = "key_path",
+        group = "key_group",
+        help = "WARNING: you should not use this through the CLI in a production environment, prefer its environment variable."
+    )]
+    jwk: Option<JWK>,
+}
+
+impl KeyArg {
+    fn get_jwk(&self) -> JWK {
+        match &self.key_path {
+            Some(p) => {
+                let key_file = File::open(p).unwrap();
+                let key_reader = BufReader::new(key_file);
+                serde_json::from_reader(key_reader).unwrap()
+            }
+            None => self.jwk.clone().unwrap(),
+        }
+    }
 }
 
 impl From<ProofOptions> for LinkedDataProofOptions {
@@ -109,13 +139,6 @@ impl From<ProofOptions> for LinkedDataProofOptions {
     }
 }
 
-fn read_key(key_path: PathBuf) -> JWK {
-    let key_file = File::open(key_path).unwrap();
-    let key_reader = BufReader::new(key_file);
-    let key: JWK = serde_json::from_reader(key_reader).unwrap();
-    key
-}
-
 fn main() {
     let opt = DIDKit::from_args();
     match opt {
@@ -125,23 +148,18 @@ fn main() {
             println!("{}", jwk_str);
         }
 
-        DIDKit::KeyToDIDKey { key: key_path } => {
-            let key = read_key(key_path);
-            let did = key.to_did().unwrap();
+        DIDKit::KeyToDIDKey { key } => {
+            let did = key.get_jwk().to_did().unwrap();
             println!("{}", did);
         }
 
-        DIDKit::KeyToVerificationMethod { key: key_path } => {
-            let key = read_key(key_path);
-            let did = key.to_verification_method().unwrap();
+        DIDKit::KeyToVerificationMethod { key } => {
+            let did = key.get_jwk().to_verification_method().unwrap();
             println!("{}", did);
         }
 
-        DIDKit::VCIssueCredential {
-            key: key_path,
-            proof_options,
-        } => {
-            let key: JWK = read_key(key_path);
+        DIDKit::VCIssueCredential { key, proof_options } => {
+            let key: JWK = key.get_jwk();
             let credential_reader = BufReader::new(stdin());
             let mut credential: VerifiableCredential =
                 serde_json::from_reader(credential_reader).unwrap();
@@ -166,11 +184,8 @@ fn main() {
             }
         }
 
-        DIDKit::VCIssuePresentation {
-            key: key_path,
-            proof_options,
-        } => {
-            let key: JWK = read_key(key_path);
+        DIDKit::VCIssuePresentation { key, proof_options } => {
+            let key: JWK = key.get_jwk();
             let presentation_reader = BufReader::new(stdin());
             let mut presentation: VerifiablePresentation =
                 serde_json::from_reader(presentation_reader).unwrap();

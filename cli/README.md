@@ -35,7 +35,8 @@ Given a Ed25519 [JWK][], output the corresponding [did:key][] [verificationMetho
 
 #### Options
 
-- `-k, --key <file>` (required) - Name of JWK file
+- `-k, --key-path <file>` (required, conflicts with jwk) - Filename of JWK file
+- `-j, --jwk <jwk>` (required, conflicts with key-path) - JWK.
 
 ### `didkit vc-issue-credential`
 
@@ -47,13 +48,14 @@ The proof type is set automatically based on the key file provided. JWK paramete
 
 #### Options
 
-Options besides `--key` correspond to linked data [proof options][] as specified in [ld-proofs][] and [vc-http-api][].
+Options besides `--key-path` correspond to linked data [proof options][] as specified in [ld-proofs][] and [vc-http-api][].
 
 - `-C, --challenge <challenge>` - [challenge][] property of the proof
 - `-c, --created <created>` - [created][] property of the proof. ISO8601 datetime. Defaults to the current time.
   time.
 - `-d, --domain <domain>` - [domain][] property of the proof
-- `-k, --key <key>` (required) - Filename of JWK for signing.
+- `-k, --key-path <key>` (required, conflicts with jwk) - Filename of JWK for signing.
+- `-j, --jwk <jwk>` (required, conflicts with key-path) - JWK for signing.
 - `-p, --proof-purpose <proof-purpose>` [proofPurpose][] property of the proof.
 - `-v, --verification-method <verification-method>` [verificationMethod][]
   property of the proof. URI for proof verification information, e.g. a public key identifier.

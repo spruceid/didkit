@@ -1,0 +1,44 @@
+name: push_image
+
+on:
+  push:
+    branches:
+      - main
+  release:
+      types: [published, created, edited]
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout DIDKit repository
+      uses: actions/checkout@v2
+      with:
+        path: didkit
+
+    - name: Checkout SSI library
+      uses: actions/checkout@v2
+      with:
+        repository: spruceid/ssi
+        token: ${{ secrets.GH_ACCESS_TOKEN_CEL }}
+        path: didkit/ssi
+
+    - name: Build and push CLI
+      uses: elgohr/Publish-Docker-Github-Action@master
+      with:
+        name: spruceid/didkit-cli
+        username: ${{ github.actor }}
+        password: ${{ secrets.SBIHEL_GH_PACKAGE_PUSH_TOKEN }}
+        registry: ghcr.io
+        dockerfile: Dockerfile-cli
+        workdir: didkit
+
+    - name: Build and push HTTP
+      uses: elgohr/Publish-Docker-Github-Action@master
+      with:
+        name: spruceid/didkit-http
+        username: ${{ github.actor }}
+        password: ${{ secrets.SBIHEL_GH_PACKAGE_PUSH_TOKEN }}
+        registry: ghcr.io
+        dockerfile: Dockerfile-http
+        workdir: didkit

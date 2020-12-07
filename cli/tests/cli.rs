@@ -15,7 +15,7 @@ fn generate_key() {
 fn issue_verify_credential_presentation() {
     // Get DID for key
     let did_output = Command::new(BIN)
-        .args(&["key-to-did-key", "-k", "tests/ed25519-key.jwk"])
+        .args(&["key-to-did-key", "--key-path", "tests/ed25519-key.jwk"])
         .stderr(Stdio::inherit())
         .output()
         .unwrap();

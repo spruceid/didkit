@@ -26,10 +26,11 @@ and runs until interrupted.
 - `-p, --port <port>` - Port to listen on. Default is a random OS-chosen port.
 - `-k, --key <key>`   - Filename of a JWK to use for issuing credentials and
   presentations.
+- `-j, --jwk <jwk>`   - JWK to use for issuing credentials and presentations.
 
 #### Issuer keys
 
-Provide issuer keys using the `-k`/`--key` option. If none are provided, issuance functionality will be unavailable. If one is provided, that one will be used to sign all credentials and presentations, regardless of the proof options in the issuance request. If more than one key is provided, the issuance request may identify which key to use for signing by its DID in the `verificationMethod` property of the proof options; if none is identified in that property, the first key is used.
+Provide issuer keys using the `-k`/`--key-path` or `-j`/`--jwk` options. If none are provided, issuance functionality will be unavailable. If one is provided, that one will be used to sign all credentials and presentations, regardless of the proof options in the issuance request. If more than one key is provided, the issuance request may identify which key to use for signing by its DID in the `verificationMethod` property of the proof options; if none is identified in that property, the first key is used.
 
 ## Rust library
 

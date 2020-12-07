@@ -2,6 +2,27 @@
 
 ## Install
 
+### Container
+
+Both the CLI and HTTP server are containerised and available under
+`ghcr.io/spruceid/didkit-(cli|http)`.
+
+The image are private for now, so a [Personal Access Token](https://docs.github.com/en/free-pro-team@latest/github/authenticating-to-github/creating-a-personal-access-token)
+is required. Once created you can login like so:
+```bash
+$ docker login ghcr.io -u USERNAME --password-stdin
+```
+
+You can use the images like CLIs:
+```bash
+$ docker run ghcr.io/spruceid/didkit-cli:latest --help
+$ docker run --init -p 8080 ghcr.io/spruceid/didkit-http:latest --port 8080
+```
+
+> You can pass JWKs either by sharing a volume with `docker run --volume`, or by passing the JWK directly with `docker run -e JWK=$MY_JWK` or `docker run didkit-http --jwk $MY_JWK`.
+
+### Manual
+
 DIDKit is written in [Rust][]. To get Rust, you can use [Rustup][].
 
 We depend on some Rust nightly features. When installing with Rustup, pick the nightly release channel. Or run `rustup default nightly` to switch to it.
