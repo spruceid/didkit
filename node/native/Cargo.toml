@@ -12,10 +12,10 @@ name = "didkit_node"
 crate-type = ["cdylib"]
 
 [build-dependencies]
-neon-build = "0.5.3"
+neon-build = "0.6.0"
 
 [dependencies]
 ssi = { path = "../../../ssi" }
-neon = "0.5.3"
+neon = "0.6.0"
 neon-serde = { path = "../../../neon-serde" }
 serde = "1.0"
