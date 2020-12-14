@@ -17,5 +17,5 @@ neon-build = "0.6.0"
 [dependencies]
 ssi = { path = "../../../ssi" }
 neon = "0.6.0"
-neon-serde = { path = "../../../neon-serde" }
+neon-serde = { git = "https://github.com/theosirian/neon-serde" }
 serde = "1.0"
