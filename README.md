@@ -23,7 +23,7 @@ $ docker run --init -p 8080 ghcr.io/spruceid/didkit-http:latest --port 8080
 
 #### Build Images
 
-The Dockefiles rely on having `ssi` in the root of `didkit` (a symbolic link will not work unfortunately).
+The Dockerfiles rely on having `ssi` in the root of `didkit` (a symbolic link will not work unfortunately).
 
 Then the images can be built with:
 ```bash
