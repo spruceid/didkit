@@ -6,7 +6,8 @@ TARGET=../target
 test: $(TARGET)/test/c.stamp \
 	$(TARGET)/test/java.stamp \
 	$(TARGET)/test/aar.stamp \
-	$(TARGET)/test/flutter.stamp
+	$(TARGET)/test/flutter.stamp \
+	$(TARGET)/test/node.stamp
 
 ## Setup
 
@@ -102,6 +103,16 @@ $(TARGET)/%/release/libdidkit.so: $(RUST_SRC)
 $(TARGET)/test/flutter.stamp: flutter/lib/didkit.dart flutter/test/didkit_test.dart $(TARGET)/release/libdidkit.so | $(TARGET)/test
 	cd flutter && LD_LIBRARY_PATH=$$PWD \
 		flutter --suppress-analytics test
+	touch $@
+
+## Node
+
+NODE_SRC=node/package.json node/lib/index.js node/native/Cargo.toml $(wildcard node/native/src/*.rs)
+
+$(TARGET)/test/node.stamp: $(NODE_SRC) | $(TARGET)/test
+	cd node && neon build
+	cd node && npm install
+	cd node && npm run test
 	touch $@
 
 ## Cleanup

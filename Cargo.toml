@@ -4,5 +4,5 @@ members = [
   "cli",
   "lib",
   "lib/cbindings",
-  "node/native"
+  "lib/node/native"
 ]

@@ -1,5 +1,5 @@
 [package]
-name = "didkit-node"
+name = "didkit_node"
 version = "0.1.0"
 authors = ["Tiago Nascimento <tiago.nascimento@spruceid.com>"]
 license = "MIT"
@@ -15,7 +15,7 @@ crate-type = ["cdylib"]
 neon-build = "0.6.0"
 
 [dependencies]
-ssi = { path = "../../../ssi" }
+ssi = { path = "../../../../ssi" }
 neon = "0.6.0"
 neon-serde = { git = "https://github.com/theosirian/neon-serde" }
 serde = "1.0"
