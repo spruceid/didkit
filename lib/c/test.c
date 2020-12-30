@@ -31,6 +31,10 @@ int main() {
     const char *verification_method = didkit_key_to_verification_method(key);
     if (verification_method == NULL) errx(1, "key to did: %s", didkit_error_message());
 
+    // Get did:tz for key
+    const char *did_tezos = didkit_key_to_did_tezos(key);
+    if (did_tezos == NULL) errx(1, "key to did:tz: %s", didkit_error_message());
+
     // Issue Credential
     char credential[0x1000];
     snprintf(credential, sizeof(credential), "{"

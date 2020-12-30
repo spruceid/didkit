@@ -59,9 +59,23 @@ fn key_to_verification_method(key_json_ptr: *const c_char) -> Result<*const c_ch
     let did = key.to_verification_method()?;
     Ok(CString::new(did)?.into_raw())
 }
+
 #[no_mangle]
 pub extern "C" fn didkit_key_to_verification_method(jwk: *const c_char) -> *const c_char {
     ccchar_or_error(key_to_verification_method(jwk))
+}
+
+// Convert JWK to did:tz DID Method
+fn key_to_did_tezos(key_json_ptr: *const c_char) -> Result<*const c_char, Error> {
+    let key_json = unsafe { CStr::from_ptr(key_json_ptr) }.to_str()?;
+    let key: JWK = serde_json::from_str(key_json)?;
+    let did = key.to_did_tezos()?;
+    Ok(CString::new(did)?.into_raw())
+}
+
+#[no_mangle]
+pub extern "C" fn didkit_key_to_did_tezos(jwk: *const c_char) -> *const c_char {
+    ccchar_or_error(key_to_did_tezos(jwk))
 }
 
 // Issue Credential

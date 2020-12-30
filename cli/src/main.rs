@@ -24,6 +24,11 @@ pub enum DIDKit {
         #[structopt(flatten)]
         key: KeyArg,
     },
+    /// Output a tz1 address for a JWK
+    KeyToTz1 {
+        #[structopt(flatten)]
+        key: KeyArg,
+    },
 
     /*
     // DID Functionality
@@ -157,6 +162,11 @@ fn main() {
         DIDKit::KeyToVerificationMethod { key } => {
             let did = key.get_jwk().to_verification_method().unwrap();
             println!("{}", did);
+        }
+
+        DIDKit::KeyToTz1 { key } => {
+            let tz1_address = key.get_jwk().to_tz1().unwrap();
+            println!("{}", tz1_address);
         }
 
         DIDKit::VCIssueCredential { key, proof_options } => {

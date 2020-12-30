@@ -79,6 +79,22 @@ pub extern "system" fn Java_com_spruceid_DIDKit_keyToVerificationMethod(
     jstring_or_error(&env, key_to_verification_method(&env, jwk))
 }
 
+fn key_to_did_tezos(env: &JNIEnv, key_jstring: JString) -> Result<jstring, Error> {
+    let key_json: String = env.get_string(key_jstring).unwrap().into();
+    let key: JWK = serde_json::from_str(&key_json)?;
+    let did = key.to_did_tezos()?;
+    Ok(env.new_string(did).unwrap().into_inner())
+}
+
+#[no_mangle]
+pub extern "system" fn Java_com_spruceid_DIDKit_keyToDIDTezos(
+    env: JNIEnv,
+    _class: JClass,
+    jwk: JString,
+) -> jstring {
+    jstring_or_error(&env, key_to_did_tezos(&env, jwk))
+}
+
 fn issue_credential(
     env: &JNIEnv,
     credential_jstring: JString,

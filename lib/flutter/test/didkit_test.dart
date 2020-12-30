@@ -24,6 +24,12 @@ void main() {
     expect(did, isInstanceOf<String>());
   });
 
+  test('keyToDIDTezos', () async {
+    final key = DIDKit.generateEd25519Key();
+    final did = DIDKit.keyToDIDTezos(key);
+    expect(did, isInstanceOf<String>());
+  });
+
   test('issueCredential, verifyCredential', () async {
     final key = DIDKit.generateEd25519Key();
     final did = DIDKit.keyToDIDKey(key);

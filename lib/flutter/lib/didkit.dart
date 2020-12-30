@@ -27,6 +27,9 @@ final key_to_did_key = lib
 final key_to_verification_method = lib
   .lookupFunction<Pointer<Utf8> Function(Pointer<Utf8>), Pointer<Utf8> Function(Pointer<Utf8>)>('didkit_key_to_verification_method');
 
+final key_to_did_tezos = lib
+    .lookupFunction<Pointer<Utf8> Function(Pointer<Utf8>), Pointer<Utf8> Function(Pointer<Utf8>)>('didkit_key_to_did_tezos');
+
 final issue_credential = lib
   .lookupFunction<Pointer<Utf8> Function(Pointer<Utf8>, Pointer<Utf8>, Pointer<Utf8>), Pointer<Utf8> Function(Pointer<Utf8>, Pointer<Utf8>, Pointer<Utf8>)>('didkit_vc_issue_credential');
 
@@ -85,6 +88,14 @@ class DIDKit {
 
   static String keyToVerificationMethod(String key) {
     final vm = key_to_verification_method(Utf8.toUtf8(key));
+    if (vm.address == nullptr.address) throw lastError();
+    final vm_string = Utf8.fromUtf8(vm);
+    free_string(vm);
+    return vm_string;
+  }
+
+  static String keyToDIDTezos(String key) {
+    final vm = key_to_did_tezos(Utf8.toUtf8(key));
     if (vm.address == nullptr.address) throw lastError();
     final vm_string = Utf8.fromUtf8(vm);
     free_string(vm);
