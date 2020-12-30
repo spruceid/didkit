@@ -9,6 +9,7 @@ edition = "2018"
 ssi = { path = "../../ssi" }
 serde_json = "1.0"
 jni = "0.17"
+async-std = "1.8"
 
 [lib]
 crate-type = ["lib", "cdylib"]

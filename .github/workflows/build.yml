@@ -30,7 +30,7 @@ jobs:
         repository: spruceid/ssi
         token: ${{ secrets.GH_ACCESS_TOKEN_CEL }}
         path: ssi
-        ref: 79d434979d10769dce0f6ba32241b559d5307320
+        ref: 8952608bf2ee864573d5932e335cac76c346eb8c
 
     - name: Cache Cargo registry and build artifacts
       uses: actions/cache@v2
@@ -58,7 +58,7 @@ jobs:
         repository: spruceid/vc-http-api
         token: ${{ secrets.GH_ACCESS_TOKEN_CEL }}
         path: vc-http-api
-        ref: spruce
+        ref: 5940af173bf1fb9379803d6e798d829e3e0fd922
 
     - name: Run vc-http-api test suite
       working-directory: vc-http-api/packages/plugfest-2020

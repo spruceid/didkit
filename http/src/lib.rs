@@ -185,7 +185,7 @@ impl DIDKitHTTPSvc {
                 None => return Self::missing_key().await,
             };
             let mut credential = issue_req.credential;
-            let proof = match credential.generate_proof(key, &options) {
+            let proof = match credential.generate_proof(key, &options).await {
                 Ok(reader) => reader,
                 Err(err) => {
                     return Self::response(StatusCode::BAD_REQUEST, err.to_string()).await;
@@ -223,7 +223,7 @@ impl DIDKitHTTPSvc {
                 }
             };
             let credential = verify_req.verifiable_credential;
-            let result = credential.verify(verify_req.options);
+            let result = credential.verify(verify_req.options).await;
             let body = Body::from(serde_json::to_vec_pretty(&result)?);
             Response::builder()
                 .status(match result.errors.is_empty() {
@@ -269,7 +269,7 @@ impl DIDKitHTTPSvc {
                 Some(key) => key,
                 None => return Self::missing_key().await,
             };
-            let proof = match presentation.generate_proof(key, &options) {
+            let proof = match presentation.generate_proof(key, &options).await {
                 Ok(reader) => reader,
                 Err(err) => {
                     return Self::response(StatusCode::BAD_REQUEST, err.to_string()).await;
@@ -307,7 +307,7 @@ impl DIDKitHTTPSvc {
                 }
             };
             let presentation = verify_req.verifiable_presentation;
-            let result = presentation.verify(verify_req.options);
+            let result = presentation.verify(verify_req.options).await;
             let body = Body::from(serde_json::to_vec_pretty(&result)?);
             Response::builder()
                 .header(CONTENT_TYPE, "application/json")

@@ -2,6 +2,7 @@ use std::fs::File;
 use std::io::{stdin, stdout, BufReader, BufWriter};
 use std::path::PathBuf;
 
+use async_std::task::block_on;
 use chrono::prelude::*;
 use structopt::{clap::ArgGroup, StructOpt};
 
@@ -164,7 +165,7 @@ fn main() {
             let mut credential: VerifiableCredential =
                 serde_json::from_reader(credential_reader).unwrap();
             let options = LinkedDataProofOptions::from(proof_options);
-            let proof = credential.generate_proof(&key, &options).unwrap();
+            let proof = block_on(credential.generate_proof(&key, &options)).unwrap();
             credential.add_proof(proof);
             let stdout_writer = BufWriter::new(stdout());
             serde_json::to_writer(stdout_writer, &credential).unwrap();
@@ -176,7 +177,7 @@ fn main() {
                 serde_json::from_reader(credential_reader).unwrap();
             let options = LinkedDataProofOptions::from(proof_options);
             credential.validate_unsigned().unwrap();
-            let result = credential.verify(Some(options));
+            let result = block_on(credential.verify(Some(options)));
             let stdout_writer = BufWriter::new(stdout());
             serde_json::to_writer(stdout_writer, &result).unwrap();
             if result.errors.len() > 0 {
@@ -190,7 +191,7 @@ fn main() {
             let mut presentation: VerifiablePresentation =
                 serde_json::from_reader(presentation_reader).unwrap();
             let options = LinkedDataProofOptions::from(proof_options);
-            let proof = presentation.generate_proof(&key, &options).unwrap();
+            let proof = block_on(presentation.generate_proof(&key, &options)).unwrap();
             presentation.add_proof(proof);
             let stdout_writer = BufWriter::new(stdout());
             serde_json::to_writer(stdout_writer, &presentation).unwrap();
@@ -202,7 +203,7 @@ fn main() {
                 serde_json::from_reader(presentation_reader).unwrap();
             let options = LinkedDataProofOptions::from(proof_options);
             presentation.validate_unsigned().unwrap();
-            let result = presentation.verify(Some(options));
+            let result = block_on(presentation.verify(Some(options)));
             let stdout_writer = BufWriter::new(stdout());
             serde_json::to_writer(stdout_writer, &result).unwrap();
             if result.errors.len() > 0 {

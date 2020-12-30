@@ -1,5 +1,6 @@
 use std::ptr;
 
+use async_std::task::block_on;
 use jni::objects::{JClass, JString};
 use jni::sys::jstring;
 use jni::JNIEnv;
@@ -93,7 +94,7 @@ fn issue_credential(
     let mut credential = VerifiableCredential::from_json_unsigned(&credential_json)?;
     let key: JWK = serde_json::from_str(&key_json)?;
     let options: LinkedDataProofOptions = serde_json::from_str(&linked_data_proof_options_json)?;
-    let proof = credential.generate_proof(&key, &options)?;
+    let proof = block_on(credential.generate_proof(&key, &options))?;
     credential.add_proof(proof);
     let vc_json = serde_json::to_string(&credential)?;
     Ok(env.new_string(vc_json).unwrap().into_inner())
@@ -122,7 +123,7 @@ fn verify_credential(
         .into();
     let vc = VerifiableCredential::from_json_unsigned(&vc_json)?;
     let options: LinkedDataProofOptions = serde_json::from_str(&linked_data_proof_options_json)?;
-    let result = vc.verify(Some(options));
+    let result = block_on(vc.verify(Some(options)));
     let result_json = serde_json::to_string(&result)?;
     Ok(env.new_string(result_json).unwrap().into_inner())
 }
@@ -152,7 +153,7 @@ fn issue_presentation(
     let mut presentation = VerifiablePresentation::from_json_unsigned(&presentation_json)?;
     let key: JWK = serde_json::from_str(&key_json)?;
     let options: LinkedDataProofOptions = serde_json::from_str(&linked_data_proof_options_json)?;
-    let proof = presentation.generate_proof(&key, &options)?;
+    let proof = block_on(presentation.generate_proof(&key, &options))?;
     presentation.add_proof(proof);
     let vp_json = serde_json::to_string(&presentation)?;
     Ok(env.new_string(vp_json).unwrap().into_inner())
@@ -181,7 +182,7 @@ fn verify_presentation(
         .into();
     let vp = VerifiablePresentation::from_json_unsigned(&vp_json)?;
     let options: LinkedDataProofOptions = serde_json::from_str(&linked_data_proof_options_json)?;
-    let result = vp.verify(Some(options));
+    let result = block_on(vp.verify(Some(options)));
     let result_json = serde_json::to_string(&result)?;
     Ok(env.new_string(result_json).unwrap().into_inner())
 }

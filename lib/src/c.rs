@@ -1,3 +1,4 @@
+use async_std::task::block_on;
 use std::ffi::CStr;
 use std::ffi::CString;
 use std::os::raw::c_char;
@@ -76,7 +77,7 @@ fn issue_credential(
     let mut credential = VerifiableCredential::from_json_unsigned(credential_json)?;
     let key: JWK = serde_json::from_str(key_json)?;
     let options: LinkedDataProofOptions = serde_json::from_str(linked_data_proof_options_json)?;
-    let proof = credential.generate_proof(&key, &options)?;
+    let proof = block_on(credential.generate_proof(&key, &options))?;
     credential.add_proof(proof);
     Ok(CString::new(serde_json::to_string(&credential)?)?.into_raw())
 }
@@ -103,7 +104,7 @@ fn verify_credential(
         unsafe { CStr::from_ptr(linked_data_proof_options_json_ptr) }.to_str()?;
     let credential = VerifiableCredential::from_json_unsigned(credential_json)?;
     let options: LinkedDataProofOptions = serde_json::from_str(linked_data_proof_options_json)?;
-    let result = credential.verify(Some(options));
+    let result = block_on(credential.verify(Some(options)));
     Ok(CString::new(serde_json::to_string(&result)?)?.into_raw())
 }
 #[no_mangle]
@@ -130,7 +131,7 @@ fn issue_presentation(
     let mut presentation = VerifiablePresentation::from_json_unsigned(presentation_json)?;
     let key: JWK = serde_json::from_str(key_json)?;
     let options: LinkedDataProofOptions = serde_json::from_str(linked_data_proof_options_json)?;
-    let proof = presentation.generate_proof(&key, &options)?;
+    let proof = block_on(presentation.generate_proof(&key, &options))?;
     presentation.add_proof(proof);
     Ok(CString::new(serde_json::to_string(&presentation)?)?.into_raw())
 }
@@ -157,7 +158,7 @@ fn verify_presentation(
         unsafe { CStr::from_ptr(linked_data_proof_options_json_ptr) }.to_str()?;
     let presentation = VerifiablePresentation::from_json_unsigned(presentation_json)?;
     let options: LinkedDataProofOptions = serde_json::from_str(linked_data_proof_options_json)?;
-    let result = presentation.verify(Some(options));
+    let result = block_on(presentation.verify(Some(options)));
     Ok(CString::new(serde_json::to_string(&result)?)?.into_raw())
 }
 #[no_mangle]
