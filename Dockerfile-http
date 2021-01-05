@@ -1,4 +1,4 @@
-FROM ekidd/rust-musl-builder as builder
+FROM ekidd/rust-musl-builder:nightly-2021-01-01 as builder
 
 ADD --chown=rust:rust . /didkit
 ADD --chown=rust:rust ./ssi /ssi
