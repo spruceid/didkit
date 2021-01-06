@@ -1,0 +1,11 @@
+{ 
+  "name": "Svelte Demo CHAPI Wallet",
+  "short_name": "Svelte Demo CHAPI Wallet",
+  "icons": [
+    {
+      "sizes": "128x128",
+      "src": "favicon.ico",
+      "type": "image/x-icon"
+    }
+  ]
+}
