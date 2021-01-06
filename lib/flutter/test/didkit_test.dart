@@ -10,77 +10,25 @@ void main() {
     expect(DIDKit.getVersion(), isInstanceOf<String>());
   });
 
-  test('Exception', () async {
-    expect(() => DIDKit.issuePresentation('', '', ''), throwsA(isInstanceOf<DIDKitException>()));
-  });
+  final jsonCredential = '{"@context":["https://www.w3.org/2018/credentials/v1","https://www.w3.org/2018/credentials/examples/v1"],"id":"urn:uuid:f493fd1c-6520-4ef8-ac20-e66070abf234","type":["VerifiableCredential"],"credentialSubject":{"id":"did:key:z6Mkro26JhbjLrznJEzvGsR2Dy4g4dFRYdkWTt2HgRYhpCc2","alumniOf":"root"},"issuer":"did:key:z6MkgAz2ZaJSmJ6NJ1xsohGq7syi41V8LLDG6JTSN2GA2JSc","issuanceDate":"2021-02-09T16:28:56Z","proof":{"type":"Ed25519Signature2018","proofPurpose":"assertionMethod","verificationMethod":"did:key:z6MkgAz2ZaJSmJ6NJ1xsohGq7syi41V8LLDG6JTSN2GA2JSc#z6MkgAz2ZaJSmJ6NJ1xsohGq7syi41V8LLDG6JTSN2GA2JSc","created":"2021-02-09T16:28:56.344Z","jws":"eyJhbGciOiJFZERTQSIsImNyaXQiOlsiYjY0Il0sImI2NCI6ZmFsc2V9..4QjG_XuduJiBFbfkacHbvQ_L-pxmrHbsDOvNZWq4rkd1xnBb7-TtM7r_Yn0ms4thMRJ3MuIOMDoeTWFbFE6ZAA"}}';
 
-  test('generateEd25519Key', () async {
-    expect(DIDKit.generateEd25519Key(), isInstanceOf<String>());
-  });
+  test('verifyCredential no opts', () async {
+    final verification = await DIDKit.verifyCredential(
+      jsonCredential,
+      jsonEncode({}),
+    );
 
-  test('keyToDID', () async {
-    final key = DIDKit.generateEd25519Key();
-    final did = DIDKit.keyToDID('key', key);
-    expect(did, isInstanceOf<String>());
-  });
-
-  test('issueCredential, verifyCredential', () async {
-    final key = DIDKit.generateEd25519Key();
-    final did = DIDKit.keyToDID('key', key);
-    final verificationMethod = DIDKit.keyToVerificationMethod('key', key);
-    final options = {
-        'proofPurpose': 'assertionMethod',
-        'verificationMethod': verificationMethod
-    };
-    final credential = {
-        '@context': 'https://www.w3.org/2018/credentials/v1',
-        'id': 'http://example.org/credentials/3731',
-        'type': ['VerifiableCredential'],
-        'issuer': did,
-        'issuanceDate': '2020-08-19T21:41:50Z',
-        'credentialSubject': {
-           'id': 'did:example:d23dd687a7dc6787646f2eb98d0'
-        }
-    };
-    final vc = DIDKit.issueCredential(jsonEncode(credential), jsonEncode(options), key);
-
-    final verifyOptions = {
-        'proofPurpose': 'assertionMethod'
-    };
-    final verifyResult = jsonDecode(DIDKit.verifyCredential(vc, jsonEncode(verifyOptions)));
+    final verifyResult = jsonDecode(verification);
     expect(verifyResult['errors'], isEmpty);
   });
 
-  test('issuePresentation, verifyPresentation', () async {
-    final key = DIDKit.generateEd25519Key();
-    final did = DIDKit.keyToDID('key', key);
-    final verificationMethod = DIDKit.keyToVerificationMethod('key', key);
-    final options = {
-        'proofPurpose': 'authentication',
-        'verificationMethod': verificationMethod
-    };
-    final presentation = {
-        '@context': ['https://www.w3.org/2018/credentials/v1'],
-        'id': 'http://example.org/presentations/3731',
-        'type': ['VerifiablePresentation'],
-        'holder': did,
-        'verifiableCredential': {
-            '@context': 'https://www.w3.org/2018/credentials/v1',
-            'id': 'http://example.org/credentials/3731',
-            'type': ['VerifiableCredential'],
-            'issuer': 'did:example:30e07a529f32d234f6181736bd3',
-            'issuanceDate': '2020-08-19T21:41:50Z',
-            'credentialSubject': {
-                'id': 'did:example:d23dd687a7dc6787646f2eb98d0'
-            }
-        }
-    };
-    final vc = DIDKit.issuePresentation(jsonEncode(presentation), jsonEncode(options), key);
+  test('verifyCredential proofPurpose', () async {
+    final verification = await DIDKit.verifyCredential(
+      jsonCredential,
+      jsonEncode({'proofPurpose': 'assertionMethod'}),
+    );
 
-    final verifyOptions = {
-        'proofPurpose': 'authentication'
-    };
-    final verifyResult = jsonDecode(DIDKit.verifyPresentation(vc, jsonEncode(verifyOptions)));
+    final verifyResult = jsonDecode(verification);
     expect(verifyResult['errors'], isEmpty);
   });
 

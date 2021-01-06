@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head>
+    <th:block th:include="fragments/base.html :: headerfiles"/>
+    <title>Sign Up - DIDKit Example</title>
+</head>
+<body>
+<th:block th:include="fragments/base.html :: header"/>
+
+<div class="container my-5">
+    <div class="card">
+        <div class="card-body">
+            <form role="form" th:action="@{/sign-up}" th:method="post" th:object="${user}">
+                <div class="my-2">
+                    <label class="form-label" for="username">Username:</label>
+                    <input class="form-control" type="text" id="username" name="username" th:field="*{username}"/>
+                </div>
+
+                <div class="my-2">
+                    <label class="form-label" for="password">Password:</label>
+                    <input class="form-control" type="password" id="password" name="password" th:field="*{password}"/>
+                </div>
+
+                <input class="btn btn-primary" type="submit" value="Sign Up"/>
+            </form>
+        </div>
+    </div>
+</div>
+
+<th:block th:include="fragments/base.html :: footer"/>
+<th:block th:include="fragments/base.html :: scripts"/>
+</body>
+</html>

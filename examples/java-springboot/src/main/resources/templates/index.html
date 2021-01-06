@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html xmlns:th="https://www.thymeleaf.org">
+<head>
+    <th:block th:include="fragments/base.html :: headerfiles"/>
+    <title>Index - DIDKit Example</title>
+</head>
+<body>
+<th:block th:include="fragments/base.html :: header"/>
+
+<div class="container my-5">
+    <div class="card">
+        <div class="card-body">
+            <h1 th:inline="text">Hello [[${#httpServletRequest.remoteUser}]]!</h1>
+            <ul>
+                <li><a href="/version">Version</a></li>
+                <li><a href="/credential">Get Credential</a></li>
+            </ul>
+            <form th:action="@{/logout}" method="post">
+                <input class="btn btn-danger" type="submit" value="Sign Out"/>
+            </form>
+        </div>
+    </div>
+</div>
+
+<th:block th:include="fragments/base.html :: footer"/>
+<th:block th:include="fragments/base.html :: scripts"/>
+</body>
+</html>
