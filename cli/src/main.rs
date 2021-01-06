@@ -25,7 +25,7 @@ pub enum DIDKit {
         key: KeyArg,
     },
     /// Output a tz1 address for a JWK
-    KeyToTz1 {
+    KeyToDIDTezos {
         #[structopt(flatten)]
         key: KeyArg,
     },
@@ -164,8 +164,8 @@ fn main() {
             println!("{}", did);
         }
 
-        DIDKit::KeyToTz1 { key } => {
-            let tz1_address = key.get_jwk().to_tz1().unwrap();
+        DIDKit::KeyToDIDTezos { key } => {
+            let tz1_address = key.get_jwk().to_did_tezos().unwrap();
             println!("{}", tz1_address);
         }
 
