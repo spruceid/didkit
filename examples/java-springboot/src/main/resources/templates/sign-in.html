@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html xmlns:th="https://www.thymeleaf.org" lang="en">
+<head>
+    <th:block th:include="fragments/base.html :: headerfiles"/>
+    <title>Sign In - DIDKit Example</title>
+</head>
+<body>
+<th:block th:include="fragments/base.html :: header"/>
+
+<div class="container my-5">
+    <div class="card">
+        <div class="card-body">
+            <h1>Spring Boot DIDKit Example</h1>
+            <h2 class="mb-4 text-muted">Choose an authentication method from the options below to sign in.</h2>
+            <div class="accordion" id="sign-in-accordion">
+                <div class="accordion-item">
+                    <h2 class="accordion-header" id="sign-in-userpass">
+                        <button class="accordion-button" type="button" data-bs-toggle="collapse"
+                                data-bs-target="#collapse-userpass"
+                                aria-expanded="true" aria-controls="collapse-userpass">
+                            Sign with User/Password
+                        </button>
+                    </h2>
+                    <div id="collapse-userpass" class="accordion-collapse collapse show"
+                         aria-labelledby="sign-in-userpass"
+                         data-bs-parent="#sign-in-accordion">
+                        <div class="accordion-body">
+                            <form th:action="@{/sign-in}" method="post">
+                                <div class="my-2">
+                                    <label class="form-label" for="username">Username:</label>
+                                    <input class="form-control" type="text" id="username" name="username"/>
+                                </div>
+
+                                <div class="my-2">
+                                    <label class="form-label" for="password">Password:</label>
+                                    <input class="form-control" type="password" id="password" name="password"/>
+                                </div>
+
+                                <input class="btn btn-primary" type="submit" value="Sign In"/>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+                <div class="accordion-item">
+                    <h2 class="accordion-header" id="sign-in-pres">
+                        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse"
+                                data-bs-target="#collapse-pres"
+                                aria-controls="collapse-pres">
+                            Sign In with Verifiable Presentation
+                        </button>
+                    </h2>
+                    <div id="collapse-pres" class="accordion-collapse collapse" aria-labelledby="sign-in-pres"
+                         data-bs-parent="#sign-in-accordion">
+                        <div class="accordion-body">
+                            <form th:action="@{/sign-in}" method="post">
+                                <div class="my-2">
+                                    <label class="form-label" for="presentation">Presentation:</label>
+                                    <input class="form-control" type="text" id="presentation" name="presentation"/>
+                                </div>
+
+                                <input class="btn btn-primary" type="submit" value="Sign In With Presentation"/>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+                <div class="accordion-item">
+                    <h2 class="accordion-header" id="sign-in-chapi">
+                        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse"
+                                data-bs-target="#collapse-chapi"
+                                aria-controls="collapse-chapi">
+                            Sign In with CHAPI Wallet
+                        </button>
+                    </h2>
+                    <div id="collapse-chapi" class="accordion-collapse collapse" aria-labelledby="sign-in-chapi"
+                         data-bs-parent="#sign-in-accordion">
+                        <form id="chapi-form" th:action="@{/sign-in}" method="post">
+                          <input class="form-control" type="text" id="chapi-vp" name="presentation" hidden/>
+                        </form>
+
+                        <div class="accordion-body">
+                            <button class="btn btn-primary" id="chapi-sign-in">Click to Request Presentation</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<th:block th:include="fragments/base.html :: footer"/>
+<th:block th:include="fragments/base.html :: scripts"/>
+</body>
+</html>
