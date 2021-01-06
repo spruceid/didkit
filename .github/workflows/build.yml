@@ -30,7 +30,7 @@ jobs:
         repository: spruceid/ssi
         token: ${{ secrets.GH_ACCESS_TOKEN_CEL }}
         path: ssi
-        ref: 71daa2663f3a6af00ba7f89d37ed5dd10afba8cc
+        ref: f09a6fcc5cc96c5778d64a9e4a85b555b26a767f
 
     - name: Cache Cargo registry and build artifacts
       uses: actions/cache@v2
