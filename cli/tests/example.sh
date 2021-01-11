@@ -1,11 +1,11 @@
 #!/bin/sh
-# Example script using DIDKit for key generation, credential/presentation
-# issuance and verification.
+# This is an example shell script using DIDKit for key generation,
+# credential/presentation issuance and verification.
 
-# Exit if anything fails
+# Exit if any command in the script fails.
 set -e
 
-# Pretty-print JSON
+# Pretty-print JSON using jq or json_pp if available.
 print_json() {
 	file=${1?file}
 	if command -v jq >/dev/null 2>&1; then
@@ -17,16 +17,16 @@ print_json() {
 	fi
 }
 
-# Run in source directory
+# Run the rest of this script in its source directory.
 cd "$(dirname "$0")"
 
-# Build didkit CLI
+# Build the didkit CLI program
 cargo build -p didkit-cli
 
-# Get didkit in $PATH
+# Adjust $PATH to include the didkit executable.
 export PATH=$PWD/../../target/debug:$PATH
 
-# Create a keypair if needed
+# Create a ed25119 keypair if needed.
 if [ -e key.jwk ]; then
 	echo 'Using existing keypair.'
 else
@@ -35,15 +35,20 @@ else
 fi
 echo
 
-# Get DID (did:key) for keypair
+# Get the keypair's did:key DID.
+# More info about did:key: https://w3c-ccg.github.io/did-method-key/
 did=$(didkit key-to-did-key -k key.jwk)
 printf 'DID: %s\n\n' "$did"
 
-# Get verificationMethod for keypair
+# Get verificationMethod for keypair.
+# This is used to identify the key in linked data proofs.
 verification_method=$(didkit key-to-verification-method -k key.jwk)
 printf 'verificationMethod: %s\n\n' "$verification_method"
 
-# Prepare credential for issuing
+# Prepare credential for issuing.
+# In this example credential, the issuance date, id, and credential subject id
+# are arbitrary. For more info about what these properties mean, see the
+# Verifiable Credentials Data Model: https://w3c.github.io/vc-data-model/
 cat > credential-unsigned.jsonld <<EOF
 {
 	"@context": "https://www.w3.org/2018/credentials/v1",
@@ -57,7 +62,12 @@ cat > credential-unsigned.jsonld <<EOF
 }
 EOF
 
-# Issue verifiable credential
+# Issue the verifiable credential.
+# Ask didkit to issue a verifiable credential using the given keypair file,
+# verification method, and proof purpose, passing the unsigned credential on
+# standard input. DIDKit creates a linked data proof to add to the credential,
+# and outputs the resulting newly-issued verifiable credential on standard
+# output, which we save to a file.
 didkit vc-issue-credential \
 	-k key.jwk \
 	-v "$verification_method" \
@@ -68,7 +78,11 @@ echo 'Issued verifiable credential:'
 print_json credential-signed.jsonld
 echo
 
-# Verify verifiable credential
+# Verify verifiable credential.
+# We pass the newly-issued verifiable credential back to didkit for
+# verification using the given verification method and proof purpose. DIDKit
+# outputs the verification result as JSON. If verification is successful, the
+# command completes successfully (returns exit code 0).
 if ! didkit vc-verify-credential \
 	-v "$verification_method" \
 	-p assertionMethod \
@@ -83,7 +97,9 @@ echo 'Verified verifiable credential:'
 print_json credential-verify-result.json
 echo
 
-# Create presentation embedding verifiable credential
+# Create presentation embedding verifiable credential.
+# Prepare to present the verifiable credential by wrapping it in a
+# Verifiable Presentation. The id here is an arbitrary URL for example purposes.
 cat > presentation-unsigned.jsonld <<EOF
 {
 	"@context": ["https://www.w3.org/2018/credentials/v1"],
@@ -94,7 +110,11 @@ cat > presentation-unsigned.jsonld <<EOF
 }
 EOF
 
-# Issue verifiable presentation
+# Issue verifiable presentation.
+# Pass the unsigned verifiable presentation to didkit to be issued as a
+# verifiable presentation. DIDKit signs the presentation with a linked data
+# proof, using the given keypair, verification method and proof type. We save
+# the resulting newly created verifiable presentation to a file.
 didkit vc-issue-presentation \
 	-k key.jwk \
 	-v "$verification_method" \
@@ -105,7 +125,9 @@ echo 'Issued verifiable presentation:'
 print_json presentation-signed.jsonld
 echo
 
-# Verify verifiable presentation
+# Verify verifiable presentation.
+# Pass the verifiable presentation back to didkit for verification.
+# Examine the verification result JSON.
 if ! didkit vc-verify-presentation \
 	-v "$verification_method" \
 	-p authentication \
