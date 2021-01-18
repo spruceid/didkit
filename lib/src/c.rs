@@ -5,19 +5,26 @@ use std::os::raw::c_char;
 use std::ptr;
 
 use crate::error::Error;
+#[cfg(doc)]
+use crate::error::{didkit_error_code, didkit_error_message};
 use crate::LinkedDataProofOptions;
 use crate::VerifiableCredential;
 use crate::VerifiablePresentation;
 use crate::JWK;
 
+/// The version of the DIDKit library, as a NULL-terminated string
 pub static VERSION_C: &str = concat!(env!("CARGO_PKG_VERSION"), "\0");
 
 #[no_mangle]
+/// Get the version of the DIDKit library. Returns a static C string which should not be mutated or
+/// freed.
 pub extern "C" fn didkit_get_version() -> *const c_char {
     VERSION_C.as_ptr() as *const c_char
 }
 
 fn ccchar_or_error(result: Result<*const c_char, Error>) -> *const c_char {
+    // On success, pass through the string. On error, save the error for retrieval using
+    // didkit_error_message, and return NULL.
     match result {
         Ok(ccchar) => ccchar,
         Err(error) => {
@@ -35,6 +42,9 @@ fn generate_ed25519_key() -> Result<*const c_char, Error> {
     let jwk = JWK::generate_ed25519()?;
     Ok(CString::new(serde_json::to_string(&jwk)?)?.into_raw())
 }
+/// Generate a new Ed25519 keypair in JWK format. On success, returns a pointer to a
+/// newly-allocated string containing the JWK. The string must be freed with [`didkit_free_string`]. On
+/// failure, returns `NULL`; the error message can be retrieved with [`didkit_error_message`].
 #[no_mangle]
 pub extern "C" fn didkit_vc_generate_ed25519_key() -> *const c_char {
     ccchar_or_error(generate_ed25519_key())
@@ -48,6 +58,12 @@ fn key_to_did(key_json_ptr: *const c_char) -> Result<*const c_char, Error> {
     Ok(CString::new(did)?.into_raw())
 }
 #[no_mangle]
+/// Convert a key in JWK format to a did:key DID. Input should be a JWK containing public key
+/// parameters. Private key parameters in the JWK are ignored. On success, returns a
+/// newly-allocated C string containing a DID corresponding to the JWK. The returned string must be
+/// freed
+/// with [`didkit_free_string`].  On failure, returns `NULL`; the error message can be retrieved
+/// with [`didkit_error_message`].
 pub extern "C" fn didkit_key_to_did(jwk: *const c_char) -> *const c_char {
     ccchar_or_error(key_to_did(jwk))
 }
@@ -59,6 +75,10 @@ fn key_to_verification_method(key_json_ptr: *const c_char) -> Result<*const c_ch
     let did = key.to_verification_method()?;
     Ok(CString::new(did)?.into_raw())
 }
+/// Convert a key to a `did:key` DID URI for use in the `verificationMethod` property of a linked data
+/// proof. Input should be a C string containing the key as a JWK. The JWK should contain public
+/// key material; private key parameters are ignored. On success, this function returns a newly-allocated C string containing the `verificationMethod` URI. On failure, `NULL` is returned; the
+/// error message can be retrieved using [`didkit_error_message`].
 #[no_mangle]
 pub extern "C" fn didkit_key_to_verification_method(jwk: *const c_char) -> *const c_char {
     ccchar_or_error(key_to_verification_method(jwk))
@@ -82,6 +102,11 @@ fn issue_credential(
     Ok(CString::new(serde_json::to_string(&credential)?)?.into_raw())
 }
 #[no_mangle]
+/// Issue a Verifiable Credential. Input parameters are JSON C strings for the unsigned credential
+/// to be issued, the linked data proof options, and the JWK for signing.  On success, the
+/// newly-issued verifiable credential is returned as a newly-allocated C string.  The returned
+/// string should be freed using [`didkit_free_string`]. On failure, `NULL` is returned, and the error
+/// message can be retrieved using [`didkit_error_message`].
 pub extern "C" fn didkit_vc_issue_credential(
     credential_json: *const c_char,
     linked_data_proof_options_json: *const c_char,
@@ -108,6 +133,15 @@ fn verify_credential(
     Ok(CString::new(serde_json::to_string(&result)?)?.into_raw())
 }
 #[no_mangle]
+/// Verify a Verifiable Credential. Arguments are a C string containing the Verifiable Credential
+/// to verify, and a C string containing a JSON object for the linked data proof options for
+/// verification. The return value is a newly-allocated C string containing a JSON object for the
+/// verification result, or `NULL` in case of certain errors. On successful verification, the
+/// verification result JSON object contains a "errors" property whose value is an empty array. If
+/// verification fails, either `NULL` is returned and the error can be retrieved using
+/// [`didkit_error_message`], or a verification result JSON object is returned with an "errors" array
+/// containing information about the verification error(s) encountered. A string returned from this
+/// function should be freed using [`didkit_free_string`].
 pub extern "C" fn didkit_vc_verify_credential(
     credential_json: *const c_char,
     linked_data_proof_options_json: *const c_char,
@@ -136,6 +170,11 @@ fn issue_presentation(
     Ok(CString::new(serde_json::to_string(&presentation)?)?.into_raw())
 }
 #[no_mangle]
+/// Issue a Verifiable Presentation. Input parameters are JSON C strings for the unsigned
+/// presentation to be issued, the linked data proof options, and the JWK for signing. On success,
+/// the newly-issued verifiable presentation is returned as a newly-allocated C string. The
+/// returned string should be freed using [`didkit_free_string`]. On failure, `NULL` is returned, and the
+/// error message can be retrieved using [`didkit_error_message`].
 pub extern "C" fn didkit_vc_issue_presentation(
     presentation_json: *const c_char,
     linked_data_proof_options_json: *const c_char,
@@ -162,6 +201,15 @@ fn verify_presentation(
     Ok(CString::new(serde_json::to_string(&result)?)?.into_raw())
 }
 #[no_mangle]
+/// Verify a Verifiable Presentation. Arguments are a C string containing the Verifiable
+/// Presentation to verify, and a C string containing a JSON object for the linked data proof
+/// options for verification. The return value is a newly-allocated C string containing a JSON
+/// object for the verification result, or `NULL` in case of certain errors. On successful
+/// verification, the verification result JSON object contains a "errors" property whose value is
+/// an empty array. If verification fails, either `NULL` is returned and the error can be retrieved
+/// using [`didkit_error_message`], or a verification result JSON object is returned with an "errors"
+/// array containing information about the verification error(s) encountered. A string returned
+/// from this function should be freed using [`didkit_free_string`].
 pub extern "C" fn didkit_vc_verify_presentation(
     presentation_json: *const c_char,
     linked_data_proof_options_json: *const c_char,
@@ -173,6 +221,8 @@ pub extern "C" fn didkit_vc_verify_presentation(
 }
 
 #[no_mangle]
+/// Free a C string that has been dynamically allocated by DIDKit. This should be used for strings
+/// returned from most DIDKit C functions, per their respective documentation.
 pub extern "C" fn didkit_free_string(string: *const c_char) {
     if string.is_null() {
         return;
