@@ -1,5 +1,5 @@
 ---
-name: Feature request for Credible
+name: Feature request for DIDKit
 about: Suggest an idea for this project
 title: 'DIDKit Feature request: [FEATURE] '
 labels: ''
