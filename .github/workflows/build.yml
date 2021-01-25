@@ -65,7 +65,7 @@ jobs:
         repository: spruceid/vc-http-api
         token: ${{ secrets.GH_ACCESS_TOKEN_CEL }}
         path: vc-http-api
-        ref: a7dcc3ed7c96f93059860511d19b384700fb43cc
+        ref: eef5ef2bb2321e4eac3f7e82a2adb7ccd4db1982
 
     - name: Run vc-http-api test suite
       working-directory: vc-http-api/packages/plugfest-2020
