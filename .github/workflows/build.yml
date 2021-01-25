@@ -59,6 +59,9 @@ jobs:
     - name: Test CLI
       run: cli/tests/example.sh
 
+    - name: Test HTTP server
+      run: http/tests/example.sh
+
     - name: Checkout vc-http-api
       uses: actions/checkout@v2
       with:
