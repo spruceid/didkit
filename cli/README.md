@@ -23,15 +23,15 @@ Output help about `didkit` and its subcommands.
 
 Generate a Ed25519 keypair and output it in [JWK format](https://tools.ietf.org/html/rfc8037#appendix-A.1).
 
-### `didkit key-to-did-key`
+### `didkit key-to-did <method_name>`
 
-Given a [JWK][], output the corresponding [did:key][].
+Given a [JWK][] and a DID method name, output the corresponding DID.
 
-Currently, this only supports [Ed25519](https://tools.ietf.org/html/rfc8037#appendix-A.2) keys.
+Currently, this only supports [Ed25519](https://tools.ietf.org/html/rfc8037#appendix-A.2) keys, and [did:key][].
 
-### `didkit key-to-verification-method`
+### `didkit key-to-verification-method <method_name>`
 
-Given a Ed25519 [JWK][], output the corresponding [did:key][] [verificationMethod][].
+Given a Ed25519 [JWK][] and a supported DID method name, output the corresponding [verificationMethod][].
 
 #### Options
 

@@ -18,16 +18,16 @@ void main() {
     expect(DIDKit.generateEd25519Key(), isInstanceOf<String>());
   });
 
-  test('keyToDIDKey', () async {
+  test('keyToDID', () async {
     final key = DIDKit.generateEd25519Key();
-    final did = DIDKit.keyToDIDKey(key);
+    final did = DIDKit.keyToDID("key", key);
     expect(did, isInstanceOf<String>());
   });
 
   test('issueCredential, verifyCredential', () async {
     final key = DIDKit.generateEd25519Key();
-    final did = DIDKit.keyToDIDKey(key);
-    final verificationMethod = DIDKit.keyToVerificationMethod(key);
+    final did = DIDKit.keyToDID("key", key);
+    final verificationMethod = DIDKit.keyToVerificationMethod("key", key);
     final options = {
         "proofPurpose": "assertionMethod",
         "verificationMethod": verificationMethod
@@ -53,8 +53,8 @@ void main() {
 
   test('issuePresentation, verifyPresentation', () async {
     final key = DIDKit.generateEd25519Key();
-    final did = DIDKit.keyToDIDKey(key);
-    final verificationMethod = DIDKit.keyToVerificationMethod(key);
+    final did = DIDKit.keyToDID("key", key);
+    final verificationMethod = DIDKit.keyToVerificationMethod("key", key);
     final options = {
         "proofPurpose": "authentication",
         "verificationMethod": verificationMethod

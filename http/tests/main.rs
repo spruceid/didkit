@@ -199,9 +199,12 @@ async fn credential_presentation_issue_verify() {
 
 #[tokio::test]
 async fn credential_issue_verify_other_key() {
+    use did_key::DIDKey;
+    use didkit::{get_verification_method, DIDMethod, Source};
     let key = JWK::generate_ed25519().unwrap();
-    let did = key.to_did().unwrap();
-    let verification_method = key.to_verification_method().unwrap();
+    let did = DIDKey.generate(&Source::Key(&key)).unwrap();
+    let resolver = DIDKey.to_resolver();
+    let verification_method = get_verification_method(&did, resolver).await.unwrap();
     let (base, shutdown) = serve(Some(vec![key]));
     let client = Client::builder().build_http::<Body>();
     // Issue credential

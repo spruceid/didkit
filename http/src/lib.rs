@@ -4,9 +4,10 @@ use std::pin::Pin;
 use std::str::FromStr;
 use std::task::{Context, Poll};
 
+use didkit::resolve_key;
 use didkit::{
-    LinkedDataProofOptions, ProofPurpose, VerifiableCredential, VerifiablePresentation,
-    VerificationResult, JWK,
+    DIDResolver, LinkedDataProofOptions, ProofPurpose, VerifiableCredential,
+    VerifiablePresentation, VerificationResult, DID_METHODS, JWK,
 };
 
 pub mod accept;
@@ -59,21 +60,33 @@ pub type VerifyCredentialResponse = VerificationResult;
 pub type ProvePresentationResponse = VerifiablePresentation;
 pub type VerifyPresentationResponse = VerificationResult;
 
-type KeyMap = HashMap<String, JWK>;
+/// Mapping from public keys to private keys
+type KeyMap = HashMap<JWK, JWK>;
 
 pub struct DIDKitHTTPSvc {
     keys: KeyMap,
 }
 
-pub fn pick_key<'a>(keys: &'a KeyMap, options: &LinkedDataProofOptions) -> Option<&'a JWK> {
+pub async fn pick_key<'a>(
+    keys: &'a KeyMap,
+    options: &LinkedDataProofOptions,
+    did_resolver: &(dyn DIDResolver + Sync),
+) -> Option<&'a JWK> {
     if keys.len() <= 1 {
-        keys.values().next()
-    } else {
-        match options.verification_method {
-            Some(ref verification_method) => keys.get(verification_method),
-            None => keys.values().next(),
-        }
+        return keys.values().next();
     }
+    let vm = match options.verification_method {
+        Some(ref verification_method) => verification_method,
+        None => return keys.values().next(),
+    };
+    let public_key = match resolve_key(vm, did_resolver).await {
+        Err(_err) => {
+            // TODO: return error
+            return None;
+        }
+        Ok(key) => key,
+    };
+    keys.get(&public_key)
 }
 
 impl DIDKitHTTPSvc {
@@ -180,7 +193,8 @@ impl DIDKitHTTPSvc {
                 }
             };
             let options = issue_req.options.unwrap_or_default();
-            let key = match pick_key(&keys, &options) {
+            let resolver = DID_METHODS.to_resolver();
+            let key = match pick_key(&keys, &options, resolver).await {
                 Some(key) => key,
                 None => return Self::missing_key().await,
             };
@@ -223,7 +237,8 @@ impl DIDKitHTTPSvc {
                 }
             };
             let credential = verify_req.verifiable_credential;
-            let result = credential.verify(verify_req.options).await;
+            let resolver = DID_METHODS.to_resolver();
+            let result = credential.verify(verify_req.options, resolver).await;
             let body = Body::from(serde_json::to_vec_pretty(&result)?);
             Response::builder()
                 .status(match result.errors.is_empty() {
@@ -264,8 +279,8 @@ impl DIDKitHTTPSvc {
                 options
             });
             let mut presentation = issue_req.presentation;
-            let options = LinkedDataProofOptions::from(options);
-            let key = match pick_key(&keys, &options) {
+            let resolver = DID_METHODS.to_resolver();
+            let key = match pick_key(&keys, &options, resolver).await {
                 Some(key) => key,
                 None => return Self::missing_key().await,
             };
@@ -307,7 +322,8 @@ impl DIDKitHTTPSvc {
                 }
             };
             let presentation = verify_req.verifiable_presentation;
-            let result = presentation.verify(verify_req.options).await;
+            let resolver = DID_METHODS.to_resolver();
+            let result = presentation.verify(verify_req.options, resolver).await;
             let body = Body::from(serde_json::to_vec_pretty(&result)?);
             Response::builder()
                 .header(CONTENT_TYPE, "application/json")
@@ -350,7 +366,7 @@ impl DIDKitHTTPMakeSvc {
     pub fn new(keys: Vec<JWK>) -> Self {
         Self {
             keys: keys.into_iter().fold(KeyMap::new(), |mut map, key| {
-                map.insert(key.to_verification_method().unwrap(), key);
+                map.insert(key.to_public(), key);
                 map
             }),
         }

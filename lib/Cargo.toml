@@ -7,9 +7,13 @@ edition = "2018"
 [dependencies]
 #didkit_cbindings = { path = "cbindings/" }
 ssi = { path = "../../ssi" }
+did-key = { path = "../../ssi/did-key" }
+#did-tezos = { path = "../../ssi/did-tezos" }
 serde_json = "1.0"
 jni = "0.17"
 async-std = "1.8"
+async-trait = "0.1"
+lazy_static = "1.4"
 
 [lib]
 crate-type = ["lib", "cdylib"]

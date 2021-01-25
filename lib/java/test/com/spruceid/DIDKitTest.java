@@ -10,15 +10,15 @@ class DIDKitTest {
         String jwk = DIDKit.generateEd25519Key();
 
         // Convert key to DID
-        String did = DIDKit.keyToDID(jwk);
+        String did = DIDKit.keyToDID("key", jwk);
 
         // Get verificationMethod for DID
-        String verificationMethod = DIDKit.keyToVerificationMethod(jwk);
+        String verificationMethod = DIDKit.keyToVerificationMethod("key", jwk);
 
         // Trigger Exception
         boolean threw = false;
         try {
-            DIDKit.keyToDID("{}");
+            DIDKit.keyToDID("key", "{}");
         } catch (DIDKitException e) {
             threw = true;
         }

@@ -6,9 +6,12 @@ use jni::sys::jstring;
 use jni::JNIEnv;
 
 use crate::error::Error;
+use crate::get_verification_method;
 use crate::LinkedDataProofOptions;
+use crate::Source;
 use crate::VerifiableCredential;
 use crate::VerifiablePresentation;
+use crate::DID_METHODS;
 use crate::JWK;
 
 pub static VERSION: &str = env!("CARGO_PKG_VERSION");
@@ -47,10 +50,20 @@ pub extern "system" fn Java_com_spruceid_DIDKit_generateEd25519Key(
     jstring_or_error(&env, generate_ed25519_key(&env))
 }
 
-fn key_to_did(env: &JNIEnv, key_jstring: JString) -> Result<jstring, Error> {
+fn key_to_did(
+    env: &JNIEnv,
+    method_name_jstring: JString,
+    key_jstring: JString,
+) -> Result<jstring, Error> {
     let key_json: String = env.get_string(key_jstring).unwrap().into();
+    let method_name: String = env.get_string(method_name_jstring).unwrap().into();
     let key: JWK = serde_json::from_str(&key_json)?;
-    let did = key.to_did()?;
+    let did_method = DID_METHODS
+        .get(&method_name)
+        .ok_or(Error::UnknownDIDMethod)?;
+    let did = did_method
+        .generate(&Source::Key(&key))
+        .ok_or(Error::UnableToGenerateDID)?;
     Ok(env.new_string(did).unwrap().into_inner())
 }
 
@@ -58,15 +71,29 @@ fn key_to_did(env: &JNIEnv, key_jstring: JString) -> Result<jstring, Error> {
 pub extern "system" fn Java_com_spruceid_DIDKit_keyToDID(
     env: JNIEnv,
     _class: JClass,
+    method_name: JString,
     jwk: JString,
 ) -> jstring {
-    jstring_or_error(&env, key_to_did(&env, jwk))
+    jstring_or_error(&env, key_to_did(&env, method_name, jwk))
 }
 
-fn key_to_verification_method(env: &JNIEnv, key_jstring: JString) -> Result<jstring, Error> {
+fn key_to_verification_method(
+    env: &JNIEnv,
+    method_name_jstring: JString,
+    key_jstring: JString,
+) -> Result<jstring, Error> {
     let key_json: String = env.get_string(key_jstring).unwrap().into();
+    let method_name: String = env.get_string(method_name_jstring).unwrap().into();
     let key: JWK = serde_json::from_str(&key_json)?;
-    let verification_method = key.to_verification_method()?;
+    let did_method = DID_METHODS
+        .get(&method_name)
+        .ok_or(Error::UnknownDIDMethod)?;
+    let did = did_method
+        .generate(&Source::Key(&key))
+        .ok_or(Error::UnableToGenerateDID)?;
+    let did_resolver = did_method.to_resolver();
+    let verification_method = block_on(get_verification_method(&did, did_resolver))
+        .ok_or(Error::UnableToGetVerificationMethod)?;
     Ok(env.new_string(verification_method).unwrap().into_inner())
 }
 
@@ -74,9 +101,10 @@ fn key_to_verification_method(env: &JNIEnv, key_jstring: JString) -> Result<jstr
 pub extern "system" fn Java_com_spruceid_DIDKit_keyToVerificationMethod(
     env: JNIEnv,
     _class: JClass,
+    method_name: JString,
     jwk: JString,
 ) -> jstring {
-    jstring_or_error(&env, key_to_verification_method(&env, jwk))
+    jstring_or_error(&env, key_to_verification_method(&env, method_name, jwk))
 }
 
 fn issue_credential(
@@ -123,7 +151,8 @@ fn verify_credential(
         .into();
     let vc = VerifiableCredential::from_json_unsigned(&vc_json)?;
     let options: LinkedDataProofOptions = serde_json::from_str(&linked_data_proof_options_json)?;
-    let result = block_on(vc.verify(Some(options)));
+    let resolver = DID_METHODS.to_resolver();
+    let result = block_on(vc.verify(Some(options), resolver));
     let result_json = serde_json::to_string(&result)?;
     Ok(env.new_string(result_json).unwrap().into_inner())
 }
@@ -182,7 +211,8 @@ fn verify_presentation(
         .into();
     let vp = VerifiablePresentation::from_json_unsigned(&vp_json)?;
     let options: LinkedDataProofOptions = serde_json::from_str(&linked_data_proof_options_json)?;
-    let result = block_on(vp.verify(Some(options)));
+    let resolver = DID_METHODS.to_resolver();
+    let result = block_on(vp.verify(Some(options), resolver));
     let result_json = serde_json::to_string(&result)?;
     Ok(env.new_string(result_json).unwrap().into_inner())
 }

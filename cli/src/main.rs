@@ -4,23 +4,33 @@ use std::path::PathBuf;
 
 use async_std::task::block_on;
 use chrono::prelude::*;
-use structopt::{clap::ArgGroup, StructOpt};
+use structopt::{clap::AppSettings, clap::ArgGroup, StructOpt};
 
+use did_key::DIDKey;
 use didkit::{
-    LinkedDataProofOptions, ProofPurpose, VerifiableCredential, VerifiablePresentation, JWK,
+    get_verification_method, DIDMethod, Error, LinkedDataProofOptions, ProofPurpose, Source,
+    VerifiableCredential, VerifiablePresentation, DID_METHODS, JWK,
 };
 
 #[derive(StructOpt, Debug)]
 pub enum DIDKit {
     /// Generate and output a Ed25519 keypair in JWK format
     GenerateEd25519Key,
-    /// Output a did:key DID for a JWK
+    /// Output a did:key DID for a JWK. Deprecated in favor of key-to-did.
+    #[structopt(setting = AppSettings::Hidden)]
     KeyToDIDKey {
         #[structopt(flatten)]
         key: KeyArg,
     },
-    /// Output a verificationMethod for a JWK
+    /// Output a DID for a given JWK and DID method name.
+    KeyToDID {
+        method_name: String,
+        #[structopt(flatten)]
+        key: KeyArg,
+    },
+    /// Output a verificationMethod DID URL for a JWK and DID method name
     KeyToVerificationMethod {
+        method_name: Option<String>,
         #[structopt(flatten)]
         key: KeyArg,
     },
@@ -151,13 +161,53 @@ fn main() {
         }
 
         DIDKit::KeyToDIDKey { key } => {
-            let did = key.get_jwk().to_did().unwrap();
+            // Deprecated in favor of KeyToDID
+            eprintln!("didkit: use key-to-did instead of key-to-did-key");
+            let jwk = key.get_jwk();
+            let did = DIDKey
+                .generate(&Source::Key(&jwk))
+                .ok_or(Error::UnableToGenerateDID)
+                .unwrap();
             println!("{}", did);
         }
 
-        DIDKit::KeyToVerificationMethod { key } => {
-            let did = key.get_jwk().to_verification_method().unwrap();
+        DIDKit::KeyToDID { method_name, key } => {
+            let jwk = key.get_jwk();
+            let did_method = DID_METHODS
+                .get(&method_name)
+                .ok_or(Error::UnknownDIDMethod)
+                .unwrap();
+            let did = did_method
+                .generate(&Source::Key(&jwk))
+                .ok_or(Error::UnableToGenerateDID)
+                .unwrap();
             println!("{}", did);
+        }
+
+        DIDKit::KeyToVerificationMethod { method_name, key } => {
+            let method_name = match method_name {
+                Some(name) => name,
+                None => {
+                    eprintln!(
+                        "didkit: key-to-verification-method should be used with method name option"
+                    );
+                    "key".to_string()
+                }
+            };
+            let did_method = DID_METHODS
+                .get(&method_name)
+                .ok_or(Error::UnknownDIDMethod)
+                .unwrap();
+            let jwk = key.get_jwk();
+            let did = did_method
+                .generate(&Source::Key(&jwk))
+                .ok_or(Error::UnableToGenerateDID)
+                .unwrap();
+            let did_resolver = did_method.to_resolver();
+            let vm = block_on(get_verification_method(&did, did_resolver))
+                .ok_or(Error::UnableToGetVerificationMethod)
+                .unwrap();
+            println!("{}", vm);
         }
 
         DIDKit::VCIssueCredential { key, proof_options } => {
@@ -178,7 +228,8 @@ fn main() {
                 serde_json::from_reader(credential_reader).unwrap();
             let options = LinkedDataProofOptions::from(proof_options);
             credential.validate_unsigned().unwrap();
-            let result = block_on(credential.verify(Some(options)));
+            let resolver = DID_METHODS.to_resolver();
+            let result = block_on(credential.verify(Some(options), resolver));
             let stdout_writer = BufWriter::new(stdout());
             serde_json::to_writer(stdout_writer, &result).unwrap();
             if result.errors.len() > 0 {
@@ -204,7 +255,8 @@ fn main() {
                 serde_json::from_reader(presentation_reader).unwrap();
             let options = LinkedDataProofOptions::from(proof_options);
             presentation.validate_unsigned().unwrap();
-            let result = block_on(presentation.verify(Some(options)));
+            let resolver = DID_METHODS.to_resolver();
+            let result = block_on(presentation.verify(Some(options), resolver));
             let stdout_writer = BufWriter::new(stdout());
             serde_json::to_writer(stdout_writer, &result).unwrap();
             if result.errors.len() > 0 {

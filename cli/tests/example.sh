@@ -37,12 +37,12 @@ echo
 
 # Get the keypair's did:key DID.
 # More info about did:key: https://w3c-ccg.github.io/did-method-key/
-did=$(didkit key-to-did-key -k key.jwk)
+did=$(didkit key-to-did key -k key.jwk)
 printf 'DID: %s\n\n' "$did"
 
 # Get verificationMethod for keypair.
 # This is used to identify the key in linked data proofs.
-verification_method=$(didkit key-to-verification-method -k key.jwk)
+verification_method=$(didkit key-to-verification-method key -k key.jwk)
 printf 'verificationMethod: %s\n\n' "$verification_method"
 
 # Prepare credential for issuing.

@@ -24,11 +24,11 @@ int main() {
     if (key == NULL) errx(1, "generate key: %s", didkit_error_message());
 
     // Get did:key for key
-    const char *did = didkit_key_to_did(key);
+    const char *did = didkit_key_to_did("key", key);
     if (did == NULL) errx(1, "key to did: %s", didkit_error_message());
 
     // Get verificationMethod for key
-    const char *verification_method = didkit_key_to_verification_method(key);
+    const char *verification_method = didkit_key_to_verification_method("key", key);
     if (verification_method == NULL) errx(1, "key to did: %s", didkit_error_message());
 
     // Issue Credential

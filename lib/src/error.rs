@@ -22,6 +22,9 @@ pub enum Error {
     Null(NulError),
     Utf8(Utf8Error),
     Borrow(BorrowError),
+    UnableToGenerateDID,
+    UnknownDIDMethod,
+    UnableToGetVerificationMethod,
 
     #[doc(hidden)]
     __Nonexhaustive,
@@ -81,6 +84,9 @@ impl fmt::Display for Error {
             Error::SSI(e) => e.fmt(f),
             Error::Null(e) => e.fmt(f),
             Error::Utf8(e) => e.fmt(f),
+            Error::UnableToGenerateDID => write!(f, "Unable to generate DID"),
+            Error::UnknownDIDMethod => write!(f, "Unknown DID method"),
+            Error::UnableToGetVerificationMethod => write!(f, "Unable to get verification method"),
             _ => unreachable!(),
         }
     }

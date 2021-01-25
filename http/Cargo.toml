@@ -14,3 +14,6 @@ bytes = "0.5"
 hyper = "0.13"
 tower-service = "0.3"
 futures-util = { version = "0.3", default-features = false }
+
+[dev-dependencies]
+did-key = { path = "../../ssi/did-key" }

@@ -7,9 +7,12 @@ use std::ptr;
 use crate::error::Error;
 #[cfg(doc)]
 use crate::error::{didkit_error_code, didkit_error_message};
+use crate::get_verification_method;
 use crate::LinkedDataProofOptions;
+use crate::Source;
 use crate::VerifiableCredential;
 use crate::VerifiablePresentation;
+use crate::DID_METHODS;
 use crate::JWK;
 
 /// The version of the DIDKit library, as a NULL-terminated string
@@ -51,10 +54,19 @@ pub extern "C" fn didkit_vc_generate_ed25519_key() -> *const c_char {
 }
 
 // Convert JWK to did:key DID
-fn key_to_did(key_json_ptr: *const c_char) -> Result<*const c_char, Error> {
+fn key_to_did(
+    method_name_ptr: *const c_char,
+    key_json_ptr: *const c_char,
+) -> Result<*const c_char, Error> {
+    let method_name = unsafe { CStr::from_ptr(method_name_ptr) }.to_str()?;
     let key_json = unsafe { CStr::from_ptr(key_json_ptr) }.to_str()?;
     let key: JWK = serde_json::from_str(key_json)?;
-    let did = key.to_did()?;
+    let did_method = DID_METHODS
+        .get(&method_name)
+        .ok_or(Error::UnknownDIDMethod)?;
+    let did = did_method
+        .generate(&Source::Key(&key))
+        .ok_or(Error::UnableToGenerateDID)?;
     Ok(CString::new(did)?.into_raw())
 }
 #[no_mangle]
@@ -64,24 +76,42 @@ fn key_to_did(key_json_ptr: *const c_char) -> Result<*const c_char, Error> {
 /// freed
 /// with [`didkit_free_string`].  On failure, returns `NULL`; the error message can be retrieved
 /// with [`didkit_error_message`].
-pub extern "C" fn didkit_key_to_did(jwk: *const c_char) -> *const c_char {
-    ccchar_or_error(key_to_did(jwk))
+pub extern "C" fn didkit_key_to_did(
+    method_name: *const c_char,
+    jwk: *const c_char,
+) -> *const c_char {
+    ccchar_or_error(key_to_did(method_name, jwk))
 }
 
 // Convert JWK to did:key DID URI for verificationMethod
-fn key_to_verification_method(key_json_ptr: *const c_char) -> Result<*const c_char, Error> {
+fn key_to_verification_method(
+    method_name_ptr: *const c_char,
+    key_json_ptr: *const c_char,
+) -> Result<*const c_char, Error> {
+    let method_name = unsafe { CStr::from_ptr(method_name_ptr) }.to_str()?;
     let key_json = unsafe { CStr::from_ptr(key_json_ptr) }.to_str()?;
     let key: JWK = serde_json::from_str(key_json)?;
-    let did = key.to_verification_method()?;
-    Ok(CString::new(did)?.into_raw())
+    let did_method = DID_METHODS
+        .get(&method_name)
+        .ok_or(Error::UnknownDIDMethod)?;
+    let did = did_method
+        .generate(&Source::Key(&key))
+        .ok_or(Error::UnableToGenerateDID)?;
+    let did_resolver = did_method.to_resolver();
+    let vm = block_on(get_verification_method(&did, did_resolver))
+        .ok_or(Error::UnableToGetVerificationMethod)?;
+    Ok(CString::new(vm)?.into_raw())
 }
 /// Convert a key to a `did:key` DID URI for use in the `verificationMethod` property of a linked data
 /// proof. Input should be a C string containing the key as a JWK. The JWK should contain public
 /// key material; private key parameters are ignored. On success, this function returns a newly-allocated C string containing the `verificationMethod` URI. On failure, `NULL` is returned; the
 /// error message can be retrieved using [`didkit_error_message`].
 #[no_mangle]
-pub extern "C" fn didkit_key_to_verification_method(jwk: *const c_char) -> *const c_char {
-    ccchar_or_error(key_to_verification_method(jwk))
+pub extern "C" fn didkit_key_to_verification_method(
+    method_name: *const c_char,
+    jwk: *const c_char,
+) -> *const c_char {
+    ccchar_or_error(key_to_verification_method(method_name, jwk))
 }
 
 // Issue Credential
@@ -129,7 +159,7 @@ fn verify_credential(
         unsafe { CStr::from_ptr(linked_data_proof_options_json_ptr) }.to_str()?;
     let credential = VerifiableCredential::from_json_unsigned(credential_json)?;
     let options: LinkedDataProofOptions = serde_json::from_str(linked_data_proof_options_json)?;
-    let result = block_on(credential.verify(Some(options)));
+    let result = block_on(credential.verify(Some(options), DID_METHODS.to_resolver()));
     Ok(CString::new(serde_json::to_string(&result)?)?.into_raw())
 }
 #[no_mangle]
@@ -197,7 +227,7 @@ fn verify_presentation(
         unsafe { CStr::from_ptr(linked_data_proof_options_json_ptr) }.to_str()?;
     let presentation = VerifiablePresentation::from_json_unsigned(presentation_json)?;
     let options: LinkedDataProofOptions = serde_json::from_str(linked_data_proof_options_json)?;
-    let result = block_on(presentation.verify(Some(options)));
+    let result = block_on(presentation.verify(Some(options), DID_METHODS.to_resolver()));
     Ok(CString::new(serde_json::to_string(&result)?)?.into_raw())
 }
 #[no_mangle]
