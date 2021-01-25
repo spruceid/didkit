@@ -42,7 +42,7 @@ We depend on some Rust nightly features. When installing with Rustup, pick the n
 
 Spruce's [ssi][] library must be cloned alongside the `didkit` repository:
 ```sh
-$ git clone https://github.com/spruceid/ssi ../ssi
+$ git clone https://github.com/spruceid/ssi ../ssi --recurse-submodules
 ```
 
 Build DIDKit using [Cargo][]:
