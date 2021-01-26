@@ -27,7 +27,7 @@ Generate a Ed25519 keypair and output it in [JWK format](https://tools.ietf.org/
 
 Given a [JWK][] and a DID method name, output the corresponding DID.
 
-Currently, this only supports [Ed25519](https://tools.ietf.org/html/rfc8037#appendix-A.2) keys, and [did:key][].
+Currently, this only supports [Ed25519](https://tools.ietf.org/html/rfc8037#appendix-A.2) keys, [did:key][] and [did:web][].
 
 ### `didkit key-to-verification-method <method_name>`
 
@@ -132,6 +132,7 @@ See the included [shell script](tests/example.sh).
 [Ed25519VerificationKey2018]: https://w3c-ccg.github.io/lds-ed25519-2018/
 
 [did:key]: https://w3c-ccg.github.io/did-method-key/
+[did:web]: https://w3c-ccg.github.io/did-method-web/
 
 [proof options]: https://w3c-ccg.github.io/ld-proofs/#dfn-proof-options
 [ld-proofs-overview]: https://w3c-ccg.github.io/ld-proofs/#linked-data-proof-overview
