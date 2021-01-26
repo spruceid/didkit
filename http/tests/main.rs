@@ -5,7 +5,7 @@ use didkit_http::DIDKitHTTPMakeSvc;
 use didkit_http::VerifyCredentialResponse;
 use didkit_http::VerifyPresentationResponse;
 
-use bytes::buf::BufExt;
+use hyper::body::Buf;
 use hyper::header::{ACCEPT, CONTENT_TYPE};
 use hyper::{Body, Client, Request, Response, Server, Uri};
 use serde_json::{json, Value};

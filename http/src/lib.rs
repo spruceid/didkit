@@ -15,7 +15,7 @@ pub mod error;
 use accept::HttpAccept;
 pub use error::Error;
 
-use bytes::buf::BufExt;
+use hyper::body::Buf;
 use hyper::header::{ACCEPT, CONTENT_TYPE};
 use hyper::{Body, Response};
 use hyper::{Method, Request, StatusCode};
