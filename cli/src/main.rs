@@ -2,9 +2,9 @@ use std::fs::File;
 use std::io::{stdin, stdout, BufReader, BufWriter};
 use std::path::PathBuf;
 
-use async_std::task::block_on;
 use chrono::prelude::*;
 use structopt::{clap::AppSettings, clap::ArgGroup, StructOpt};
+use tokio::runtime::Runtime;
 
 use did_key::DIDKey;
 use didkit::{
@@ -152,6 +152,7 @@ impl From<ProofOptions> for LinkedDataProofOptions {
 }
 
 fn main() {
+    let rt = Runtime::new().unwrap();
     let opt = DIDKit::from_args();
     match opt {
         DIDKit::GenerateEd25519Key => {
@@ -204,7 +205,8 @@ fn main() {
                 .ok_or(Error::UnableToGenerateDID)
                 .unwrap();
             let did_resolver = did_method.to_resolver();
-            let vm = block_on(get_verification_method(&did, did_resolver))
+            let vm = rt
+                .block_on(get_verification_method(&did, did_resolver))
                 .ok_or(Error::UnableToGetVerificationMethod)
                 .unwrap();
             println!("{}", vm);
@@ -216,7 +218,9 @@ fn main() {
             let mut credential: VerifiableCredential =
                 serde_json::from_reader(credential_reader).unwrap();
             let options = LinkedDataProofOptions::from(proof_options);
-            let proof = block_on(credential.generate_proof(&key, &options)).unwrap();
+            let proof = rt
+                .block_on(credential.generate_proof(&key, &options))
+                .unwrap();
             credential.add_proof(proof);
             let stdout_writer = BufWriter::new(stdout());
             serde_json::to_writer(stdout_writer, &credential).unwrap();
@@ -229,7 +233,7 @@ fn main() {
             let options = LinkedDataProofOptions::from(proof_options);
             credential.validate_unsigned().unwrap();
             let resolver = DID_METHODS.to_resolver();
-            let result = block_on(credential.verify(Some(options), resolver));
+            let result = rt.block_on(credential.verify(Some(options), resolver));
             let stdout_writer = BufWriter::new(stdout());
             serde_json::to_writer(stdout_writer, &result).unwrap();
             if result.errors.len() > 0 {
@@ -243,7 +247,9 @@ fn main() {
             let mut presentation: VerifiablePresentation =
                 serde_json::from_reader(presentation_reader).unwrap();
             let options = LinkedDataProofOptions::from(proof_options);
-            let proof = block_on(presentation.generate_proof(&key, &options)).unwrap();
+            let proof = rt
+                .block_on(presentation.generate_proof(&key, &options))
+                .unwrap();
             presentation.add_proof(proof);
             let stdout_writer = BufWriter::new(stdout());
             serde_json::to_writer(stdout_writer, &presentation).unwrap();
@@ -256,7 +262,7 @@ fn main() {
             let options = LinkedDataProofOptions::from(proof_options);
             presentation.validate_unsigned().unwrap();
             let resolver = DID_METHODS.to_resolver();
-            let result = block_on(presentation.verify(Some(options), resolver));
+            let result = rt.block_on(presentation.verify(Some(options), resolver));
             let stdout_writer = BufWriter::new(stdout());
             serde_json::to_writer(stdout_writer, &result).unwrap();
             if result.errors.len() > 0 {
