@@ -1,0 +1,49 @@
+Copyright 2020 Spruce Systems, Inc.
+SPDX-License-Identifier: Apache-2.0
+
+Third Party Notices
+Portions of this software are based in part on the work of the World Wide Web Consortium (W3C). Because Spruce Systems, Inc. has included the work of the W3C in this product, Spruce Systems, Inc. is required to include the following text that accompanied such software:
+The Security Vocabulary:: https://w3c-ccg.github.io/security-vocab/ 
+Copyright © 2021 World Wide Web Consortium, (Massachusetts Institute of Technology, European Research Consortium for Informatics and Mathematics, Keio University, Beihang). All Rights Reserved. This work is distributed under the W3C® Software License in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+
+Verifiable Credentials Data Model: https://www.w3.org/TR/vc-data-model/
+
+Copyright © 2019 World Wide Web Consortium, (Massachusetts Institute of Technology, European Research Consortium for Informatics and Mathematics, Keio University, Beihang). All Rights Reserved. This work is distributed under the W3C® Software License in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+
+Decentralized Identifiers (DIDs): https://www.w3.org/TR/did-core/ 
+
+Copyright © 2021 World Wide Web Consortium, (Massachusetts Institute of Technology, European Research Consortium for Informatics and Mathematics, Keio University, Beihang). All Rights Reserved. This work is distributed under the W3C® Software License in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+
+ODRL Vocabulary & Expression: https://www.w3.org/TR/odrl-vocab/
+
+Copyright © 2018 World Wide Web Consortium, (Massachusetts Institute of Technology, European Research Consortium for Informatics and Mathematics, Keio University, Beihang). All Rights Reserved. This work is distributed under the W3C® Software License in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+
+Portions of this software are based in part on the work of schema.org. Because Spruce Systems, Inc. has included the work of schema.org in this product, Spruce Systems, Inc. is providing attribution in the following notice:
+Copyright in the schema by the sponsors of schema.org (Google, Inc., Yahoo, Inc., Microsoft Corporation and Yandex) are licensed to website publishers and other third parties under the Creative Commons Attribution-ShareAlike License (version 3.0) according to their Terms of Service, please visit https://schema.org/docs/terms.html. To view a copy of this license, please visit http://creativecommons.org/licenses/by-sa/3.0/.
+
+Portions of this software are based in part on the work of Flutter. Because Spruce Systems, Inc. has included the work of Flutter in this product, Spruce Systems, Inc. is required to include the following text that accompanied such software:
+Copyright 2014 The Flutter Authors. All rights reserved.
+
+Redistribution and use in source and binary forms, with or without modification,
+are permitted provided that the following conditions are met:
+
+    * Redistributions of source code must retain the above copyright
+      notice, this list of conditions and the following disclaimer.
+    * Redistributions in binary form must reproduce the above
+      copyright notice, this list of conditions and the following
+      disclaimer in the documentation and/or other materials provided
+      with the distribution.
+    * Neither the name of Google Inc. nor the names of its
+      contributors may be used to endorse or promote products derived
+      from this software without specific prior written permission.
+
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
+ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR
+ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
+(INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON
+ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
