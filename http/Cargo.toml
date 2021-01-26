@@ -5,7 +5,7 @@ authors = ["Charles E. Lehner <charles.lehner@spruceid.com>"]
 edition = "2018"
 
 [dependencies]
-didkit = { path = "../lib" }
+didkit = { path = "../lib", features = ["did-web"] }
 tokio = { version = "1.0", features = ["macros", "rt-multi-thread"] }
 structopt = "0.3"
 serde = { version = "1.0", features = ["derive"] }
