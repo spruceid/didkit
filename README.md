@@ -1,4 +1,4 @@
-![DIDKit header](/img/didkithead.png)
+![DIDKit header](https://spruceid.dev/assets/images/didkithead-52d41d35622b77d7662965794aa33eff.png)
 
 [![](https://img.shields.io/badge/Docker-19.03.x-blue)](https://www.docker.com/) [![](https://img.shields.io/badge/Rust-v1.49.0-orange)](https://www.rust-lang.org/) [![](https://img.shields.io/badge/ssi-v0.1-green)](https://www.github.com/spruceid/ssi) [![](https://img.shields.io/badge/License-Apache--2.0-green)](https://github.com/spruceid/didkit/blob/main/LICENSE) [![](https://img.shields.io/twitter/follow/sprucesystems?label=Follow&style=social)](https://twitter.com/sprucesystems) 
 
@@ -11,7 +11,7 @@ functionality across different platforms. It was written primarily in Rust due
 to Rust's expressive type system, memory safety, simple dependency web, and
 suitability across different platforms including embedded systems.
 
-![DIDKit core components](/img/didkit-core-components.png)
+![DIDKit core components](https://spruceid.dev/assets/images/didkit-core-components-7abba2778ffe8dde24997f305e706bd8.png)
 
 ## Install
 
