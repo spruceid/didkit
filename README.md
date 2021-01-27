@@ -33,6 +33,26 @@ packages.
 
 ## Install
 
+### Manual
+
+DIDKit is written in [Rust][]. To get Rust, you can use [Rustup][].
+
+We depend on some Rust nightly features. When installing with Rustup, pick the nightly release channel. Or run `rustup default nightly` to switch to it.
+([More info][installing-rust])
+
+Spruce's [ssi][] library must be cloned alongside the `didkit` repository:
+```sh
+$ git clone https://github.com/spruceid/ssi ../ssi --recurse-submodules
+```
+
+Build DIDKit using [Cargo][]:
+```sh
+$ cargo build
+```
+That will give you the DIDKit CLI and HTTP server executables located at
+`target/debug/didkit` and `target/debug/didkit-http`, respectively. You can also build and install DIDKit's components separately. Building the FFI libraries will require additional dependencies. See the corresponding readmes linked below for more info.
+
+
 ### Container
 
 Both the CLI and HTTP server are containerised and available under
@@ -63,25 +83,6 @@ $ docker build -f Dockerfile-http . -t didkit-http
 ```
 
 And to use them, replace `ghcr.io/spruceid/didkit-(cli|http):latest` with `didkit-(cli|http)`.
-
-### Manual
-
-DIDKit is written in [Rust][]. To get Rust, you can use [Rustup][].
-
-We depend on some Rust nightly features. When installing with Rustup, pick the nightly release channel. Or run `rustup default nightly` to switch to it.
-([More info][installing-rust])
-
-Spruce's [ssi][] library must be cloned alongside the `didkit` repository:
-```sh
-$ git clone https://github.com/spruceid/ssi ../ssi --recurse-submodules
-```
-
-Build DIDKit using [Cargo][]:
-```sh
-$ cargo build
-```
-That will give you the DIDKit CLI and HTTP server executables located at
-`target/debug/didkit` and `target/debug/didkit-http`, respectively. You can also build and install DIDKit's components separately. Building the FFI libraries will require additional dependencies. See the corresponding readmes linked below for more info.
 
 ## Usage
 
