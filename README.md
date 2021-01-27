@@ -91,9 +91,8 @@ DIDKit can be used in any of the following ways:
 - [HTTP](http/) - HTTP server (Rust library and CLI program)
 - [FFI](lib/FFI.md) - libraries for C, Java, Android, and Dart/Flutter
 
-## Additional Resources
-- [Rust](https://www.rust-lang.org/)
-- [rustup](https://rustup.rs/)
-- [Cargo](https://doc.rust-lang.org/cargo/)
-- [ssi](https://github.com/spruceid/ssi)
-- [installing-rust](https://doc.rust-lang.org/nightly/edition-guide/rust-2018/rustup-for-managing-rust-versions.html)
+[Rust]: https://www.rust-lang.org/
+[rustup]: https://rustup.rs/
+[Cargo]: https://doc.rust-lang.org/cargo/
+[ssi]: https://github.com/spruceid/ssi
+[installing-rust]: https://doc.rust-lang.org/nightly/edition-guide/rust-2018/rustup-for-managing-rust-versions.html
