@@ -28,7 +28,6 @@ jobs:
       uses: actions/checkout@v2
       with:
         repository: spruceid/ssi
-        token: ${{ secrets.GH_ACCESS_TOKEN_CEL }}
         path: ssi
         ref: d14eadee2c0973c210baadf5ec4f2a20c01412db
 
@@ -66,7 +65,6 @@ jobs:
       uses: actions/checkout@v2
       with:
         repository: spruceid/vc-http-api
-        token: ${{ secrets.GH_ACCESS_TOKEN_CEL }}
         path: vc-http-api
         ref: eef5ef2bb2321e4eac3f7e82a2adb7ccd4db1982
 
