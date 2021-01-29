@@ -5,6 +5,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+
+## [0.1.0] - 2021-01-27
+[Initial release][]
 ### Added
 - Issuing and verifying JSON-LD [Verifiable Credentials][vc-data-model] and [Verifiable Presentations][].
 - [Linked data proof](https://w3c-ccg.github.io/ld-proofs/) types [RsaSignature2018](https://w3c-ccg.github.io/lds-rsa2018/) and [Ed25519Signature2018](https://w3c-ccg.github.io/lds-ed25519-2018/).
@@ -20,6 +23,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Apache License, Version 2.0.
 - Third-party copyright notices.
 
+[Initial release]: https://sprucesystems.medium.com/didkit-v0-1-is-live-d0ea6638dbc9
 [did:key]: https://w3c-ccg.github.io/did-method-key/
 [did:web]: https://w3c-ccg.github.io/did-method-web/
 [did:tz]: https://did-tezos-draft.spruceid.com/
@@ -27,4 +31,5 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [vc-data-model]: https://w3c.github.io/vc-data-model/
 [Verifiable Presentations]: https://w3c.github.io/vc-data-model/#presentations-0
 
-[Unreleased]: https://github.com/spruceid/didkit/commits/main
+[Unreleased]: https://github.com/spruceid/didkit/compare/v0.1.0...HEAD
+[0.1.0]: https://github.com/spruceid/didkit/releases/tag/v0.1.0
