@@ -17,4 +17,4 @@ async-trait = "0.1"
 lazy_static = "1.4"
 
 [lib]
-crate-type = ["lib", "cdylib"]
+crate-type = ["lib", "staticlib", "cdylib"]

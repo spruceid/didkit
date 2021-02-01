@@ -97,6 +97,28 @@ $(TARGET)/%/release/libdidkit.so: $(RUST_SRC)
 	cargo build --lib --release --target $*
 	$(TOOLCHAIN)/bin/llvm-strip $@
 
+## iOS
+
+.PHONY: install-rustup-ios
+install-rustup-ios:
+	rustup target add \
+		aarch64-apple-ios \
+		x86_64-apple-ios
+
+IOS_LIBS=\
+	$(TARGET)/aarch64-apple-ios/release/libdidkit.a \
+	$(TARGET)/x86_64-apple-ios/release/libdidkit.a
+
+$(TARGET)/test/ios.stamp: $(TARGET)/libdidkit.a | $(TARGET)/test
+	touch $@
+
+$(TARGET)/libdidkit.a: $(IOS_LIBS)
+	lipo -create $^ -output $@
+
+$(TARGET)/%/release/libdidkit.a: $(RUST_SRC)
+	cargo build --lib --release --target $*
+	#$(TOOLCHAIN)/bin/llvm-strip $@
+
 ## Flutter
 
 $(TARGET)/test/flutter.stamp: flutter/lib/didkit.dart flutter/test/didkit_test.dart $(TARGET)/release/libdidkit.so | $(TARGET)/test
