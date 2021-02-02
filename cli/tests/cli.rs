@@ -25,7 +25,12 @@ fn issue_verify_credential_presentation() {
 
     // Get verificationMethod for key
     let vm_output = Command::new(BIN)
-        .args(&["key-to-verification-method", "-k", "tests/ed25519-key.jwk"])
+        .args(&[
+            "key-to-verification-method",
+            "key",
+            "-k",
+            "tests/ed25519-key.jwk",
+        ])
         .stderr(Stdio::inherit())
         .output()
         .unwrap();
