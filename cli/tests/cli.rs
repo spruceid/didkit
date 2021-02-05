@@ -1,3 +1,4 @@
+use serde_json::Value;
 use std::io::Write;
 use std::process::{Command, Stdio};
 
@@ -12,7 +13,7 @@ fn generate_key() {
 }
 
 #[test]
-fn issue_verify_credential_presentation() {
+fn didkit_cli() {
     // Get DID for key
     let did_output = Command::new(BIN)
         .args(&["key-to-did", "key", "--key-path", "tests/ed25519-key.jwk"])
@@ -92,7 +93,7 @@ fn issue_verify_credential_presentation() {
        "id": "http://example.org/presentations/3731",
        "type": ["VerifiablePresentation"]
     }"#;
-    let mut presentation: serde_json::Value = serde_json::from_str(presentation_str).unwrap();
+    let mut presentation: Value = serde_json::from_str(presentation_str).unwrap();
     let vc_value = serde_json::from_slice(&vc).unwrap();
     presentation["holder"] = did.to_string().into();
     presentation["verifiableCredential"] = vc_value;
@@ -130,4 +131,38 @@ fn issue_verify_credential_presentation() {
     verify_stdin.write_all(&vp).unwrap();
     let verify_output = verify_presentation.wait_with_output().unwrap();
     assert!(verify_output.status.success());
+
+    // Resolve DID
+    let resolve = Command::new(BIN)
+        .args(&["did-resolve", "-m", &did])
+        .stderr(Stdio::inherit())
+        .output()
+        .unwrap();
+    assert!(resolve.status.success());
+    let res_result_string = String::from_utf8(resolve.stdout).unwrap();
+    eprintln!("{}", res_result_string);
+    let res_result: Value = serde_json::from_str(&res_result_string).unwrap();
+    assert_ne!(res_result["didDocument"], Value::Null);
+    assert_ne!(res_result["didResolutionMetadata"], Value::Null);
+    assert_ne!(res_result["didDocumentMetadata"], Value::Null);
+    assert_eq!(res_result["didResolutionMetadata"]["error"], Value::Null);
+
+    // Dereference a DID URL to a verification method
+    let deref = Command::new(BIN)
+        .args(&["did-dereference", "-m", &verification_method])
+        .stderr(Stdio::inherit())
+        .output()
+        .unwrap();
+    assert!(deref.status.success());
+    let deref_result_string = String::from_utf8(deref.stdout).unwrap();
+    eprintln!("{}", deref_result_string);
+    let deref_result: Value = serde_json::from_str(&deref_result_string).unwrap();
+    let deref_vec = deref_result
+        .as_array()
+        .expect("Expected array dereferencing result");
+    assert_eq!(deref_vec.len(), 3);
+    assert_ne!(deref_vec[0], Value::Null);
+    assert_eq!(deref_vec[0]["didResolutionMetadata"]["error"], Value::Null);
+    assert_ne!(deref_vec[1], Value::Null);
+    assert_ne!(deref_vec[2], Value::Null);
 }

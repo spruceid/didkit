@@ -68,5 +68,13 @@ class DIDKitTest {
             + "}";
         String vpResult = DIDKit.verifyPresentation(vp, vpVerifyOptions);
         assert vpResult.contains("\"errors\":[]");
+
+        // Resolve DID
+        String resolutionResult = DIDKit.resolveDID(did, "{}");
+        assert vpResult.contains("\"didDocument\":{");
+
+        // Dereference DID URL
+        String dereferencingResult = DIDKit.dereferenceDIDURL(verificationMethod, "{}");
+        assert vpResult.startsWith("[{");
     }
 }

@@ -142,4 +142,22 @@ echo 'Verified verifiable presentation:'
 print_json presentation-verify-result.json
 echo
 
+# Resolve a DID.
+if ! didkit did-resolve "$did" > did.json
+then
+	echo 'Unable to resolve DID.'
+	exit 1
+fi
+echo 'Resolved DID to DID document:'
+print_json did.json
+
+# Dereference a DID URL
+if ! didkit did-dereference "$verification_method" > vm.json
+then
+	echo 'Unable to dereference DID URL.'
+	exit 1
+fi
+echo 'Dereferenced DID URL for verification method:'
+print_json vm.json
+
 echo Done

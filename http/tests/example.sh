@@ -183,4 +183,28 @@ echo 'Verified verifiable presentation:'
 print_json presentation-verify-result.json
 echo
 
+# Resolve a DID to a DID Document.
+if ! curl -fsS "$didkit_url/identifiers/$did" \
+	-o did.json
+then
+	echo 'Unable to resolve DID.'
+	exit 1
+fi
+echo 'Resolved DID to DID document:'
+print_json did.json
+echo
+
+# Dereference a DID URL.
+# URL-encode verificationMethod DID URL
+vm_enc=$(printf %s "$verification_method" | sed 's/#/%23/g')
+if ! curl -fsS "$didkit_url/identifiers/$vm_enc" \
+	-o vm.json
+then
+	echo 'Unable to resolve DID.'
+	exit 1
+fi
+echo 'Dereferenced DID URL for verification method:'
+print_json vm.json
+echo
+
 echo Done

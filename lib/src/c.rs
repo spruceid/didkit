@@ -14,6 +14,7 @@ use crate::VerifiableCredential;
 use crate::VerifiablePresentation;
 use crate::DID_METHODS;
 use crate::JWK;
+use crate::{dereference, DereferencingInputMetadata, ResolutionInputMetadata, ResolutionResult};
 
 /// The version of the DIDKit library, as a NULL-terminated string
 pub static VERSION_C: &str = concat!(env!("CARGO_PKG_VERSION"), "\0");
@@ -248,6 +249,74 @@ pub extern "C" fn didkit_vc_verify_presentation(
         presentation_json,
         linked_data_proof_options_json,
     ))
+}
+
+// Resolve DID
+fn resolve_did(
+    did_ptr: *const c_char,
+    input_metadata_json_ptr: *const c_char,
+) -> Result<*const c_char, Error> {
+    let did = unsafe { CStr::from_ptr(did_ptr) }.to_str()?;
+    let input_metadata_json = if input_metadata_json_ptr.is_null() {
+        "{}"
+    } else {
+        unsafe { CStr::from_ptr(input_metadata_json_ptr) }.to_str()?
+    };
+    let input_metadata: ResolutionInputMetadata = serde_json::from_str(input_metadata_json)?;
+    let resolver = DID_METHODS.to_resolver();
+    let (res_meta, doc_opt, doc_meta_opt) = block_on(resolver.resolve(did, &input_metadata));
+    let result = ResolutionResult {
+        did_document: doc_opt,
+        did_resolution_metadata: Some(res_meta),
+        did_document_metadata: doc_meta_opt,
+        ..Default::default()
+    };
+    Ok(CString::new(serde_json::to_string(&result)?)?.into_raw())
+}
+
+#[no_mangle]
+/// Resolve a DID to a DID Document. Arguments are a C string containing the DID to resolve, and a
+/// C string containing a JSON object for resolution input metadata. The return value on success is
+/// a newly-allocated C string containing either the resolved DID document or a DID resolution
+/// result JSON object. On error, `NULL` is returned, and the error can be retrieved using
+/// [`didkit_error_message`].
+pub extern "C" fn didkit_did_resolve(
+    did: *const c_char,
+    input_metadata_json: *const c_char,
+) -> *const c_char {
+    ccchar_or_error(resolve_did(did, input_metadata_json))
+}
+
+// Dereference DID URL
+fn dereference_did_url(
+    did_url_ptr: *const c_char,
+    input_metadata_json_ptr: *const c_char,
+) -> Result<*const c_char, Error> {
+    let did_url = unsafe { CStr::from_ptr(did_url_ptr) }.to_str()?;
+    let input_metadata_json = if input_metadata_json_ptr.is_null() {
+        "{}"
+    } else {
+        unsafe { CStr::from_ptr(input_metadata_json_ptr) }.to_str()?
+    };
+    let input_metadata: DereferencingInputMetadata = serde_json::from_str(input_metadata_json)?;
+    let resolver = DID_METHODS.to_resolver();
+    let deref_result = block_on(dereference(resolver, did_url, &input_metadata));
+    use serde_json::json;
+    let result = json!(deref_result);
+    Ok(CString::new(serde_json::to_string(&result)?)?.into_raw())
+}
+
+#[no_mangle]
+/// Resolve a DID to a DID Document. Arguments are a C string containing the DID URL to dereference, and a
+/// C string containing a JSON object for dereferencing input metadata. The return value on success is
+/// a newly-allocated C string containing either a resolved resource or a DID resolution
+/// result JSON object. On error, `NULL` is returned, and the error can be retrieved using
+/// [`didkit_error_message`].
+pub extern "C" fn didkit_did_url_dereference(
+    did_url: *const c_char,
+    input_metadata_json: *const c_char,
+) -> *const c_char {
+    ccchar_or_error(dereference_did_url(did_url, input_metadata_json))
 }
 
 #[no_mangle]

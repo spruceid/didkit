@@ -121,6 +121,47 @@ Corresponds to [/verify/presentations](https://w3c-ccg.github.io/vc-http-api/#/V
 
 Options and output format are the same as for [didkit vc-verify-credential](#didkit-vc-verify-credential).
 
+### `didkit did-resolve <did>`
+
+Resolve a DID to a DID document, according to [DID Resolution][did-resolution].
+
+#### Options
+- `-m, --with-metadata` - Return a the resolved DID document with resolution metadata and document metadata, in a [DID Resolution Result][did-resolution-result] object.
+- `-i <name=value>` - A [DID Resolution input metadata][did-resolution-input-metadata] property. If `=` is omitted, boolean `true` is used as the value, otherwise, value is a string. May be repeated to add multiple properties. If used multiple times with the same `name`, the values are combined into an array value to form a single property.
+
+#### Output
+Returns the resolved DID document, optionally with metadata.
+
+Without the `-m` option, a representation of the resolved DID document is returned, without document metadata or resolution metadata.
+
+If the `-m` option is used, a DID Resolution Result is returned, which is a JSON object containing the following properties:
+- `didDocument` - the resolved DID document
+- `didResolutionMetadata` - [DID resolution metadata][did-resolution-metadata]
+- `didDocumentMetadata` - [DID document metadata][did-document-metadata]
+- `@context` - JSON-LD context, if using JSON-LD representation.
+
+Exit status is zero on success, and nonzero on failure. On failure, a DID Resolution Result object may still be returned on standard output if the `-m` option is used, where the `error` property of the DID resolution metadata object is set to the error message. If `-m` is not used, the error message is returned on standnard error.
+
+### `didkit did-dereference <did-url>`
+
+Dereference a DID URL to a resource, as in [did-core - DID URL Dereferencing][did-url-dereferencing].
+
+#### Options
+- `-m, --with-metadata` - Return the resulting resource with resolution metadata and document metadata, in a [DID Resolution Result][did-resolution-result] object.
+- `-i <name=value>` - A [DID URL Dereferencing input metadata][did-url-dereferencing-input-metadata] property. If `=` is omitted, boolean `true` is used as the value, otherwise, value is a string. May be repeated to add multiple properties. If used multiple times with the same `name`, the values are combined into an array value to form a single property.
+
+#### Output
+Returns the resource dereferenced from the DID URL, optionally with metadata.
+
+Without the `-m` option, the content resulting from dereferencing is returned, without content metadata or dereferencing metadata.
+
+If the `-m` option is used, a JSON array is returned containing the following three objects:
+- The resolved DID document or other resource corresponding to the dereferenced DID URL
+- [DID dereferencing metadata][did-url-dereferencing-metadata] or [DID resolution metadata][did-resolution-metadata]
+- Content metadata or [DID document metadata][did-document-metadata]
+
+Exit status is zero on success and nonzero on error. On error, if `-m` is used, the error message is returned in the `error` property of the DID dereferencing metadata object on standard output; if `-m` is not used, the error is printed on standard error.
+
 ## Examples
 
 See the included [shell script](tests/example.sh).
@@ -146,3 +187,11 @@ See the included [shell script](tests/example.sh).
 [kty]: https://tools.ietf.org/html/rfc7517#section-4.1
 [kid]: https://tools.ietf.org/html/rfc7517#section-4.5
 [alg]: https://tools.ietf.org/html/rfc7517#section-4.4
+[did-resolution]: https://w3c-ccg.github.io/did-resolution/
+[did-resolution-input-metadata]: https://w3c.github.io/did-core/#did-resolution-input-metadata-properties
+[did-resolution-metadata]: https://w3c.github.io/did-core/#did-resolution-metadata-properties
+[did-document-metadata]: https://w3c.github.io/did-core/#did-document-metadata-properties
+[did-resolution-result]: https://w3c-ccg.github.io/did-resolution/#did-resolution-result
+[did-url-dereferencing]: https://w3c.github.io/did-core/#did-url-dereferencing
+[did-url-dereferencing-metadata]: https://w3c.github.io/did-core/#did-url-dereferencing-metadata-properties
+[did-url-dereferencing-input-metadata]: https://w3c.github.io/did-core/#did-url-dereferencing-input-metadata-properties

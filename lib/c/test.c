@@ -84,6 +84,19 @@ int main() {
 
     didkit_free_string(vp);
     didkit_free_string(vc);
+
+    // Resolve DID
+    const char *did_doc = didkit_did_resolve(did, NULL);
+    if (did_doc == NULL) errx(1, "resolve DID: %s", didkit_error_message());
+    if (strstr(did_doc, "\"didDocument\":{") == NULL) errx(1, "DID resolution result: %s", did_doc);
+    didkit_free_string(did_doc);
+
+    // Dereference DID URL
+    const char *result = didkit_did_url_dereference(verification_method, NULL);
+    if (result == NULL) errx(1, "Dereference DID URL: %s", didkit_error_message());
+    if (strncmp(result, "[{", 2) != 0) errx(1, "DID dereferencing result: %s", result);
+    didkit_free_string(result);
+
     didkit_free_string(verification_method);
     didkit_free_string(did);
     didkit_free_string(key);
