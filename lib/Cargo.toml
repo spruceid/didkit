@@ -4,9 +4,13 @@ version = "0.1.0"
 authors = ["Charles E. Lehner <charles.lehner@spruceid.com>"]
 edition = "2018"
 
+[features]
+default = ["ring"]
+ring = ["ssi/ring"]
+
 [dependencies]
 #didkit_cbindings = { path = "cbindings/" }
-ssi = { path = "../../ssi" }
+ssi = { path = "../../ssi", default-features = false }
 did-key = { path = "../../ssi/did-key" }
 did-tezos = { path = "../../ssi/did-tezos" }
 did-web = { path = "../../ssi/did-web", optional = true }
