@@ -83,4 +83,18 @@ void main() {
     final verifyResult = jsonDecode(DIDKit.verifyPresentation(vc, jsonEncode(verifyOptions)));
     expect(verifyResult['errors'], isEmpty);
   });
+
+  test('resolveDID', () async {
+    final key = DIDKit.generateEd25519Key();
+    final did = DIDKit.keyToDID("key", key);
+    final resolutionResult = jsonDecode(DIDKit.resolveDID(did, "{}"));
+    expect(resolutionResult['didDocument'], isNotEmpty);
+  });
+
+  test('dereferenceDIDURL', () async {
+    final key = DIDKit.generateEd25519Key();
+    final verificationMethod = DIDKit.keyToVerificationMethod("key", key);
+    final derefResult = jsonDecode(DIDKit.dereferenceDIDURL(verificationMethod, "{}"));
+    expect(derefResult, isList);
+  });
 }

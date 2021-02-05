@@ -10,9 +10,11 @@ extern crate lazy_static;
 
 pub use crate::did_methods::DID_METHODS;
 pub use crate::error::Error;
-pub use ssi::did::DIDMethod;
-pub use ssi::did::Source;
-pub use ssi::did_resolve::DIDResolver;
+pub use ssi::did::{DIDMethod, Document, Source};
+pub use ssi::did_resolve::{
+    dereference, Content, ContentMetadata, DIDResolver, DereferencingInputMetadata, Metadata,
+    ResolutionInputMetadata, ResolutionResult,
+};
 pub use ssi::jwk::JWK;
 pub use ssi::ldp::resolve_key;
 pub use ssi::vc::get_verification_method;

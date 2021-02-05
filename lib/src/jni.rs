@@ -8,11 +8,13 @@ use jni::JNIEnv;
 use crate::error::Error;
 use crate::get_verification_method;
 use crate::LinkedDataProofOptions;
+use crate::ResolutionResult;
 use crate::Source;
 use crate::VerifiableCredential;
 use crate::VerifiablePresentation;
 use crate::DID_METHODS;
 use crate::JWK;
+use crate::{dereference, DereferencingInputMetadata, ResolutionInputMetadata};
 
 pub static VERSION: &str = env!("CARGO_PKG_VERSION");
 pub static DIDKIT_EXCEPTION_CLASS: &str = "com/spruceid/DIDKitException";
@@ -225,4 +227,66 @@ pub extern "system" fn Java_com_spruceid_DIDKit_verifyPresentation(
     options: JString,
 ) -> jstring {
     jstring_or_error(&env, verify_presentation(&env, presentation, options))
+}
+
+fn resolve_did(
+    env: &JNIEnv,
+    did_jstring: JString,
+    input_metadata_jstring: JString,
+) -> Result<jstring, Error> {
+    let did: String = env.get_string(did_jstring).unwrap().into();
+    let input_metadata_json: String = if input_metadata_jstring.is_null() {
+        env.get_string(input_metadata_jstring).unwrap().into()
+    } else {
+        "{}".to_string()
+    };
+    let input_metadata: ResolutionInputMetadata = serde_json::from_str(&input_metadata_json)?;
+    let resolver = DID_METHODS.to_resolver();
+    let (res_meta, doc_opt, doc_meta_opt) = block_on(resolver.resolve(&did, &input_metadata));
+    let result = ResolutionResult {
+        did_document: doc_opt,
+        did_resolution_metadata: Some(res_meta),
+        did_document_metadata: doc_meta_opt,
+        ..Default::default()
+    };
+    let result_json = serde_json::to_string(&result)?;
+    Ok(env.new_string(result_json).unwrap().into_inner())
+}
+
+#[no_mangle]
+pub extern "system" fn Java_com_spruceid_DIDKit_resolveDID(
+    env: JNIEnv,
+    _class: JClass,
+    did: JString,
+    input_metadata: JString,
+) -> jstring {
+    jstring_or_error(&env, resolve_did(&env, did, input_metadata))
+}
+
+fn dereference_did_url(
+    env: &JNIEnv,
+    did_url_jstring: JString,
+    input_metadata_jstring: JString,
+) -> Result<jstring, Error> {
+    let did_url: String = env.get_string(did_url_jstring).unwrap().into();
+    let input_metadata_json: String = if input_metadata_jstring.is_null() {
+        env.get_string(input_metadata_jstring).unwrap().into()
+    } else {
+        "{}".to_string()
+    };
+    let input_metadata: DereferencingInputMetadata = serde_json::from_str(&input_metadata_json)?;
+    let resolver = DID_METHODS.to_resolver();
+    let deref_result = block_on(dereference(resolver, &did_url, &input_metadata));
+    let result_json = serde_json::to_string(&deref_result)?;
+    Ok(env.new_string(result_json).unwrap().into_inner())
+}
+
+#[no_mangle]
+pub extern "system" fn Java_com_spruceid_DIDKit_dereferenceDIDURL(
+    env: JNIEnv,
+    _class: JClass,
+    did_url: JString,
+    input_metadata: JString,
+) -> jstring {
+    jstring_or_error(&env, dereference_did_url(&env, did_url, input_metadata))
 }

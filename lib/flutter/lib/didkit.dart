@@ -39,6 +39,12 @@ final issue_presentation = lib
 final verify_presentation = lib
   .lookupFunction<Pointer<Utf8> Function(Pointer<Utf8>, Pointer<Utf8>), Pointer<Utf8> Function(Pointer<Utf8>, Pointer<Utf8>)>('didkit_vc_verify_presentation');
 
+final resolve_did = lib
+  .lookupFunction<Pointer<Utf8> Function(Pointer<Utf8>, Pointer<Utf8>), Pointer<Utf8> Function(Pointer<Utf8>, Pointer<Utf8>)>('didkit_did_resolve');
+
+final dereference_did_url = lib
+  .lookupFunction<Pointer<Utf8> Function(Pointer<Utf8>, Pointer<Utf8>), Pointer<Utf8> Function(Pointer<Utf8>, Pointer<Utf8>)>('didkit_did_url_dereference');
+
 final free_string = lib
   .lookupFunction<Void Function(Pointer<Utf8>), void Function(Pointer<Utf8>)>('didkit_free_string');
 
@@ -128,6 +134,22 @@ class DIDKit {
 
   static String verifyPresentation(String presentation, String options) {
     final result = verify_presentation(Utf8.toUtf8(presentation), Utf8.toUtf8(options));
+    if (result.address == nullptr.address) throw lastError();
+    final result_string = Utf8.fromUtf8(result);
+    free_string(result);
+    return result_string;
+  }
+
+  static String resolveDID(String did, String inputMetadata) {
+    final result = resolve_did(Utf8.toUtf8(did), Utf8.toUtf8(inputMetadata));
+    if (result.address == nullptr.address) throw lastError();
+    final result_string = Utf8.fromUtf8(result);
+    free_string(result);
+    return result_string;
+  }
+
+  static String dereferenceDIDURL(String didUrl, String inputMetadata) {
+    final result = dereference_did_url(Utf8.toUtf8(didUrl), Utf8.toUtf8(inputMetadata));
     if (result.address == nullptr.address) throw lastError();
     final result_string = Utf8.fromUtf8(result);
     free_string(result);

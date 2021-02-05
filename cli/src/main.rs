@@ -1,15 +1,20 @@
 use std::fs::File;
+use std::io::Write;
 use std::io::{stdin, stdout, BufReader, BufWriter};
 use std::path::PathBuf;
+use std::str::FromStr;
 
 use chrono::prelude::*;
+use serde::Serialize;
+use serde_json::Value;
 use structopt::{clap::AppSettings, clap::ArgGroup, StructOpt};
 use tokio::runtime::Runtime;
 
 use did_key::DIDKey;
 use didkit::{
-    get_verification_method, DIDMethod, Error, LinkedDataProofOptions, ProofPurpose, Source,
-    VerifiableCredential, VerifiablePresentation, DID_METHODS, JWK,
+    dereference, get_verification_method, DIDMethod, DereferencingInputMetadata, Error,
+    LinkedDataProofOptions, Metadata, ProofPurpose, ResolutionInputMetadata, ResolutionResult,
+    Source, VerifiableCredential, VerifiablePresentation, DID_METHODS, JWK,
 };
 
 #[derive(StructOpt, Debug)]
@@ -39,10 +44,28 @@ pub enum DIDKit {
     // DID Functionality
     /// Create new DID Document.
     DIDCreate {},
+    */
     /// Resolve a DID to a DID Document.
-    DIDResolve {},
+    DIDResolve {
+        did: String,
+        #[structopt(short = "m", long)]
+        /// Return resolution result with metadata
+        with_metadata: bool,
+        #[structopt(short = "i", name = "name=value")]
+        /// DID resolution input metadata
+        input_metadata: Vec<MetadataProperty>,
+    },
     /// Dereference a DID URL to a resource.
-    DIDDereference {},
+    DIDDereference {
+        did_url: String,
+        #[structopt(short = "m", long)]
+        /// Return resolution result with metadata
+        with_metadata: bool,
+        #[structopt(short = "i", name = "name=value")]
+        /// DID dereferencing input metadata
+        input_metadata: Vec<MetadataProperty>,
+    },
+    /*
     /// Update a DID Document’s authentication.
     DIDUpdateAuthentication {},
     /// Update a DID Document’s service endpoint(s).
@@ -148,6 +171,89 @@ impl From<ProofOptions> for LinkedDataProofOptions {
             domain: options.domain,
             checks: None,
         }
+    }
+}
+
+#[derive(Debug, Serialize)]
+/// Subset of [DID Metadata Structure][metadata] that is just a string property name and string value.
+/// [metadata]: https://w3c.github.io/did-core/#metadata-structure
+pub struct MetadataProperty {
+    pub name: String,
+    pub value: Metadata,
+}
+
+impl FromStr for MetadataProperty {
+    type Err = String;
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let mut parts = s.splitn(2, '=');
+        let name = parts.next().unwrap_or_default().to_string();
+        if let Some(value) = parts.next() {
+            Ok(Self {
+                name,
+                value: Metadata::String(value.to_string()),
+            })
+        } else {
+            Ok(Self {
+                name,
+                value: Metadata::Boolean(true),
+            })
+        }
+    }
+}
+
+fn metadata_properties_to_value(meta_props: Vec<MetadataProperty>) -> Result<Value, Error> {
+    use serde_json::map::Entry;
+    let mut map = serde_json::Map::new();
+    for prop in meta_props {
+        let value = serde_json::to_value(prop.value)?;
+        match map.entry(prop.name) {
+            Entry::Vacant(entry) => {
+                entry.insert(value);
+            }
+            Entry::Occupied(mut entry) => {
+                match entry.get_mut() {
+                    Value::Null => {
+                        entry.insert(value);
+                    }
+                    Value::Array(ref mut array) => {
+                        array.push(value);
+                    }
+                    _ => {
+                        let old_value = entry.get_mut().take();
+                        entry.insert(Value::Array(vec![old_value, value]));
+                    }
+                };
+            }
+        };
+    }
+    Ok(Value::Object(map))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn metadata_properties() {
+        use serde_json::json;
+
+        // single value - string
+        let props = vec![MetadataProperty::from_str("name=value").unwrap()];
+        let meta = metadata_properties_to_value(props).unwrap();
+        assert_eq!(meta, json!({"name": "value"}));
+
+        // single value - boolean
+        let props = vec![MetadataProperty::from_str("name").unwrap()];
+        let meta = metadata_properties_to_value(props).unwrap();
+        assert_eq!(meta, json!({"name": true}));
+
+        // multiple values
+        let props = vec![
+            MetadataProperty::from_str("name=value1").unwrap(),
+            MetadataProperty::from_str("name=value2").unwrap(),
+        ];
+        let meta = metadata_properties_to_value(props).unwrap();
+        assert_eq!(meta, json!({"name": ["value1", "value2"]}));
     }
 }
 
@@ -267,6 +373,70 @@ fn main() {
             serde_json::to_writer(stdout_writer, &result).unwrap();
             if result.errors.len() > 0 {
                 std::process::exit(2);
+            }
+        }
+
+        DIDKit::DIDResolve {
+            did,
+            with_metadata,
+            input_metadata,
+        } => {
+            let resolver = DID_METHODS.to_resolver();
+            let res_input_meta_value = metadata_properties_to_value(input_metadata).unwrap();
+            let res_input_meta: ResolutionInputMetadata =
+                serde_json::from_value(res_input_meta_value).unwrap();
+            if with_metadata {
+                let (res_meta, doc_opt, doc_meta_opt) =
+                    rt.block_on(resolver.resolve(&did, &res_input_meta));
+                let error = res_meta.error.is_some();
+                let result = ResolutionResult {
+                    did_document: doc_opt,
+                    did_resolution_metadata: Some(res_meta),
+                    did_document_metadata: doc_meta_opt,
+                    ..Default::default()
+                };
+                let stdout_writer = BufWriter::new(stdout());
+                serde_json::to_writer_pretty(stdout_writer, &result).unwrap();
+                if error {
+                    std::process::exit(2);
+                }
+            } else {
+                let (res_meta, doc_data, _doc_meta_opt) =
+                    rt.block_on(resolver.resolve_representation(&did, &res_input_meta));
+                if let Some(err) = res_meta.error {
+                    eprintln!("{}", err);
+                    std::process::exit(2);
+                }
+                stdout().write_all(&doc_data).unwrap();
+            }
+        }
+
+        DIDKit::DIDDereference {
+            did_url,
+            with_metadata,
+            input_metadata,
+        } => {
+            let resolver = DID_METHODS.to_resolver();
+            let deref_input_meta_value = metadata_properties_to_value(input_metadata).unwrap();
+            let deref_input_meta: DereferencingInputMetadata =
+                serde_json::from_value(deref_input_meta_value).unwrap();
+            let stdout_writer = BufWriter::new(stdout());
+            let (deref_meta, content, content_meta) =
+                rt.block_on(dereference(&resolver, &did_url, &deref_input_meta));
+            if with_metadata {
+                use serde_json::json;
+                let result = json!([deref_meta, content, content_meta]);
+                serde_json::to_writer_pretty(stdout_writer, &result).unwrap();
+                if deref_meta.error.is_some() {
+                    std::process::exit(2);
+                }
+            } else {
+                if let Some(err) = deref_meta.error {
+                    eprintln!("{}", err);
+                    std::process::exit(2);
+                }
+                let content_vec = content.into_vec().unwrap();
+                stdout().write_all(&content_vec).unwrap();
             }
         }
     }

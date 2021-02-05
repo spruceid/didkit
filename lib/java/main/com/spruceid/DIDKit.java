@@ -11,6 +11,8 @@ public class DIDKit {
     public static native String verifyCredential(String verifiableCredential, String linkedDataProofOptions);
     public static native String issuePresentation(String presentation, String linkedDataProofOptions, String key) throws DIDKitException;
     public static native String verifyPresentation(String verifiablePresentation, String linkedDataProofOptions);
+    public static native String resolveDID(String did, String inputMetadata);
+    public static native String dereferenceDIDURL(String didUrl, String inputMetadata);
 
     static {
         System.loadLibrary("didkit");

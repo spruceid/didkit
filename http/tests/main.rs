@@ -1,13 +1,15 @@
 use std::str::FromStr;
 
-use didkit::JWK;
+use didkit::{Document, JWK};
 use didkit_http::DIDKitHTTPMakeSvc;
 use didkit_http::VerifyCredentialResponse;
 use didkit_http::VerifyPresentationResponse;
+use ssi::did_resolve::{ResolutionResult, TYPE_DID_LD_JSON, TYPE_DID_RESOLUTION};
 
 use hyper::body::Buf;
 use hyper::header::{ACCEPT, CONTENT_TYPE};
 use hyper::{Body, Client, Request, Response, Server, Uri};
+use percent_encoding::{utf8_percent_encode, NON_ALPHANUMERIC};
 use serde_json::{json, Value};
 
 const DID_KEY_JSON: &'static str = include_str!("../../cli/tests/ed25519-key.jwk");
@@ -307,6 +309,62 @@ async fn non_json_accept() {
         .unwrap();
     let resp = client.request(req).await.unwrap();
     assert_eq!(resp.status(), 406);
+
+    shutdown();
+}
+
+#[tokio::test]
+async fn resolve_dereference() {
+    let (base, shutdown) = serve(None);
+    let client = Client::builder().build_http::<Body>();
+
+    // Resolve DID
+    let uri_string = format!("{}/identifiers/{}", base, DID_KEY);
+    let uri = Uri::from_str(&uri_string).unwrap();
+    let resp = client.get(uri).await.unwrap();
+    assert_eq!(resp.status(), 200);
+    let body_reader = hyper::body::aggregate(resp).await.unwrap().reader();
+    let doc: Document = serde_json::from_reader(body_reader).unwrap();
+    assert_eq!(doc.id, DID_KEY);
+
+    // Resolve DID with metadata
+    let uri = Uri::from_str(&uri_string).unwrap();
+    let req = Request::builder()
+        .method("GET")
+        .header(ACCEPT, TYPE_DID_RESOLUTION)
+        .uri(uri)
+        .body(Body::default())
+        .unwrap();
+    let resp = client.request(req).await.unwrap();
+    assert_eq!(resp.status(), 200);
+    let resp_headers = resp.headers().clone();
+    let body_reader = hyper::body::aggregate(resp).await.unwrap().reader();
+    let result: ResolutionResult = serde_json::from_reader(body_reader).unwrap();
+    eprintln!("{:?}", result);
+    let res_meta = result.did_resolution_metadata.unwrap();
+    let http_content_type = resp_headers
+        .get(hyper::header::CONTENT_TYPE)
+        .unwrap()
+        .to_str()
+        .unwrap();
+    assert_eq!(res_meta.error, None);
+    assert_eq!(result.did_document.unwrap().id, DID_KEY);
+    assert_eq!(res_meta.content_type.unwrap(), TYPE_DID_LD_JSON);
+    assert_eq!(http_content_type, TYPE_DID_RESOLUTION);
+
+    // Dereference DID URL
+    let uri_string = format!(
+        "{}/identifiers/{}",
+        base,
+        utf8_percent_encode(VERIFICATION_METHOD, NON_ALPHANUMERIC)
+    );
+    eprintln!("uri {}", uri_string);
+    let uri = Uri::from_str(&uri_string).unwrap();
+    let resp = client.get(uri).await.unwrap();
+    assert_eq!(resp.status(), 200);
+    let body_reader = hyper::body::aggregate(resp).await.unwrap().reader();
+    let vm: Value = serde_json::from_reader(body_reader).unwrap();
+    eprintln!("vm {:?}", vm);
 
     shutdown();
 }

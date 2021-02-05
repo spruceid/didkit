@@ -1,3 +1,4 @@
+use percent_encoding::percent_decode;
 use std::collections::HashMap;
 use std::future::Future;
 use std::pin::Pin;
@@ -6,8 +7,13 @@ use std::task::{Context, Poll};
 
 use didkit::resolve_key;
 use didkit::{
-    DIDResolver, LinkedDataProofOptions, ProofPurpose, VerifiableCredential,
-    VerifiablePresentation, VerificationResult, DID_METHODS, JWK,
+    dereference as dereference_did_url, Content, ContentMetadata, DIDResolver,
+    DereferencingInputMetadata, LinkedDataProofOptions, ProofPurpose, ResolutionResult,
+    VerifiableCredential, VerifiablePresentation, VerificationResult, DID_METHODS, JWK,
+};
+use ssi::did_resolve::{
+    ERROR_INVALID_DID, ERROR_NOT_FOUND, ERROR_REPRESENTATION_NOT_SUPPORTED, TYPE_DID_LD_JSON,
+    TYPE_DID_RESOLUTION,
 };
 
 pub mod accept;
@@ -16,7 +22,7 @@ use accept::HttpAccept;
 pub use error::Error;
 
 use hyper::body::Buf;
-use hyper::header::{ACCEPT, CONTENT_TYPE};
+use hyper::header::{ACCEPT, CONTENT_TYPE, LOCATION};
 use hyper::{Body, Response};
 use hyper::{Method, Request, StatusCode};
 use serde::{Deserialize, Serialize};
@@ -70,7 +76,7 @@ pub struct DIDKitHTTPSvc {
 pub async fn pick_key<'a>(
     keys: &'a KeyMap,
     options: &LinkedDataProofOptions,
-    did_resolver: &(dyn DIDResolver + Sync),
+    did_resolver: &dyn DIDResolver,
 ) -> Option<&'a JWK> {
     if keys.len() <= 1 {
         return keys.values().next();
@@ -335,6 +341,191 @@ impl DIDKitHTTPSvc {
                 .map_err(|err| err.into())
         })
     }
+
+    /// Resolve a DID or dereference a DID URL.
+    ///
+    /// <https://w3c-ccg.github.io/did-resolution/#bindings-https>
+    pub fn resolve_dereference(
+        &self,
+        req: Request<Body>,
+    ) -> Pin<Box<dyn Future<Output = Result<Response<Body>, Error>> + Send>> {
+        if req.method() != Method::GET {
+            return self.method_not_allowed();
+        }
+        let uri = req.uri();
+        let mut deref_input_meta: DereferencingInputMetadata =
+            match serde_urlencoded::from_str(uri.query().unwrap_or("")) {
+                Ok(metadata) => metadata,
+                Err(err) => {
+                    return Self::response(
+                        StatusCode::BAD_REQUEST,
+                        format!("Unable to parse resolution input metadata: {}", err),
+                    );
+                }
+            };
+        let http_accept = match req.headers().get(ACCEPT) {
+            Some(header) => match header.to_str() {
+                Ok(accept_str) => Some(accept_str.to_string()),
+                Err(err) => {
+                    return Self::response(
+                        StatusCode::BAD_REQUEST,
+                        format!("Unable to parse Accept header: {}", err),
+                    );
+                }
+            },
+            None => None,
+        };
+        if deref_input_meta.accept.is_none() && http_accept.is_some() {
+            deref_input_meta.accept = http_accept;
+        };
+        Box::pin(async move {
+            let resolver = DID_METHODS.to_resolver();
+            let uri = req.uri();
+            let path: String = uri.path().chars().skip(13).collect();
+            let did_url = match percent_decode(path.as_bytes()).decode_utf8() {
+                Ok(did_url) => did_url,
+                Err(err) => {
+                    return Self::response(
+                        StatusCode::BAD_REQUEST,
+                        format!("Unable to parse DID URL: {}", err),
+                    )
+                    .await;
+                }
+            };
+            // skip root "/identifiers/" to get DID
+            let (deref_meta, content, content_meta) =
+                dereference_did_url(resolver, &did_url, &deref_input_meta).await;
+            let (mut parts, mut body) = Response::<Body>::default().into_parts();
+            if let Some(ref error) = deref_meta.error {
+                // 1.6, 1.7, 1.8
+                parts.status = match &error[..] {
+                    ERROR_NOT_FOUND => StatusCode::NOT_FOUND,
+                    ERROR_INVALID_DID => StatusCode::BAD_REQUEST,
+                    ERROR_REPRESENTATION_NOT_SUPPORTED => StatusCode::NOT_ACCEPTABLE,
+                    _ => StatusCode::INTERNAL_SERVER_ERROR,
+                };
+                body = Body::from(error.as_bytes().to_vec());
+            }
+            if let ContentMetadata::DIDDocument(ref did_doc_meta) = content_meta {
+                if did_doc_meta.deactivated == Some(true) {
+                    parts.status = StatusCode::GONE;
+                }
+            }
+            // 1.10
+            match content {
+                Content::DIDDocument(did_doc) => {
+                    // TODO: Check if type is of a conformant representation?
+                    if deref_input_meta.accept != Some(TYPE_DID_RESOLUTION.to_string()) {
+                        // 1.10.1
+                        let content_type = deref_meta
+                            .content_type
+                            .unwrap_or_else(|| TYPE_DID_LD_JSON.to_string());
+                        let content_type_header = match content_type.parse() {
+                            Err(err) => {
+                                return Self::response(
+                                    StatusCode::BAD_REQUEST,
+                                    format!("Unable to parse Content-Type: {}", err),
+                                )
+                                .await;
+                            }
+                            Ok(content_type) => content_type,
+                        };
+                        parts.headers.insert(CONTENT_TYPE, content_type_header);
+                        // 1.10.1.3
+                        let representation = match did_doc.to_representation(&content_type) {
+                            Err(err) => {
+                                return Self::response(
+                                    StatusCode::NOT_ACCEPTABLE,
+                                    format!("Unable to represent DID document: {}", err),
+                                )
+                                .await;
+                            }
+                            Ok(content_type) => content_type,
+                        };
+                        body = Body::from(representation);
+                    } else {
+                        // 1.10.2
+                        // 1.10.2.1
+                        let did_doc_meta_opt = match content_meta {
+                            ContentMetadata::DIDDocument(meta) => Some(meta),
+                            ContentMetadata::Other(map) if map.is_empty() => None,
+                            _ => {
+                                return Self::response(
+                                    StatusCode::NOT_ACCEPTABLE,
+                                    format!(
+                                    "Expected content-metadata to be a DID Document metadata structure, but found: {:?}", content_meta
+                                ),
+                                )
+                                .await;
+                            }
+                        };
+                        let result = ResolutionResult {
+                            did_document: Some(did_doc),
+                            did_resolution_metadata: Some(deref_meta.clone().into()),
+                            did_document_metadata: did_doc_meta_opt,
+                            ..Default::default()
+                        };
+                        // 1.10.2.3
+                        let content_type = match TYPE_DID_RESOLUTION.parse() {
+                            Ok(content_type) => content_type,
+                            Err(err) => {
+                                return Self::response(
+                                    StatusCode::BAD_REQUEST,
+                                    format!("Unable to parse Content-Type: {}", err),
+                                )
+                                .await;
+                            }
+                        };
+                        parts.headers.insert(CONTENT_TYPE, content_type);
+
+                        // 1.10.2.4
+                        let result_data = match serde_json::to_vec(&result) {
+                            Ok(data) => data,
+                            Err(err) => {
+                                return Self::response(
+                                    StatusCode::INTERNAL_SERVER_ERROR,
+                                    format!("Unable to serialize resolution result: {}", err),
+                                )
+                                .await;
+                            }
+                        };
+                        body = Body::from(result_data);
+                    }
+                }
+                Content::URL(url) => {
+                    // 1.11
+                    parts.status = StatusCode::SEE_OTHER;
+                    let location = match url.parse() {
+                        Ok(location) => location,
+                        Err(err) => {
+                            return Self::response(
+                                StatusCode::BAD_REQUEST,
+                                format!("Unable to parse service endpoint URL: {}", err),
+                            )
+                            .await;
+                        }
+                    };
+                    parts.headers.insert(LOCATION, location);
+                }
+                Content::Object(object) => {
+                    let object_data = match serde_json::to_vec(&object) {
+                        Ok(data) => data,
+                        Err(err) => {
+                            return Self::response(
+                                StatusCode::INTERNAL_SERVER_ERROR,
+                                format!("Unable to serialize dereferenced object: {}", err),
+                            )
+                            .await;
+                        }
+                    };
+                    body = Body::from(object_data);
+                }
+                Content::Null => {}
+            };
+            let response = Response::from_parts(parts, body);
+            Ok(response)
+        })
+    }
 }
 
 impl Service<Request<Body>> for DIDKitHTTPSvc {
@@ -347,14 +538,18 @@ impl Service<Request<Body>> for DIDKitHTTPSvc {
     }
 
     fn call(&mut self, req: Request<Body>) -> Self::Future {
-        let _accept = req.headers().get(ACCEPT);
-        match req.uri().path() {
-            "/issue/credentials" => self.issue_credentials(req),
-            "/verify/credentials" => self.verify_credentials(req),
-            "/prove/presentations" => self.prove_presentations(req),
-            "/verify/presentations" => self.verify_presentations(req),
-            _ => self.not_found(),
+        let path = req.uri().path();
+        match path {
+            "/issue/credentials" => return self.issue_credentials(req),
+            "/verify/credentials" => return self.verify_credentials(req),
+            "/prove/presentations" => return self.prove_presentations(req),
+            "/verify/presentations" => return self.verify_presentations(req),
+            _ => {}
+        };
+        if path.starts_with("/identifiers/") {
+            return self.resolve_dereference(req);
         }
+        self.not_found()
     }
 }
 
