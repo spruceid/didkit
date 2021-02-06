@@ -12,10 +12,11 @@ use tokio::runtime::Runtime;
 
 use did_key::DIDKey;
 use didkit::{
-    dereference, get_verification_method, DIDMethod, DereferencingInputMetadata, Error,
-    LinkedDataProofOptions, Metadata, ProofPurpose, ResolutionInputMetadata, ResolutionResult,
-    Source, VerifiableCredential, VerifiablePresentation, DID_METHODS, JWK,
+    dereference, get_verification_method, DIDMethod, DIDResolver, DereferencingInputMetadata,
+    Error, LinkedDataProofOptions, Metadata, ProofPurpose, ResolutionInputMetadata,
+    ResolutionResult, Source, VerifiableCredential, VerifiablePresentation, DID_METHODS, JWK,
 };
+use didkit_cli::opts::ResolverOptions;
 
 #[derive(StructOpt, Debug)]
 pub enum DIDKit {
@@ -54,6 +55,8 @@ pub enum DIDKit {
         #[structopt(short = "i", name = "name=value")]
         /// DID resolution input metadata
         input_metadata: Vec<MetadataProperty>,
+        #[structopt(flatten)]
+        resolver_options: ResolverOptions,
     },
     /// Dereference a DID URL to a resource.
     DIDDereference {
@@ -64,6 +67,8 @@ pub enum DIDKit {
         #[structopt(short = "i", name = "name=value")]
         /// DID dereferencing input metadata
         input_metadata: Vec<MetadataProperty>,
+        #[structopt(flatten)]
+        resolver_options: ResolverOptions,
     },
     /*
     /// Update a DID Document’s authentication.
@@ -87,6 +92,8 @@ pub enum DIDKit {
     VCVerifyCredential {
         #[structopt(flatten)]
         proof_options: ProofOptions,
+        #[structopt(flatten)]
+        resolver_options: ResolverOptions,
     },
     /// Issue Presentation
     VCIssuePresentation {
@@ -97,6 +104,8 @@ pub enum DIDKit {
     },
     /// Verify Presentation
     VCVerifyPresentation {
+        #[structopt(flatten)]
+        resolver_options: ResolverOptions,
         #[structopt(flatten)]
         proof_options: ProofOptions,
     },
@@ -332,14 +341,17 @@ fn main() {
             serde_json::to_writer(stdout_writer, &credential).unwrap();
         }
 
-        DIDKit::VCVerifyCredential { proof_options } => {
+        DIDKit::VCVerifyCredential {
+            proof_options,
+            resolver_options,
+        } => {
+            let resolver = resolver_options.to_resolver();
             let credential_reader = BufReader::new(stdin());
             let credential: VerifiableCredential =
                 serde_json::from_reader(credential_reader).unwrap();
             let options = LinkedDataProofOptions::from(proof_options);
             credential.validate_unsigned().unwrap();
-            let resolver = DID_METHODS.to_resolver();
-            let result = rt.block_on(credential.verify(Some(options), resolver));
+            let result = rt.block_on(credential.verify(Some(options), &resolver));
             let stdout_writer = BufWriter::new(stdout());
             serde_json::to_writer(stdout_writer, &result).unwrap();
             if result.errors.len() > 0 {
@@ -361,14 +373,17 @@ fn main() {
             serde_json::to_writer(stdout_writer, &presentation).unwrap();
         }
 
-        DIDKit::VCVerifyPresentation { proof_options } => {
+        DIDKit::VCVerifyPresentation {
+            proof_options,
+            resolver_options,
+        } => {
+            let resolver = resolver_options.to_resolver();
             let presentation_reader = BufReader::new(stdin());
             let presentation: VerifiablePresentation =
                 serde_json::from_reader(presentation_reader).unwrap();
             let options = LinkedDataProofOptions::from(proof_options);
             presentation.validate_unsigned().unwrap();
-            let resolver = DID_METHODS.to_resolver();
-            let result = rt.block_on(presentation.verify(Some(options), resolver));
+            let result = rt.block_on(presentation.verify(Some(options), &resolver));
             let stdout_writer = BufWriter::new(stdout());
             serde_json::to_writer(stdout_writer, &result).unwrap();
             if result.errors.len() > 0 {
@@ -380,8 +395,9 @@ fn main() {
             did,
             with_metadata,
             input_metadata,
+            resolver_options,
         } => {
-            let resolver = DID_METHODS.to_resolver();
+            let resolver = resolver_options.to_resolver();
             let res_input_meta_value = metadata_properties_to_value(input_metadata).unwrap();
             let res_input_meta: ResolutionInputMetadata =
                 serde_json::from_value(res_input_meta_value).unwrap();
@@ -415,8 +431,9 @@ fn main() {
             did_url,
             with_metadata,
             input_metadata,
+            resolver_options,
         } => {
-            let resolver = DID_METHODS.to_resolver();
+            let resolver = resolver_options.to_resolver();
             let deref_input_meta_value = metadata_properties_to_value(input_metadata).unwrap();
             let deref_input_meta: DereferencingInputMetadata =
                 serde_json::from_value(deref_input_meta_value).unwrap();

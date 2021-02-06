@@ -8,6 +8,7 @@ edition = "2018"
 default = ["ring"]
 ring = ["ssi/ring"]
 wasm = []
+http-did = ["ssi/http-did"]
 
 [dependencies]
 #didkit_cbindings = { path = "cbindings/" }

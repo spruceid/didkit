@@ -11,9 +11,12 @@ extern crate lazy_static;
 pub use crate::did_methods::DID_METHODS;
 pub use crate::error::Error;
 pub use ssi::did::{DIDMethod, Document, Source};
+#[cfg(feature = "http-did")]
+pub use ssi::did_resolve::HTTPDIDResolver;
 pub use ssi::did_resolve::{
-    dereference, Content, ContentMetadata, DIDResolver, DereferencingInputMetadata, Metadata,
-    ResolutionInputMetadata, ResolutionResult,
+    dereference, Content, ContentMetadata, DIDResolver, DereferencingInputMetadata,
+    DocumentMetadata, Metadata, ResolutionInputMetadata, ResolutionMetadata, ResolutionResult,
+    SeriesResolver,
 };
 pub use ssi::jwk::JWK;
 pub use ssi::ldp::resolve_key;
