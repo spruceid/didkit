@@ -15,7 +15,7 @@ didkit = { path = "../lib", features = ["did-web"] }
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
 structopt = "0.3"
-async-std = { version = "1.5", features = ["attributes"] }
+async-std = { version = "1.9", features = ["attributes"] }
 did-key = { path = "../../ssi/did-key" }
 ssi = { path = "../../ssi", default-features = false }
 
