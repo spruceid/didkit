@@ -48,13 +48,15 @@ The proof type is set automatically based on the key file provided. JWK paramete
 
 #### Options
 
-Options besides `--key-path` correspond to linked data [proof options][] as specified in [ld-proofs][] and [vc-http-api][].
+- `-r, --did-resolver <url>` - [DID resolver HTTP(S) endpoint][did-resolution-https-binding], used for DID resolution and DID URL dereferencing for non-built-in DID Methods. Equivalent to environmental variable `DID_RESOLVER`.
+- `-k, --key-path <key>` (required, conflicts with jwk) - Filename of JWK for signing.
+
+The following options correspond to linked data [proof options][] as specified in [ld-proofs][] and [vc-http-api][]:
 
 - `-C, --challenge <challenge>` - [challenge][] property of the proof
 - `-c, --created <created>` - [created][] property of the proof. ISO8601 datetime. Defaults to the current time.
   time.
 - `-d, --domain <domain>` - [domain][] property of the proof
-- `-k, --key-path <key>` (required, conflicts with jwk) - Filename of JWK for signing.
 - `-j, --jwk <jwk>` (required, conflicts with key-path) - JWK for signing.
 - `-p, --proof-purpose <proof-purpose>` [proofPurpose][] property of the proof.
 - `-v, --verification-method <verification-method>` [verificationMethod][]
@@ -73,7 +75,9 @@ Corresponds to [/verify/credentials](https://w3c-ccg.github.io/vc-http-api/#/Ver
 
 #### Options
 
-Options are linked data [proof options][] as specified in [ld-proofs][] and [vc-http-api][]. If there is more than one proof present, at least one must pass all the requirements passed in the options.
+- `-r, --did-resolver <url>` - [DID resolver HTTP(S) endpoint][did-resolution-https-binding], used for DID resolution and DID URL dereferencing for non-built-in DID Methods. Equivalent to environmental variable `DID_RESOLVER`.
+
+The following options are linked data [proof options][] as specified in [ld-proofs][] and [vc-http-api][]. If there is more than one proof present, at least one must pass all the requirements passed in the options.
 
 - `-C, --challenge <challenge>` - The [challenge][] property of the proof must
   equal this value.
@@ -128,6 +132,7 @@ Resolve a DID to a DID document, according to [DID Resolution][did-resolution].
 #### Options
 - `-m, --with-metadata` - Return a the resolved DID document with resolution metadata and document metadata, in a [DID Resolution Result][did-resolution-result] object.
 - `-i <name=value>` - A [DID Resolution input metadata][did-resolution-input-metadata] property. If `=` is omitted, boolean `true` is used as the value, otherwise, value is a string. May be repeated to add multiple properties. If used multiple times with the same `name`, the values are combined into an array value to form a single property.
+- `-r, --did-resolver <url>` - [DID resolver HTTP(S) endpoint][did-resolution-https-binding], used for DID resolution and DID URL dereferencing for non-built-in DID Methods. Equivalent to environmental variable `DID_RESOLVER`.
 
 #### Output
 Returns the resolved DID document, optionally with metadata.
@@ -149,6 +154,7 @@ Dereference a DID URL to a resource, as in [did-core - DID URL Dereferencing][di
 #### Options
 - `-m, --with-metadata` - Return the resulting resource with resolution metadata and document metadata, in a [DID Resolution Result][did-resolution-result] object.
 - `-i <name=value>` - A [DID URL Dereferencing input metadata][did-url-dereferencing-input-metadata] property. If `=` is omitted, boolean `true` is used as the value, otherwise, value is a string. May be repeated to add multiple properties. If used multiple times with the same `name`, the values are combined into an array value to form a single property.
+- `-r, --did-resolver <url>` - [DID resolver HTTP(S) endpoint][did-resolution-https-binding], used for DID resolution and DID URL dereferencing for non-built-in DID Methods. Equivalent to environmental variable `DID_RESOLVER`.
 
 #### Output
 Returns the resource dereferenced from the DID URL, optionally with metadata.
@@ -195,3 +201,4 @@ See the included [shell script](tests/example.sh).
 [did-url-dereferencing]: https://w3c.github.io/did-core/#did-url-dereferencing
 [did-url-dereferencing-metadata]: https://w3c.github.io/did-core/#did-url-dereferencing-metadata-properties
 [did-url-dereferencing-input-metadata]: https://w3c.github.io/did-core/#did-url-dereferencing-input-metadata-properties
+[did-resolution-https-binding]: https://w3c-ccg.github.io/did-resolution/#bindings-https

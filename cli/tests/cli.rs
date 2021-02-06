@@ -166,3 +166,167 @@ fn didkit_cli() {
     assert_ne!(deref_vec[1], Value::Null);
     assert_ne!(deref_vec[2], Value::Null);
 }
+
+#[tokio::test]
+async fn resolver_option() {
+    use serde_json::json;
+    use ssi::did_resolve::TYPE_DID_RESOLUTION;
+    use ssi::jsonld::DID_RESOLUTION_V1_CONTEXT;
+    use std::collections::HashMap;
+    fn did_resolver_server(
+        results: HashMap<String, (Option<String>, Value)>,
+    ) -> Result<(String, impl FnOnce() -> Result<(), ()>), hyper::Error> {
+        use hyper::header::CONTENT_TYPE;
+        use hyper::service::{make_service_fn, service_fn};
+        use hyper::{Body, Response, Server, StatusCode};
+        let addr = ([127, 0, 0, 1], 0).into();
+        let make_svc = make_service_fn(move |_| {
+            let results = results.clone();
+            async move {
+                Ok::<_, hyper::Error>(service_fn(move |req| {
+                    let results = results.clone();
+                    let uri = req.uri();
+                    // skip root "/" to get requested DID or DID URL
+                    let path: String = uri.path().chars().skip(1).collect();
+                    let url = percent_encoding::percent_decode(path.as_bytes())
+                        .decode_utf8()
+                        .unwrap()
+                        .to_string();
+                    async move {
+                        if let Some((type_opt, result)) = results.get(&url) {
+                            let body = Body::from(serde_json::to_vec_pretty(&result).unwrap());
+                            let mut response = Response::new(body);
+                            if let Some(content_type) = type_opt {
+                                response
+                                    .headers_mut()
+                                    .insert(CONTENT_TYPE, content_type.parse().unwrap());
+                            }
+                            return Ok::<_, hyper::Error>(response);
+                        }
+
+                        let body = Body::from(Vec::new());
+                        let response = Response::builder()
+                            .status(StatusCode::NOT_FOUND)
+                            .header(CONTENT_TYPE, "application/json")
+                            .body(body)
+                            .unwrap();
+                        return Ok::<_, hyper::Error>(response);
+                    }
+                }))
+            }
+        });
+        let server = Server::try_bind(&addr)?.serve(make_svc);
+        let url = "http://".to_string() + &server.local_addr().to_string() + "/";
+        let (shutdown_tx, shutdown_rx) = futures::channel::oneshot::channel();
+        let graceful = server.with_graceful_shutdown(async {
+            shutdown_rx.await.ok();
+        });
+        tokio::task::spawn(async move {
+            graceful.await.ok();
+        });
+        let shutdown = || shutdown_tx.send(());
+        Ok((url, shutdown))
+    }
+
+    let mut results = HashMap::new();
+    results.insert(
+        "did:example:empty".to_string(),
+        (
+            Some(TYPE_DID_RESOLUTION.to_string()),
+            json!({
+                "@context": DID_RESOLUTION_V1_CONTEXT,
+                "didDocument": {
+                  "@context": ["https://www.w3.org/ns/did/v1"],
+                  "id": "did:example:empty"
+                },
+                "didDocumentMetadata": {},
+                "didResolutionMetadata": {}
+            }),
+        ),
+    );
+    results.insert(
+        "did:example:thing".to_string(),
+        (
+            Some(TYPE_DID_RESOLUTION.to_string()),
+            json!({
+                "@context": DID_RESOLUTION_V1_CONTEXT,
+                "didDocument": {
+                    "@context": ["https://www.w3.org/ns/did/v1"],
+                    "id": "did:example:thing",
+                    "verificationMethod": [{
+                        "id": "did:example:thing#key1",
+                        "controller": "did:example:thing",
+                        "type": "Ed25519VerificationKey2018",
+                        "publicKeyJwk": {
+                          "kty": "OKP",
+                          "crv": "Ed25519",
+                          "x": "PBcY2yJ4h_cLUnQNcYhplu9KQQBNpGxP4sYcMPdlu6I"
+                        }
+                    }]
+                },
+                "didDocumentMetadata": {},
+                "didResolutionMetadata": {
+                    "contentType": "application/did+ld+json"
+                }
+            }),
+        ),
+    );
+    results.insert(
+        "did:example:thing/path".to_string(),
+        (
+            Some("application/ld+json".to_string()),
+            json!({
+                "@id": "did:example:thing/path",
+            }),
+        ),
+    );
+    let (endpoint, shutdown) = did_resolver_server(results).unwrap();
+
+    // Resolve DID with -r option for fallback HTTP resolver
+    use tokio::process::Command;
+    let resolve = Command::new(BIN)
+        .args(&["did-resolve", "-r", &endpoint, "did:example:empty"])
+        .stdout(Stdio::piped())
+        .spawn()
+        .unwrap()
+        .wait_with_output()
+        .await
+        .unwrap();
+    let resolve_result_string = String::from_utf8(resolve.stdout).unwrap();
+    eprintln!("resolve: {}", resolve_result_string);
+    assert!(resolve.status.success());
+
+    // Resolve DID URL with -r option for fallback HTTP resolver
+    // Dereference secondary resource client-side
+    let deref = Command::new(BIN)
+        .args(&["did-dereference", "-r", &endpoint, "did:example:thing#key1"])
+        .stdout(Stdio::piped())
+        .spawn()
+        .unwrap()
+        .wait_with_output()
+        .await
+        .unwrap();
+    let deref_result_string = String::from_utf8(deref.stdout).unwrap();
+    eprintln!("dereference: {}", deref_result_string);
+    assert!(deref.status.success());
+    let deref_result: Value = serde_json::from_str(&deref_result_string).unwrap();
+    assert_eq!(deref_result["id"], json!("did:example:thing#key1"));
+
+    // Resolve DID URL with -r option for fallback HTTP resolver
+    // DID URL with path
+    let deref = Command::new(BIN)
+        .args(&["did-dereference", "-r", &endpoint, "did:example:thing/path"])
+        .stdout(Stdio::piped())
+        .spawn()
+        .unwrap()
+        .wait_with_output()
+        .await
+        .unwrap();
+    let deref_result_string = String::from_utf8(deref.stdout).unwrap();
+    eprintln!("dereference with path: {}", deref_result_string);
+    assert!(deref.status.success());
+    let deref_result: Value = serde_json::from_str(&deref_result_string).unwrap();
+    assert_eq!(deref_result, json!({"@id": "did:example:thing/path"}));
+
+    shutdown().ok();
+}
