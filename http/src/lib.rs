@@ -520,6 +520,9 @@ impl DIDKitHTTPSvc {
                     };
                     body = Body::from(object_data);
                 }
+                Content::Data(data) => {
+                    body = Body::from(data);
+                }
                 Content::Null => {}
             };
             let response = Response::from_parts(parts, body);
