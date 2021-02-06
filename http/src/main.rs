@@ -6,6 +6,7 @@ use hyper::Server;
 use structopt::StructOpt;
 
 use didkit::JWK;
+use didkit_cli::opts::ResolverOptions;
 use didkit_http::DIDKitHTTPMakeSvc;
 use didkit_http::Error;
 
@@ -20,6 +21,8 @@ pub struct DIDKitHttpOpts {
     /// JWK to use for issuing
     #[structopt(flatten)]
     key: KeyArg,
+    #[structopt(flatten)]
+    resolver_options: ResolverOptions,
 }
 
 #[derive(StructOpt, Debug)]
@@ -59,7 +62,7 @@ async fn main() -> Result<(), Error> {
     let opt = DIDKitHttpOpts::from_args();
 
     let keys = opt.key.get_jwks();
-    let makesvc = DIDKitHTTPMakeSvc::new(keys);
+    let makesvc = DIDKitHTTPMakeSvc::new(keys, opt.resolver_options);
     let host = opt.host.unwrap_or([127, 0, 0, 1].into());
     let addr = (host, opt.port.unwrap_or(0)).into();
 

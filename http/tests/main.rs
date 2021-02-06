@@ -1,6 +1,7 @@
 use std::str::FromStr;
 
 use didkit::{Document, JWK};
+use didkit_cli::opts::ResolverOptions;
 use didkit_http::DIDKitHTTPMakeSvc;
 use didkit_http::VerifyCredentialResponse;
 use didkit_http::VerifyPresentationResponse;
@@ -49,7 +50,8 @@ fn serve(other_keys: Option<Vec<JWK>>) -> (String, impl FnOnce() -> ()) {
     if let Some(mut other_keys) = other_keys {
         keys.append(&mut other_keys);
     }
-    let makesvc = DIDKitHTTPMakeSvc::new(keys);
+    let resolver_options = ResolverOptions::default();
+    let makesvc = DIDKitHTTPMakeSvc::new(keys, resolver_options);
     let addr = ([127, 0, 0, 1], 0).into();
     let server = Server::bind(&addr).serve(makesvc);
     let url = "http://".to_string() + &server.local_addr().to_string();
