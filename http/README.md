@@ -27,6 +27,7 @@ and runs until interrupted.
 - `-k, --key <key>`   - Filename of a JWK to use for issuing credentials and
   presentations.
 - `-j, --jwk <jwk>`   - JWK to use for issuing credentials and presentations.
+- `-r, --did-resolver <url>` - [DID resolver HTTP(S) endpoint][did-resolution-https-binding] URL to use for resolving DIDs and dereferencing DID URLs that the built-in resolver does not support. Equivalent to environmental variable `DID_RESOLVER`.
 
 #### Issuer keys
 
@@ -72,3 +73,4 @@ Resolve a DID to a DID document, or dereference a DID URL to a resource. Paramet
 [did-http]: https://w3c-ccg.github.io/did-resolution/#bindings-https
 [vc-http-api]: https://w3c-ccg.github.io/vc-http-api/
 [vc-http-api-0.0.1]: https://github.com/w3c-ccg/vc-http-api/pull/72
+[did-resolution-https-binding]: https://w3c-ccg.github.io/did-resolution/#bindings-https

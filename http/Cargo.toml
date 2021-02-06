@@ -9,7 +9,8 @@ default = ["ring"]
 ring = ["ssi/ring"]
 
 [dependencies]
-didkit = { path = "../lib", features = ["did-web"] }
+didkit = { path = "../lib", features = ["did-web", "http-did"] }
+didkit-cli = { path = "../cli" }
 tokio = { version = "1.0", features = ["macros", "rt-multi-thread"] }
 structopt = "0.3"
 serde = { version = "1.0", features = ["derive"] }

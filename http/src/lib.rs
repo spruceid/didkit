@@ -9,8 +9,9 @@ use didkit::resolve_key;
 use didkit::{
     dereference as dereference_did_url, Content, ContentMetadata, DIDResolver,
     DereferencingInputMetadata, LinkedDataProofOptions, ProofPurpose, ResolutionResult,
-    VerifiableCredential, VerifiablePresentation, VerificationResult, DID_METHODS, JWK,
+    VerifiableCredential, VerifiablePresentation, VerificationResult, JWK,
 };
+use didkit_cli::opts::ResolverOptions;
 use ssi::did_resolve::{
     ERROR_INVALID_DID, ERROR_NOT_FOUND, ERROR_REPRESENTATION_NOT_SUPPORTED, TYPE_DID_LD_JSON,
     TYPE_DID_RESOLUTION,
@@ -71,6 +72,7 @@ type KeyMap = HashMap<JWK, JWK>;
 
 pub struct DIDKitHTTPSvc {
     keys: KeyMap,
+    resolver_options: ResolverOptions,
 }
 
 pub async fn pick_key<'a>(
@@ -96,8 +98,11 @@ pub async fn pick_key<'a>(
 }
 
 impl DIDKitHTTPSvc {
-    pub fn new(keys: KeyMap) -> Self {
-        Self { keys }
+    pub fn new(keys: KeyMap, resolver_options: ResolverOptions) -> Self {
+        Self {
+            keys,
+            resolver_options,
+        }
     }
 
     pub fn response(
@@ -190,6 +195,7 @@ impl DIDKitHTTPSvc {
             return resp;
         };
         let keys = self.keys.clone();
+        let resolver_options = self.resolver_options.clone();
         Box::pin(async move {
             let body_reader = hyper::body::aggregate(req).await?.reader();
             let issue_req: IssueCredentialRequest = match serde_json::from_reader(body_reader) {
@@ -199,8 +205,8 @@ impl DIDKitHTTPSvc {
                 }
             };
             let options = issue_req.options.unwrap_or_default();
-            let resolver = DID_METHODS.to_resolver();
-            let key = match pick_key(&keys, &options, resolver).await {
+            let resolver = resolver_options.to_resolver();
+            let key = match pick_key(&keys, &options, &resolver).await {
                 Some(key) => key,
                 None => return Self::missing_key().await,
             };
@@ -234,6 +240,7 @@ impl DIDKitHTTPSvc {
         if let Some(resp) = self.ensure_accept_json(&req) {
             return resp;
         };
+        let resolver_options = self.resolver_options.clone();
         Box::pin(async move {
             let body_reader = hyper::body::aggregate(req).await?.reader();
             let verify_req: VerifyCredentialRequest = match serde_json::from_reader(body_reader) {
@@ -243,8 +250,8 @@ impl DIDKitHTTPSvc {
                 }
             };
             let credential = verify_req.verifiable_credential;
-            let resolver = DID_METHODS.to_resolver();
-            let result = credential.verify(verify_req.options, resolver).await;
+            let resolver = resolver_options.to_resolver();
+            let result = credential.verify(verify_req.options, &resolver).await;
             let body = Body::from(serde_json::to_vec_pretty(&result)?);
             Response::builder()
                 .status(match result.errors.is_empty() {
@@ -271,6 +278,7 @@ impl DIDKitHTTPSvc {
             return resp;
         };
         let keys = self.keys.clone();
+        let resolver_options = self.resolver_options.clone();
         Box::pin(async move {
             let body_reader = hyper::body::aggregate(req).await?.reader();
             let issue_req: ProvePresentationRequest = match serde_json::from_reader(body_reader) {
@@ -285,8 +293,8 @@ impl DIDKitHTTPSvc {
                 options
             });
             let mut presentation = issue_req.presentation;
-            let resolver = DID_METHODS.to_resolver();
-            let key = match pick_key(&keys, &options, resolver).await {
+            let resolver = resolver_options.to_resolver();
+            let key = match pick_key(&keys, &options, &resolver).await {
                 Some(key) => key,
                 None => return Self::missing_key().await,
             };
@@ -319,6 +327,7 @@ impl DIDKitHTTPSvc {
         if let Some(resp) = self.ensure_accept_json(&req) {
             return resp;
         };
+        let resolver_options = self.resolver_options.clone();
         Box::pin(async move {
             let body_reader = hyper::body::aggregate(req).await?.reader();
             let verify_req: VerifyPresentationRequest = match serde_json::from_reader(body_reader) {
@@ -328,8 +337,8 @@ impl DIDKitHTTPSvc {
                 }
             };
             let presentation = verify_req.verifiable_presentation;
-            let resolver = DID_METHODS.to_resolver();
-            let result = presentation.verify(verify_req.options, resolver).await;
+            let resolver = resolver_options.to_resolver();
+            let result = presentation.verify(verify_req.options, &resolver).await;
             let body = Body::from(serde_json::to_vec_pretty(&result)?);
             Response::builder()
                 .header(CONTENT_TYPE, "application/json")
@@ -378,8 +387,8 @@ impl DIDKitHTTPSvc {
         if deref_input_meta.accept.is_none() && http_accept.is_some() {
             deref_input_meta.accept = http_accept;
         };
+        let resolver_options = self.resolver_options.clone();
         Box::pin(async move {
-            let resolver = DID_METHODS.to_resolver();
             let uri = req.uri();
             let path: String = uri.path().chars().skip(13).collect();
             let did_url = match percent_decode(path.as_bytes()).decode_utf8() {
@@ -392,9 +401,10 @@ impl DIDKitHTTPSvc {
                     .await;
                 }
             };
+            let resolver = resolver_options.to_resolver();
             // skip root "/identifiers/" to get DID
             let (deref_meta, content, content_meta) =
-                dereference_did_url(resolver, &did_url, &deref_input_meta).await;
+                dereference_did_url(&resolver, &did_url, &deref_input_meta).await;
             let (mut parts, mut body) = Response::<Body>::default().into_parts();
             if let Some(ref error) = deref_meta.error {
                 // 1.6, 1.7, 1.8
@@ -558,15 +568,17 @@ impl Service<Request<Body>> for DIDKitHTTPSvc {
 
 pub struct DIDKitHTTPMakeSvc {
     keys: KeyMap,
+    resolver_options: ResolverOptions,
 }
 
 impl DIDKitHTTPMakeSvc {
-    pub fn new(keys: Vec<JWK>) -> Self {
+    pub fn new(keys: Vec<JWK>, resolver_options: ResolverOptions) -> Self {
         Self {
             keys: keys.into_iter().fold(KeyMap::new(), |mut map, key| {
                 map.insert(key.to_public(), key);
                 map
             }),
+            resolver_options,
         }
     }
 }
@@ -582,7 +594,8 @@ impl<T> Service<T> for DIDKitHTTPMakeSvc {
 
     fn call(&mut self, _: T) -> Self::Future {
         let keys = self.keys.clone();
-        let fut = async move { Ok(DIDKitHTTPSvc::new(keys)) };
+        let resolver_options = self.resolver_options.clone();
+        let fut = async move { Ok(DIDKitHTTPSvc::new(keys, resolver_options)) };
         Box::pin(fut)
     }
 }
