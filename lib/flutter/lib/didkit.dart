@@ -1,4 +1,4 @@
-library DIDKit;
+library didkit;
 
 import 'dart:ffi';
 import 'dart:io';
@@ -6,7 +6,7 @@ import 'package:ffi/ffi.dart';
 
 // TODO: support macOS, Windows
 final DynamicLibrary lib = Platform.isAndroid || Platform.isLinux
-  ? DynamicLibrary.open("libdidkit.so")
+  ? DynamicLibrary.open('libdidkit.so')
   : DynamicLibrary.process();
 
 final get_version = lib
@@ -46,8 +46,10 @@ class DIDKitException implements Exception {
   int code;
   String message;
   DIDKitException(this.code, this.message);
+
+  @override
   String toString() {
-    return "DIDKitException ($code): $message";
+    return 'DIDKitException ($code): $message';
   }
 }
 
@@ -55,10 +57,10 @@ DIDKitException lastError() {
   final code = get_error_code();
   final message_utf8 = get_error_message();
   final message_string = message_utf8.address == nullptr.address
-    ? "Unable to get error message"
+    ? 'Unable to get error message'
     : Utf8.fromUtf8(message_utf8);
 
-  return new DIDKitException(code, message_string);
+  return DIDKitException(code, message_string);
 }
 
 class DIDKit {
@@ -77,7 +79,7 @@ class DIDKit {
 
   @Deprecated('Use [keyToDID]')
   static String keyToDIDKey(String key) {
-    final did_key = key_to_did(Utf8.toUtf8("key"), Utf8.toUtf8(key));
+    final did_key = key_to_did(Utf8.toUtf8('key'), Utf8.toUtf8(key));
     if (did_key.address == nullptr.address) throw lastError();
     final did_key_string = Utf8.fromUtf8(did_key);
     free_string(did_key);
