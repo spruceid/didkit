@@ -1,12 +1,12 @@
 use std::ptr;
 
-use async_std::task::block_on;
 use jni::objects::{JClass, JString};
 use jni::sys::jstring;
 use jni::JNIEnv;
 
 use crate::error::Error;
 use crate::get_verification_method;
+use crate::runtime;
 use crate::LinkedDataProofOptions;
 use crate::ResolutionResult;
 use crate::Source;
@@ -94,7 +94,9 @@ fn key_to_verification_method(
         .generate(&Source::Key(&key))
         .ok_or(Error::UnableToGenerateDID)?;
     let did_resolver = did_method.to_resolver();
-    let verification_method = block_on(get_verification_method(&did, did_resolver))
+    let rt = runtime::get()?;
+    let verification_method = rt
+        .block_on(get_verification_method(&did, did_resolver))
         .ok_or(Error::UnableToGetVerificationMethod)?;
     Ok(env.new_string(verification_method).unwrap().into_inner())
 }
@@ -124,7 +126,8 @@ fn issue_credential(
     let mut credential = VerifiableCredential::from_json_unsigned(&credential_json)?;
     let key: JWK = serde_json::from_str(&key_json)?;
     let options: LinkedDataProofOptions = serde_json::from_str(&linked_data_proof_options_json)?;
-    let proof = block_on(credential.generate_proof(&key, &options))?;
+    let rt = runtime::get()?;
+    let proof = rt.block_on(credential.generate_proof(&key, &options))?;
     credential.add_proof(proof);
     let vc_json = serde_json::to_string(&credential)?;
     Ok(env.new_string(vc_json).unwrap().into_inner())
@@ -154,7 +157,8 @@ fn verify_credential(
     let vc = VerifiableCredential::from_json_unsigned(&vc_json)?;
     let options: LinkedDataProofOptions = serde_json::from_str(&linked_data_proof_options_json)?;
     let resolver = DID_METHODS.to_resolver();
-    let result = block_on(vc.verify(Some(options), resolver));
+    let rt = runtime::get()?;
+    let result = rt.block_on(vc.verify(Some(options), resolver));
     let result_json = serde_json::to_string(&result)?;
     Ok(env.new_string(result_json).unwrap().into_inner())
 }
@@ -184,7 +188,8 @@ fn issue_presentation(
     let mut presentation = VerifiablePresentation::from_json_unsigned(&presentation_json)?;
     let key: JWK = serde_json::from_str(&key_json)?;
     let options: LinkedDataProofOptions = serde_json::from_str(&linked_data_proof_options_json)?;
-    let proof = block_on(presentation.generate_proof(&key, &options))?;
+    let rt = runtime::get()?;
+    let proof = rt.block_on(presentation.generate_proof(&key, &options))?;
     presentation.add_proof(proof);
     let vp_json = serde_json::to_string(&presentation)?;
     Ok(env.new_string(vp_json).unwrap().into_inner())
@@ -214,7 +219,8 @@ fn verify_presentation(
     let vp = VerifiablePresentation::from_json_unsigned(&vp_json)?;
     let options: LinkedDataProofOptions = serde_json::from_str(&linked_data_proof_options_json)?;
     let resolver = DID_METHODS.to_resolver();
-    let result = block_on(vp.verify(Some(options), resolver));
+    let rt = runtime::get()?;
+    let result = rt.block_on(vp.verify(Some(options), resolver));
     let result_json = serde_json::to_string(&result)?;
     Ok(env.new_string(result_json).unwrap().into_inner())
 }
@@ -242,7 +248,8 @@ fn resolve_did(
     };
     let input_metadata: ResolutionInputMetadata = serde_json::from_str(&input_metadata_json)?;
     let resolver = DID_METHODS.to_resolver();
-    let (res_meta, doc_opt, doc_meta_opt) = block_on(resolver.resolve(&did, &input_metadata));
+    let rt = runtime::get()?;
+    let (res_meta, doc_opt, doc_meta_opt) = rt.block_on(resolver.resolve(&did, &input_metadata));
     let result = ResolutionResult {
         did_document: doc_opt,
         did_resolution_metadata: Some(res_meta),
@@ -276,7 +283,8 @@ fn dereference_did_url(
     };
     let input_metadata: DereferencingInputMetadata = serde_json::from_str(&input_metadata_json)?;
     let resolver = DID_METHODS.to_resolver();
-    let deref_result = block_on(dereference(resolver, &did_url, &input_metadata));
+    let rt = runtime::get()?;
+    let deref_result = rt.block_on(dereference(resolver, &did_url, &input_metadata));
     let result_json = serde_json::to_string(&deref_result)?;
     Ok(env.new_string(result_json).unwrap().into_inner())
 }

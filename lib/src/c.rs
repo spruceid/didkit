@@ -1,4 +1,3 @@
-use async_std::task::block_on;
 use std::ffi::CStr;
 use std::ffi::CString;
 use std::os::raw::c_char;
@@ -8,6 +7,7 @@ use crate::error::Error;
 #[cfg(doc)]
 use crate::error::{didkit_error_code, didkit_error_message};
 use crate::get_verification_method;
+use crate::runtime;
 use crate::LinkedDataProofOptions;
 use crate::Source;
 use crate::VerifiableCredential;
@@ -99,7 +99,9 @@ fn key_to_verification_method(
         .generate(&Source::Key(&key))
         .ok_or(Error::UnableToGenerateDID)?;
     let did_resolver = did_method.to_resolver();
-    let vm = block_on(get_verification_method(&did, did_resolver))
+    let rt = runtime::get()?;
+    let vm = rt
+        .block_on(get_verification_method(&did, did_resolver))
         .ok_or(Error::UnableToGetVerificationMethod)?;
     Ok(CString::new(vm)?.into_raw())
 }
@@ -128,7 +130,8 @@ fn issue_credential(
     let mut credential = VerifiableCredential::from_json_unsigned(credential_json)?;
     let key: JWK = serde_json::from_str(key_json)?;
     let options: LinkedDataProofOptions = serde_json::from_str(linked_data_proof_options_json)?;
-    let proof = block_on(credential.generate_proof(&key, &options))?;
+    let rt = runtime::get()?;
+    let proof = rt.block_on(credential.generate_proof(&key, &options))?;
     credential.add_proof(proof);
     Ok(CString::new(serde_json::to_string(&credential)?)?.into_raw())
 }
@@ -160,7 +163,8 @@ fn verify_credential(
         unsafe { CStr::from_ptr(linked_data_proof_options_json_ptr) }.to_str()?;
     let credential = VerifiableCredential::from_json_unsigned(credential_json)?;
     let options: LinkedDataProofOptions = serde_json::from_str(linked_data_proof_options_json)?;
-    let result = block_on(credential.verify(Some(options), DID_METHODS.to_resolver()));
+    let rt = runtime::get()?;
+    let result = rt.block_on(credential.verify(Some(options), DID_METHODS.to_resolver()));
     Ok(CString::new(serde_json::to_string(&result)?)?.into_raw())
 }
 #[no_mangle]
@@ -196,7 +200,8 @@ fn issue_presentation(
     let mut presentation = VerifiablePresentation::from_json_unsigned(presentation_json)?;
     let key: JWK = serde_json::from_str(key_json)?;
     let options: LinkedDataProofOptions = serde_json::from_str(linked_data_proof_options_json)?;
-    let proof = block_on(presentation.generate_proof(&key, &options))?;
+    let rt = runtime::get()?;
+    let proof = rt.block_on(presentation.generate_proof(&key, &options))?;
     presentation.add_proof(proof);
     Ok(CString::new(serde_json::to_string(&presentation)?)?.into_raw())
 }
@@ -228,7 +233,8 @@ fn verify_presentation(
         unsafe { CStr::from_ptr(linked_data_proof_options_json_ptr) }.to_str()?;
     let presentation = VerifiablePresentation::from_json_unsigned(presentation_json)?;
     let options: LinkedDataProofOptions = serde_json::from_str(linked_data_proof_options_json)?;
-    let result = block_on(presentation.verify(Some(options), DID_METHODS.to_resolver()));
+    let rt = runtime::get()?;
+    let result = rt.block_on(presentation.verify(Some(options), DID_METHODS.to_resolver()));
     Ok(CString::new(serde_json::to_string(&result)?)?.into_raw())
 }
 #[no_mangle]
@@ -264,7 +270,8 @@ fn resolve_did(
     };
     let input_metadata: ResolutionInputMetadata = serde_json::from_str(input_metadata_json)?;
     let resolver = DID_METHODS.to_resolver();
-    let (res_meta, doc_opt, doc_meta_opt) = block_on(resolver.resolve(did, &input_metadata));
+    let rt = runtime::get()?;
+    let (res_meta, doc_opt, doc_meta_opt) = rt.block_on(resolver.resolve(did, &input_metadata));
     let result = ResolutionResult {
         did_document: doc_opt,
         did_resolution_metadata: Some(res_meta),
@@ -300,7 +307,8 @@ fn dereference_did_url(
     };
     let input_metadata: DereferencingInputMetadata = serde_json::from_str(input_metadata_json)?;
     let resolver = DID_METHODS.to_resolver();
-    let deref_result = block_on(dereference(resolver, did_url, &input_metadata));
+    let rt = runtime::get()?;
+    let deref_result = rt.block_on(dereference(resolver, did_url, &input_metadata));
     use serde_json::json;
     let result = json!(deref_result);
     Ok(CString::new(serde_json::to_string(&result)?)?.into_raw())

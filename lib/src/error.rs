@@ -7,6 +7,7 @@ use std::ptr;
 
 use serde_json::Error as JSONError;
 use ssi::error::Error as SSIError;
+use std::io::Error as IOError;
 use std::str::Utf8Error;
 
 static UNKNOWN_ERROR: &str = "Unable to create error string\0";
@@ -22,6 +23,7 @@ pub enum Error {
     Null(NulError),
     Utf8(Utf8Error),
     Borrow(BorrowError),
+    IO(IOError),
     UnableToGenerateDID,
     UnknownDIDMethod,
     UnableToGetVerificationMethod,
@@ -113,6 +115,12 @@ impl From<NulError> for Error {
 impl From<Utf8Error> for Error {
     fn from(err: Utf8Error) -> Error {
         Error::Utf8(err)
+    }
+}
+
+impl From<IOError> for Error {
+    fn from(err: IOError) -> Error {
+        Error::IO(err)
     }
 }
 

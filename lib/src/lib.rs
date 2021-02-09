@@ -4,6 +4,8 @@ mod did_methods;
 pub mod error;
 #[cfg(not(feature = "wasm"))]
 pub mod jni;
+#[cfg(not(feature = "wasm"))]
+pub mod runtime;
 
 #[macro_use]
 extern crate lazy_static;

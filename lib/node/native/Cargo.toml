@@ -19,4 +19,4 @@ didkit = { path = "../../", default-features = false }
 neon = "0.6.0"
 neon-serde = { git = "https://github.com/theosirian/neon-serde" }
 serde = "1.0"
-async-std = "1.8"
+tokio = { version = "1.0", features = ["rt-multi-thread"] }
