@@ -13,5 +13,4 @@ default-members = [
   "cli",
   "lib",
   "lib/cbindings",
-  "lib/node/native"
 ]
