@@ -1,11 +1,10 @@
 use neon::prelude::*;
 
-use async_std::task::block_on;
-
 use didkit::error::Error as DIDKitError;
 #[cfg(doc)]
 use didkit::error::{didkit_error_code, didkit_error_message};
 use didkit::get_verification_method;
+use didkit::runtime;
 use didkit::LinkedDataProofOptions;
 use didkit::Source;
 use didkit::VerifiableCredential;
@@ -60,10 +59,10 @@ pub fn key_to_verification_method(mut cx: FunctionContext) -> JsResult<JsString>
             .ok_or(DIDKitError::UnableToGenerateDID)
     )?;
     let did_resolver = did_method.to_resolver();
+    let rt = throws!(cx, runtime::get())?;
     let vm = throws!(
         cx,
-        block_on(get_verification_method(&did, did_resolver)
-            )
+        rt.block_on(get_verification_method(&did, did_resolver))
             .ok_or(DIDKitError::UnableToGetVerificationMethod)
     )?;
     Ok(cx.string(vm))
@@ -74,7 +73,8 @@ pub fn issue_credential(mut cx: FunctionContext) -> JsResult<JsValue> {
     let options = arg!(cx, 1, LinkedDataProofOptions);
     let key = arg!(cx, 2, JWK);
 
-    let proof = throws!(cx, block_on(credential.generate_proof(&key, &options)))?;
+    let rt = throws!(cx, runtime::get())?;
+    let proof = throws!(cx, rt.block_on(credential.generate_proof(&key, &options)))?;
     credential.add_proof(proof);
 
     let vc = throws!(cx, neon_serde::to_value(&mut cx, &credential))?;
@@ -85,7 +85,8 @@ pub fn verify_credential(mut cx: FunctionContext) -> JsResult<JsValue> {
     let vc = arg!(cx, 0, VerifiableCredential);
     let options = arg!(cx, 1, LinkedDataProofOptions);
 
-    let result = block_on(vc.verify(Some(options), DID_METHODS.to_resolver()));
+    let rt = throws!(cx, runtime::get())?;
+    let result = rt.block_on(vc.verify(Some(options), DID_METHODS.to_resolver()));
     let result = throws!(cx, neon_serde::to_value(&mut cx, &result))?;
     Ok(result)
 }
@@ -95,7 +96,8 @@ pub fn issue_presentation(mut cx: FunctionContext) -> JsResult<JsValue> {
     let options = arg!(cx, 1, LinkedDataProofOptions);
     let key = arg!(cx, 2, JWK);
 
-    let proof = throws!(cx, block_on(presentation.generate_proof(&key, &options)))?;
+    let rt = throws!(cx, runtime::get())?;
+    let proof = throws!(cx, rt.block_on(presentation.generate_proof(&key, &options)))?;
     presentation.add_proof(proof);
 
     let vp = throws!(cx, neon_serde::to_value(&mut cx, &presentation))?;
@@ -106,7 +108,8 @@ pub fn verify_presentation(mut cx: FunctionContext) -> JsResult<JsValue> {
     let vp = arg!(cx, 0, VerifiablePresentation);
     let options = arg!(cx, 1, LinkedDataProofOptions);
 
-    let result = block_on(vp.verify(Some(options), DID_METHODS.to_resolver()));
+    let rt = throws!(cx, runtime::get())?;
+    let result = rt.block_on(vp.verify(Some(options), DID_METHODS.to_resolver()));
     let result = throws!(cx, neon_serde::to_value(&mut cx, &result))?;
     Ok(result)
 }

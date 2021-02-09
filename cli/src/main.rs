@@ -8,13 +8,13 @@ use chrono::prelude::*;
 use serde::Serialize;
 use serde_json::Value;
 use structopt::{clap::AppSettings, clap::ArgGroup, StructOpt};
-use tokio::runtime::Runtime;
 
 use did_key::DIDKey;
 use didkit::{
-    dereference, get_verification_method, DIDMethod, DIDResolver, DereferencingInputMetadata,
-    Error, LinkedDataProofOptions, Metadata, ProofPurpose, ResolutionInputMetadata,
-    ResolutionResult, Source, VerifiableCredential, VerifiablePresentation, DID_METHODS, JWK,
+    dereference, get_verification_method, runtime, DIDMethod, DIDResolver,
+    DereferencingInputMetadata, Error, LinkedDataProofOptions, Metadata, ProofPurpose,
+    ResolutionInputMetadata, ResolutionResult, Source, VerifiableCredential,
+    VerifiablePresentation, DID_METHODS, JWK,
 };
 use didkit_cli::opts::ResolverOptions;
 
@@ -267,7 +267,7 @@ mod tests {
 }
 
 fn main() {
-    let rt = Runtime::new().unwrap();
+    let rt = runtime::get().unwrap();
     let opt = DIDKit::from_args();
     match opt {
         DIDKit::GenerateEd25519Key => {
