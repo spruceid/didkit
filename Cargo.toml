@@ -7,3 +7,11 @@ members = [
   "lib/node/native",
   "lib/wasm"
 ]
+
+default-members = [
+  "http",
+  "cli",
+  "lib",
+  "lib/cbindings",
+  "lib/node/native"
+]

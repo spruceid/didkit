@@ -47,7 +47,7 @@ $ git clone https://github.com/spruceid/ssi ../ssi --recurse-submodules
 
 Build DIDKit using [Cargo][]:
 ```sh
-$ cargo build --workspace --exclude didkit-wasm
+$ cargo build
 ```
 That will give you the DIDKit CLI and HTTP server executables located at
 `target/debug/didkit` and `target/debug/didkit-http`, respectively. You can also build and install DIDKit's components separately. Building the FFI libraries will require additional dependencies. See the corresponding readmes linked below for more info.

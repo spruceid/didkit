@@ -50,10 +50,10 @@ jobs:
         default: true
 
     - name: Build
-      run: cargo build --verbose --workspace --exclude didkit-wasm
+      run: cargo build --verbose
 
     - name: Test
-      run: cargo build --verbose --workspace --exclude didkit-wasm
+      run: cargo test --verbose
 
     - name: Test CLI
       run: cli/tests/example.sh
