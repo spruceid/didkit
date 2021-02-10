@@ -14,7 +14,7 @@ crate-type = ["cdylib"]
 neon-build = "0.6.0"
 
 [dependencies]
-ssi = { path = "../../../../ssi" }
+ssi = { path = "../../../../ssi", default-features = false, features = ["ed25519-dalek", "sha2", "rsa", "rand"] }
 didkit = { path = "../../", default-features = false }
 neon = "0.6.0"
 neon-serde = { git = "https://github.com/theosirian/neon-serde" }

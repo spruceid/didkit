@@ -21,6 +21,9 @@ final get_error_code = lib
 final generate_ed25519_key = lib
   .lookupFunction<Pointer<Utf8> Function(), Pointer<Utf8> Function()>('didkit_vc_generate_ed25519_key');
 
+final generate_ed25519_key_from_secret = lib
+  .lookupFunction<Pointer<Utf8> Function(Pointer<Utf8>), Pointer<Utf8> Function(Pointer<Utf8>)>('didkit_vc_generate_ed25519_key_from_secret');
+
 final key_to_did = lib
   .lookupFunction<Pointer<Utf8> Function(Pointer<Utf8>, Pointer<Utf8>), Pointer<Utf8> Function(Pointer<Utf8>, Pointer<Utf8>)>('didkit_key_to_did');
 
@@ -77,6 +80,14 @@ class DIDKit {
 
   static String generateEd25519Key() {
     final key = generate_ed25519_key();
+    if (key.address == nullptr.address) throw lastError();
+    final key_string = Utf8.fromUtf8(key);
+    free_string(key);
+    return key_string;
+  }
+
+  static String generateEd25519KeyFromSecret(String secret) {
+    final key = generate_ed25519_key_from_secret(Utf8.toUtf8(secret));
     if (key.address == nullptr.address) throw lastError();
     final key_string = Utf8.fromUtf8(key);
     free_string(key);

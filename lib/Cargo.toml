@@ -5,14 +5,14 @@ authors = ["Charles E. Lehner <charles.lehner@spruceid.com>"]
 edition = "2018"
 
 [features]
-default = ["ring"]
+default = []
 ring = ["ssi/ring"]
 wasm = []
 http-did = ["ssi/http-did"]
 
 [dependencies]
 #didkit_cbindings = { path = "cbindings/" }
-ssi = { path = "../../ssi", default-features = false }
+ssi = { path = "../../ssi", default-features = false, features = ["ed25519-dalek", "sha2", "rsa", "rand"] }
 did-key = { path = "../../ssi/did-key" }
 did-tezos = { path = "../../ssi/did-tezos" }
 did-web = { path = "../../ssi/did-web", optional = true }

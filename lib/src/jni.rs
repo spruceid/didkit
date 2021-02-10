@@ -52,6 +52,25 @@ pub extern "system" fn Java_com_spruceid_DIDKit_generateEd25519Key(
     jstring_or_error(&env, generate_ed25519_key(&env))
 }
 
+fn generate_ed25519_key_from_secret(
+    env: &JNIEnv,
+    secret_jstring: JString,
+) -> Result<jstring, Error> {
+    let secret: String = env.get_string(secret_jstring).unwrap().into();
+    let jwk = JWK::generate_ed25519_from_secret(&secret)?;
+    let jwk_json = serde_json::to_string(&jwk)?;
+    Ok(env.new_string(jwk_json).unwrap().into_inner())
+}
+
+#[no_mangle]
+pub extern "system" fn Java_com_spruceid_DIDKit_generateEd25519KeyFromSecret(
+    env: JNIEnv,
+    _class: JClass,
+    secret: JString,
+) -> jstring {
+    jstring_or_error(&env, generate_ed25519_key_from_secret(&env, secret))
+}
+
 fn key_to_did(
     env: &JNIEnv,
     method_name_jstring: JString,

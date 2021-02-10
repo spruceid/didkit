@@ -54,6 +54,22 @@ pub extern "C" fn didkit_vc_generate_ed25519_key() -> *const c_char {
     ccchar_or_error(generate_ed25519_key())
 }
 
+// Generate Ed25519 key from a secret
+fn generate_ed25519_key_from_secret(secret_ptr: *const c_char) -> Result<*const c_char, Error> {
+    let secret = unsafe { CStr::from_ptr(secret_ptr) }.to_str()?;
+    let jwk = JWK::generate_ed25519_from_secret(secret)?;
+    Ok(CString::new(serde_json::to_string(&jwk)?)?.into_raw())
+}
+/// Generate a new Ed25519 keypair in JWK format from a secret. On success, returns a pointer to a
+/// newly-allocated string containing the JWK. The string must be freed with [`didkit_free_string`]. On
+/// failure, returns `NULL`; the error message can be retrieved with [`didkit_error_message`].
+#[no_mangle]
+pub extern "C" fn didkit_vc_generate_ed25519_key_from_secret(
+    secret: *const c_char,
+) -> *const c_char {
+    ccchar_or_error(generate_ed25519_key_from_secret(secret))
+}
+
 // Convert JWK to did:key DID
 fn key_to_did(
     method_name_ptr: *const c_char,

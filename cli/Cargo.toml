@@ -5,7 +5,7 @@ authors = ["Charles E. Lehner <charles.lehner@spruceid.com>"]
 edition = "2018"
 
 [features]
-default = ["ring"]
+default = []
 ring = ["ssi/ring"]
 
 [dependencies]
@@ -17,7 +17,7 @@ serde_json = "1.0"
 structopt = "0.3"
 async-std = { version = "1.9", features = ["attributes"] }
 did-key = { path = "../../ssi/did-key" }
-ssi = { path = "../../ssi", default-features = false }
+ssi = { path = "../../ssi", default-features = false, features = ["ed25519-dalek", "sha2", "rsa", "rand"] }
 
 [dev-dependencies]
 tokio = { version = "1.0", features = ["macros", "process"] }
