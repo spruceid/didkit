@@ -111,10 +111,11 @@ IOS_LIBS=\
 	$(TARGET)/aarch64-apple-ios/release/libdidkit.a \
 	$(TARGET)/x86_64-apple-ios/release/libdidkit.a
 
-$(TARGET)/test/ios.stamp: $(TARGET)/libdidkit.a | $(TARGET)/test
+$(TARGET)/test/ios.stamp: $(TARGET)/universal/release/libdidkit.a | $(TARGET)/test
 	touch $@
 
-$(TARGET)/libdidkit.a: $(IOS_LIBS)
+$(TARGET)/universal/release/libdidkit.a: $(IOS_LIBS)
+	mkdir -p $(TARGET)/universal/release
 	lipo -create $^ -output $@
 
 $(TARGET)/%/release/libdidkit.a: $(RUST_SRC)
