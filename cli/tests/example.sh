@@ -5,6 +5,10 @@
 # Exit if any command in the script fails.
 set -e
 
+# Allow issuing using a DID method other than did:key
+did_method=${DID_METHOD:-key}
+# More info about did:key: https://w3c-ccg.github.io/did-method-key/
+
 # Pretty-print JSON using jq or json_pp if available.
 print_json() {
 	file=${1?file}
@@ -35,14 +39,13 @@ else
 fi
 echo
 
-# Get the keypair's did:key DID.
-# More info about did:key: https://w3c-ccg.github.io/did-method-key/
-did=$(didkit key-to-did key -k key.jwk)
+# Get the keypair's DID.
+did=$(didkit key-to-did "$did_method" -k key.jwk)
 printf 'DID: %s\n\n' "$did"
 
 # Get verificationMethod for keypair.
 # This is used to identify the key in linked data proofs.
-verification_method=$(didkit key-to-verification-method key -k key.jwk)
+verification_method=$(didkit key-to-verification-method "$did_method" -k key.jwk)
 printf 'verificationMethod: %s\n\n' "$verification_method"
 
 # Prepare credential for issuing.
