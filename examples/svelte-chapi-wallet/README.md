@@ -32,16 +32,18 @@ If everything succeeds, you can proceed to the next step.
 
 ## Running
 
-Now we have to install the NPM dependencies of this example project with:
+Install the `npm` dependencies of this example project using
+[Yarn](https://yarnpkg.com/) with:
 
 ```bash
-npm install
+$ cd examples/svelte-chapi-wallet
+$ yarn install
 ```
 
 The run the app in development mode with:
 
 ```bash
-npm run dev
+$ yarn run dev
 ```
 
 You should now be able to see the app running on
@@ -52,10 +54,10 @@ You should now be able to see the app running on
 To create an optimised version of the app:
 
 ```bash
-npm run build
+$ yarn run build
 ```
 
-You can run the newly built app with `npm run start`. This uses
+You can run the newly built app with `yarn run start`. This uses
 [sirv](https://github.com/lukeed/sirv), which is included in your
-package.json's `dependencies` so that the app will work when you deploy to
-platforms like [Heroku](https://heroku.com).
+package.json's `dependencies` so the app will function when deployed to
+platforms such as [Heroku](https://heroku.com).
