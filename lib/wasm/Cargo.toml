@@ -21,7 +21,15 @@ features = ["wasm"]
 [dependencies.ssi]
 path = "../../../ssi"
 default-features = false
-features = ["ed25519-dalek", "sha2", "rsa", "rand"]
+features = ["ed25519-dalek", "sha2", "rsa", "rand", "libsecp256k1"]
+
+[dependencies.did-key]
+path = "../../../ssi/did-key"
+features = ["secp256k1"]
+
+[dependencies.did-tezos]
+path = "../../../ssi/did-tezos"
+features = ["secp256k1"]
 
 [dev-dependencies]
 wasm-bindgen-test = "0.2"
