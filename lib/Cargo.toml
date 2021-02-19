@@ -9,6 +9,7 @@ default = ["ring"]
 ring = ["ssi/ring"]
 wasm = []
 http-did = ["ssi/http-did"]
+secp256k1 = ["ssi/libsecp256k1", "did-tezos/secp256k1", "did-key/secp256k1"]
 
 [dependencies]
 #didkit_cbindings = { path = "cbindings/" }
