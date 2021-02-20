@@ -37,9 +37,6 @@ packages.
 
 DIDKit is written in [Rust][]. To get Rust, you can use [Rustup][].
 
-We depend on some Rust nightly features. When installing with Rustup, pick the nightly release channel. Or run `rustup default nightly` to switch to it.
-([More info][installing-rust])
-
 Spruce's [ssi][] library must be cloned alongside the `didkit` repository:
 ```sh
 $ git clone https://github.com/spruceid/ssi ../ssi --recurse-submodules
@@ -96,4 +93,3 @@ DIDKit can be used in any of the following ways:
 [rustup]: https://rustup.rs/
 [Cargo]: https://doc.rust-lang.org/cargo/
 [ssi]: https://github.com/spruceid/ssi
-[installing-rust]: https://doc.rust-lang.org/nightly/edition-guide/rust-2018/rustup-for-managing-rust-versions.html
