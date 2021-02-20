@@ -22,6 +22,7 @@ pub use ssi::did_resolve::{
 };
 pub use ssi::jwk::JWK;
 pub use ssi::ldp::resolve_key;
+pub use ssi::ldp::ProofPreparation;
 pub use ssi::vc::get_verification_method;
 pub use ssi::vc::Credential as VerifiableCredential;
 pub use ssi::vc::LinkedDataProofOptions;
