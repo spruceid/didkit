@@ -29,7 +29,7 @@ jobs:
       with:
         repository: spruceid/ssi
         path: ssi
-        ref: 000be6ba9ade255df529a6555016f9b4ae516eca
+        ref: a160cad6217864b7164012aa12e4bf9924c42073
 
     - name: Cache Cargo registry and build artifacts
       uses: actions/cache@v2
