@@ -163,4 +163,36 @@ fi
 echo 'Dereferenced DID URL for verification method:'
 print_json vm.json
 
+# Authenticate with a DID
+if ! challenge=$(awk 'BEGIN { srand(); print rand() }')
+then
+	echo 'Unable to create challenge.'
+	exit 1
+fi
+if ! didkit did-auth \
+	-k key.jwk \
+	-h "$did" \
+	-p authentication \
+	-C "$challenge" \
+	-v "$verification_method" \
+	> auth.jsonld
+then
+	echo 'Unable to create DIDAuth response'
+	exit 1
+fi
+
+# Verify DID auth
+if ! didkit vc-verify-presentation \
+	-p authentication \
+	-C "$challenge" \
+	< auth.jsonld \
+	> auth-verify-result.json
+then
+	echo 'Unable to verify DIDAuth presentation:'
+	print_json auth-verify-result.json
+	exit 1
+fi
+echo 'Verified DIDAuth verifiable presentation:'
+print_json auth-verify-result.json
+
 echo Done

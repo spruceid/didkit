@@ -223,6 +223,38 @@ pub extern "C" fn didkit_vc_issue_presentation(
     ))
 }
 
+// Issue Presentation (DIDAuth)
+fn did_auth(
+    holder_ptr: *const c_char,
+    linked_data_proof_options_json_ptr: *const c_char,
+    key_json_ptr: *const c_char,
+) -> Result<*const c_char, Error> {
+    let holder = unsafe { CStr::from_ptr(holder_ptr) }.to_str()?;
+    let linked_data_proof_options_json =
+        unsafe { CStr::from_ptr(linked_data_proof_options_json_ptr) }.to_str()?;
+    let key_json = unsafe { CStr::from_ptr(key_json_ptr) }.to_str()?;
+    let mut presentation = VerifiablePresentation::default();
+    presentation.holder = Some(ssi::vc::URI::String(holder.to_string()));
+    let key: JWK = serde_json::from_str(key_json)?;
+    let options: LinkedDataProofOptions = serde_json::from_str(linked_data_proof_options_json)?;
+    let rt = runtime::get()?;
+    let proof = rt.block_on(presentation.generate_proof(&key, &options))?;
+    presentation.add_proof(proof);
+    Ok(CString::new(serde_json::to_string(&presentation)?)?.into_raw())
+}
+#[no_mangle]
+/// Issue a Verifiable Presentation for [DIDAuth](https://w3c-ccg.github.io/vp-request-spec/#did-authentication-request). Input parameters are the holder URI as a C string, and JSON C strings for the linked data proof options and the JWK for signing. On success,
+/// a newly-issued verifiable presentation is returned as a newly-allocated C string. The
+/// returned string should be freed using [`didkit_free_string`]. On failure, `NULL` is returned, and the
+/// error message can be retrieved using [`didkit_error_message`].
+pub extern "C" fn didkit_did_auth(
+    holder: *const c_char,
+    linked_data_proof_options_json: *const c_char,
+    key_json: *const c_char,
+) -> *const c_char {
+    ccchar_or_error(did_auth(holder, linked_data_proof_options_json, key_json))
+}
+
 // Verify Presentation
 fn verify_presentation(
     presentation_json_ptr: *const c_char,

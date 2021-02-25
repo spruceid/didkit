@@ -19,6 +19,7 @@ register_module!(mut m, {
 
     m.export_function("issuePresentation", didkit::issue_presentation)?;
     m.export_function("verifyPresentation", didkit::verify_presentation)?;
+    m.export_function("DIDAuth", didkit::did_auth)?;
 
     Ok(())
 });

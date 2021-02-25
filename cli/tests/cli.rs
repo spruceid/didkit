@@ -165,6 +165,43 @@ fn didkit_cli() {
     assert_eq!(deref_vec[0]["didResolutionMetadata"]["error"], Value::Null);
     assert_ne!(deref_vec[1], Value::Null);
     assert_ne!(deref_vec[2], Value::Null);
+
+    // Create DIDAuth verifiable presentation
+    let mut issue_presentation = Command::new(BIN)
+        .args(&[
+            "did-auth",
+            "-k",
+            "tests/ed25519-key.jwk",
+            "-h",
+            &did.to_string(),
+            "-v",
+            &verification_method.trim(),
+            "-p",
+            "authentication",
+        ])
+        .stdin(Stdio::piped())
+        .stdout(Stdio::piped())
+        .stderr(Stdio::inherit())
+        .spawn()
+        .unwrap();
+    let issue_stdin = issue_presentation.stdin.as_mut().unwrap();
+    serde_json::to_writer(issue_stdin, &presentation).unwrap();
+    let issue_output = issue_presentation.wait_with_output().unwrap();
+    assert!(issue_output.status.success());
+    let vp = issue_output.stdout;
+
+    // Verify DIDAuth presentation
+    let mut verify_presentation = Command::new(BIN)
+        .args(&["vc-verify-presentation", "-p", "authentication"])
+        .stdin(Stdio::piped())
+        .stdout(Stdio::piped())
+        .stderr(Stdio::inherit())
+        .spawn()
+        .unwrap();
+    let verify_stdin = verify_presentation.stdin.as_mut().unwrap();
+    verify_stdin.write_all(&vp).unwrap();
+    let verify_output = verify_presentation.wait_with_output().unwrap();
+    assert!(verify_output.status.success());
 }
 
 #[tokio::test]

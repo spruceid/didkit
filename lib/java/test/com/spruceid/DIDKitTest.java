@@ -76,5 +76,21 @@ class DIDKitTest {
         // Dereference DID URL
         String dereferencingResult = DIDKit.dereferenceDIDURL(verificationMethod, "{}");
         assert vpResult.startsWith("[{");
+
+        // Create a DIDAuth VP
+        vpOptions = "{"
+            + "  \"proofPurpose\": \"authentication\","
+            + "  \"domain\": \"example.org\","
+            + "  \"verificationMethod\": \"" + verificationMethod + "\""
+            + "}";
+        vp = DIDKit.DIDAuth(did, vpOptions, jwk);
+
+        // Verify Presentation
+        vpVerifyOptions = "{"
+            + "  \"domain\": \"example.org\","
+            + "  \"proofPurpose\": \"authentication\""
+            + "}";
+        vpResult = DIDKit.verifyPresentation(vp, vpVerifyOptions);
+        assert vpResult.contains("\"errors\":[]");
     }
 }

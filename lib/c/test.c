@@ -1,7 +1,9 @@
 #include <assert.h>
 #include <err.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
+#include <time.h>
 
 #include "didkit.h"
 
@@ -96,6 +98,30 @@ int main() {
     if (result == NULL) errx(1, "Dereference DID URL: %s", didkit_error_message());
     if (strncmp(result, "[{", 2) != 0) errx(1, "DID dereferencing result: %s", result);
     didkit_free_string(result);
+
+    // Generate a DIDAuth Verifiable Presentation.
+    // Prepare challenge and domain for VP request
+    srand(time(NULL));
+    int challenge = rand();
+    // Generate VP
+    snprintf(vp_options, sizeof vp_options, "{"
+            "  \"proofPurpose\": \"authentication\","
+            "  \"verificationMethod\": \"%s\","
+            "  \"challenge\": \"%d\""
+            "}", verification_method, challenge);
+    vp = didkit_did_auth(did, vp_options, key);
+    if (vp == NULL) errx(1, "DIDAuth: %s", didkit_error_message());
+
+    // Verify Presentation
+    char didauth_vp_verify_options[0x1000];
+    snprintf(vp_options, sizeof vp_options, "{"
+            "  \"proofPurpose\": \"authentication\","
+            "  \"challenge\": \"%d\""
+            "}", challenge);
+    res = didkit_vc_verify_presentation(vp, vp_verify_options);
+    if (res == NULL) errx(1, "verify DIDAuth: %s", didkit_error_message());
+    if (strstr(res, "\"errors\":[]") == NULL) errx(1, "verify DIDAuth result: %s", res);
+    didkit_free_string(res);
 
     didkit_free_string(verification_method);
     didkit_free_string(did);
