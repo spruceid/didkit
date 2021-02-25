@@ -45,6 +45,9 @@ final resolve_did = lib
 final dereference_did_url = lib
   .lookupFunction<Pointer<Utf8> Function(Pointer<Utf8>, Pointer<Utf8>), Pointer<Utf8> Function(Pointer<Utf8>, Pointer<Utf8>)>('didkit_did_url_dereference');
 
+final did_auth = lib
+  .lookupFunction<Pointer<Utf8> Function(Pointer<Utf8>, Pointer<Utf8>, Pointer<Utf8>), Pointer<Utf8> Function(Pointer<Utf8>, Pointer<Utf8>, Pointer<Utf8>)>('didkit_did_auth');
+
 final free_string = lib
   .lookupFunction<Void Function(Pointer<Utf8>), void Function(Pointer<Utf8>)>('didkit_free_string');
 
@@ -154,6 +157,14 @@ class DIDKit {
     final result_string = Utf8.fromUtf8(result);
     free_string(result);
     return result_string;
+  }
+
+  static String DIDAuth(String did, String options, String key) {
+    final vp = did_auth(Utf8.toUtf8(did), Utf8.toUtf8(options), Utf8.toUtf8(key));
+    if (vp.address == nullptr.address) throw lastError();
+    final vp_string = Utf8.fromUtf8(vp);
+    free_string(vp);
+    return vp_string;
   }
 
 }

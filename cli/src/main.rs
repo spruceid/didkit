@@ -70,6 +70,15 @@ pub enum DIDKit {
         #[structopt(flatten)]
         resolver_options: ResolverOptions,
     },
+    /// Authenticate with a DID.
+    DIDAuth {
+        #[structopt(flatten)]
+        key: KeyArg,
+        #[structopt(short = "h", long)]
+        holder: String,
+        #[structopt(flatten)]
+        proof_options: ProofOptions,
+    },
     /*
     /// Update a DID Document’s authentication.
     DIDUpdateAuthentication {},
@@ -455,6 +464,23 @@ fn main() {
                 let content_vec = content.into_vec().unwrap();
                 stdout().write_all(&content_vec).unwrap();
             }
+        }
+
+        DIDKit::DIDAuth {
+            key,
+            holder,
+            proof_options,
+        } => {
+            let key: JWK = key.get_jwk();
+            let mut presentation = VerifiablePresentation::default();
+            presentation.holder = Some(ssi::vc::URI::String(holder));
+            let options = LinkedDataProofOptions::from(proof_options);
+            let proof = rt
+                .block_on(presentation.generate_proof(&key, &options))
+                .unwrap();
+            presentation.add_proof(proof);
+            let stdout_writer = BufWriter::new(stdout());
+            serde_json::to_writer(stdout_writer, &presentation).unwrap();
         }
     }
 }

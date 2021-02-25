@@ -302,3 +302,42 @@ async fn verify_presentation(
 pub fn verifyPresentation(vp: String, linked_data_proof_options: String) -> Promise {
     map_async_jsvalue(verify_presentation(vp, linked_data_proof_options))
 }
+
+#[cfg(any(
+    all(feature = "issue", feature = "presentation"),
+    all(feature = "issue", not(feature = "credential")),
+    all(
+        feature = "presentation",
+        not(feature = "issue"),
+        not(feature = "verify")
+    )
+))]
+async fn did_auth(
+    holder: String,
+    linked_data_proof_options: String,
+    key: String,
+) -> Result<String, Error> {
+    let mut presentation = VerifiablePresentation::default();
+    presentation.holder = Some(ssi::vc::URI::String(holder));
+    let key: JWK = serde_json::from_str(&key)?;
+    let options: LinkedDataProofOptions = serde_json::from_str(&linked_data_proof_options)?;
+    let proof = presentation.generate_proof(&key, &options).await?;
+    presentation.add_proof(proof);
+    let vp_json = serde_json::to_string(&presentation)?;
+    Ok(vp_json)
+}
+
+#[wasm_bindgen]
+#[allow(non_snake_case)]
+#[cfg(any(
+    all(feature = "issue", feature = "presentation"),
+    all(feature = "issue", not(feature = "credential")),
+    all(
+        feature = "presentation",
+        not(feature = "issue"),
+        not(feature = "verify")
+    )
+))]
+pub fn DIDAuth(holder: String, linked_data_proof_options: String, key: String) -> Promise {
+    map_async_jsvalue(did_auth(holder, linked_data_proof_options, key))
+}

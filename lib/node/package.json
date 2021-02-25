@@ -15,7 +15,8 @@
     "eslint-plugin-prettier": "^3.3.1",
     "jest": "^26.6.3",
     "node-pre-gyp-github": "^1.4.3",
-    "prettier": "2.2.1"
+    "prettier": "2.2.1",
+    "uuid": "^8.3.2"
   },
   "scripts": {
     "build": "neon build",

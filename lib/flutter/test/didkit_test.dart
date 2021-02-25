@@ -2,6 +2,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:didkit/didkit.dart';
 import 'dart:convert';
+import 'package:uuid/uuid.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -44,5 +45,26 @@ void main() {
     final verificationMethod = DIDKit.keyToVerificationMethod("key", key);
     final derefResult = jsonDecode(DIDKit.dereferenceDIDURL(verificationMethod, "{}"));
     expect(derefResult, isList);
+  });
+
+  test('DIDAuth', () async {
+    final key = DIDKit.generateEd25519Key();
+    final did = DIDKit.keyToDID("key", key);
+    final verificationMethod = DIDKit.keyToVerificationMethod("key", key);
+
+    final challenge = Uuid().v4();
+    final proofOptions = jsonEncode({
+      'proofPurpose': 'assertionMethod',
+      'verificationMethod': verificationMethod,
+      'challenge': challenge
+    });
+    final vp = await DIDKit.DIDAuth(did, proofOptions, key);
+    final verifyOptions = jsonEncode({
+      'proofPurpose': 'assertionMethod',
+      'challenge': challenge
+    });
+    final verification = await DIDKit.verifyPresentation(vp, verifyOptions);
+    final verifyResult = jsonDecode(verification);
+    expect(verifyResult['errors'], isEmpty);
   });
 }

@@ -104,6 +104,22 @@ pub fn issue_presentation(mut cx: FunctionContext) -> JsResult<JsValue> {
     Ok(vp)
 }
 
+pub fn did_auth(mut cx: FunctionContext) -> JsResult<JsValue> {
+    let holder = arg!(cx, 0, String);
+    let options = arg!(cx, 1, LinkedDataProofOptions);
+    let key = arg!(cx, 2, JWK);
+
+    let mut presentation = VerifiablePresentation::default();
+    presentation.holder = Some(ssi::vc::URI::String(holder));
+
+    let rt = throws!(cx, runtime::get())?;
+    let proof = throws!(cx, rt.block_on(presentation.generate_proof(&key, &options)))?;
+    presentation.add_proof(proof);
+
+    let vp = throws!(cx, neon_serde::to_value(&mut cx, &presentation))?;
+    Ok(vp)
+}
+
 pub fn verify_presentation(mut cx: FunctionContext) -> JsResult<JsValue> {
     let vp = arg!(cx, 0, VerifiablePresentation);
     let options = arg!(cx, 1, LinkedDataProofOptions);

@@ -206,6 +206,40 @@ pub extern "system" fn Java_com_spruceid_DIDKit_issuePresentation(
     jstring_or_error(&env, issue_presentation(&env, presentation, options, key))
 }
 
+fn did_auth(
+    env: &JNIEnv,
+    holder_jstring: JString,
+    linked_data_proof_options_jstring: JString,
+    key_jstring: JString,
+) -> Result<jstring, Error> {
+    let holder: String = env.get_string(holder_jstring).unwrap().into();
+    let linked_data_proof_options_json: String = env
+        .get_string(linked_data_proof_options_jstring)
+        .unwrap()
+        .into();
+    let key_json: String = env.get_string(key_jstring).unwrap().into();
+    let mut presentation = VerifiablePresentation::default();
+    presentation.holder = Some(ssi::vc::URI::String(holder));
+    let key: JWK = serde_json::from_str(&key_json)?;
+    let options: LinkedDataProofOptions = serde_json::from_str(&linked_data_proof_options_json)?;
+    let rt = runtime::get()?;
+    let proof = rt.block_on(presentation.generate_proof(&key, &options))?;
+    presentation.add_proof(proof);
+    let vp_json = serde_json::to_string(&presentation)?;
+    Ok(env.new_string(vp_json).unwrap().into_inner())
+}
+
+#[no_mangle]
+pub extern "system" fn Java_com_spruceid_DIDKit_DIDAuth(
+    env: JNIEnv,
+    _class: JClass,
+    holder: JString,
+    options: JString,
+    key: JString,
+) -> jstring {
+    jstring_or_error(&env, did_auth(&env, holder, options, key))
+}
+
 fn verify_presentation(
     env: &JNIEnv,
     vp_jstring: JString,
