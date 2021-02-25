@@ -1,6 +1,11 @@
 # didkit/lib/Makefile
 
 TARGET=../target
+ifeq ($(OS),Windows_NT)
+	OS_NAME=Windows_NT
+else
+	OS_NAME=$(shell uname | tr '[:upper:]' '[:lower:]')
+endif
 
 .PHONY: test
 test: $(TARGET)/test/c.stamp \
@@ -75,7 +80,6 @@ ANDROID_TOOLS ?= $(lastword $(wildcard $(ANDROID_SDK_ROOT)/build-tools/*))
 ANDROID_NDK_HOME ?= $(lastword $(wildcard \
 					$(ANDROID_SDK_ROOT)/ndk/* \
 					$(ANDROID_SDK_ROOT)/ndk-bundle))
-OS_NAME=$(shell uname | tr '[:upper:]' '[:lower:]')
 TOOLCHAIN=$(ANDROID_NDK_HOME)/toolchains/llvm/prebuilt/$(OS_NAME)-x86_64
 ANDROID_LIBS=\
 	$(TARGET)/i686-linux-android/release/libdidkit.so\
@@ -149,8 +153,37 @@ install-wasm-pack:
 
 $(TARGET)/test/wasm.stamp: $(WASM_SRC) | $(TARGET)/test
 	cd wasm && wasm-pack build --target web
-	cd wasm/loader && npm install
-	cd wasm/loader && npm run build
+	npm --prefix wasm/loader install
+	npm --prefix wasm/loader run build
+	rm -f $(TARGET)/test/asmjs.stamp
+	touch $@ 
+
+## WASM-ASM-JS
+
+ASM_SRC=wasm/Cargo.toml wasm/asm/package.json wasm/asm/webpack.config.js wasm/asm/asm-loader.js $(WASM_SRC)
+
+BINARYEN_ROOT="$(HOME)/binaryen"
+
+$(TARGET)/test/asmjs.stamp: $(ASM_SRC) | $(TARGET)/test
+	cd wasm && wasm-pack build --target bundler
+	cd wasm/pkg && $(BINARYEN_ROOT)/bin/wasm2js --pedantic -o didkit_wasm_bg1.js didkit_wasm_bg.wasm
+ifeq ($(OS_NAME),linux)
+	sed -i '0,/didkit_wasm_bg.wasm/s//didkit_wasm_bg1.js/' wasm/pkg/didkit_wasm_bg.js
+else
+	sed -i '1,/didkit_wasm_bg.wasm/s//didkit_wasm_bg1.js/' wasm/pkg/didkit_wasm_bg.js
+endif
+	npm --prefix wasm/asm install
+	npm --prefix wasm/asm run build
+	rm -f $(TARGET)/test/wasm.stamp
+	touch $@ 
+
+## WASM-ASM-JS
+
+BINARYEN_ROOT="$(HOME)/binaryen"
+
+$(TARGET)/test/asmjs.stamp: $(WASM_SRC) | $(TARGET)/test
+	cd wasm && wasm-pack build --target bundler
+	cd wasm/pkg && $(BINARYEN_ROOT)/bin/wasm2js --pedantic -o didkit_wasm_bg1.js didkit_wasm_bg.wasm
 	touch $@ 
 
 ## Cleanup
