@@ -1,5 +1,3 @@
 node_modules
-asm-loader.min.js
-asm-loader.min.js.LICENSE.txt
-asm-loader.min.js.map
-dist
+didkit-asm.min.js
+didkit-output.js

@@ -160,30 +160,22 @@ $(TARGET)/test/wasm.stamp: $(WASM_SRC) | $(TARGET)/test
 
 ## WASM-ASM-JS
 
-ASM_SRC=wasm/Cargo.toml wasm/asm/package.json wasm/asm/webpack.config.js wasm/asm/asm-loader.js $(WASM_SRC)
+ASM_SRC=wasm/Cargo.toml wasm/asm/package.json wasm/asm/webpack.config.js $(WASM_SRC)
 
 BINARYEN_ROOT="$(HOME)/binaryen"
 
-$(TARGET)/test/asmjs.stamp: $(ASM_SRC) | $(TARGET)/test
+wasm/asm/didkit-output.js: $(ASM_SRC)
 	cd wasm && wasm-pack build --target bundler
 	cd wasm/pkg && $(BINARYEN_ROOT)/bin/wasm2js --pedantic -o didkit_wasm_bg1.js didkit_wasm_bg.wasm
-ifeq ($(OS_NAME),linux)
-	sed -i '0,/didkit_wasm_bg.wasm/s//didkit_wasm_bg1.js/' wasm/pkg/didkit_wasm_bg.js
-else
-	sed -i '1,/didkit_wasm_bg.wasm/s//didkit_wasm_bg1.js/' wasm/pkg/didkit_wasm_bg.js
-endif
+	cd wasm/asm && ./repack.sh
+
+wasm/asm/didkit-asm.min.js: wasm/asm/didkit-output.js
 	npm --prefix wasm/asm install
 	npm --prefix wasm/asm run build
+
+$(TARGET)/test/asmjs.stamp: wasm/asm/didkit-asm.min.js | $(TARGET)/test
+	npm --prefix wasm/asm run test
 	rm -f $(TARGET)/test/wasm.stamp
-	touch $@ 
-
-## WASM-ASM-JS
-
-BINARYEN_ROOT="$(HOME)/binaryen"
-
-$(TARGET)/test/asmjs.stamp: $(WASM_SRC) | $(TARGET)/test
-	cd wasm && wasm-pack build --target bundler
-	cd wasm/pkg && $(BINARYEN_ROOT)/bin/wasm2js --pedantic -o didkit_wasm_bg1.js didkit_wasm_bg.wasm
 	touch $@ 
 
 ## Cleanup
