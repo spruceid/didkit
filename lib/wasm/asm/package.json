@@ -11,7 +11,8 @@
   "module": "asm-loader.js",
   "sideEffects": false,
   "scripts": {
-    "build": "webpack --mode development"
+    "build": "webpack",
+    "test": "true"
   },
   "devDependencies": {
     "webpack": "^5.18.0",
