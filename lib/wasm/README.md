@@ -10,6 +10,7 @@ To install `wasm-pack` run:
 cargo install wasm-pack
 ```
 
+## ASM target
 For the ASM target the `wasm2js` build is necessary, to get this tool
 follow the steps in [binaryen](https://github.com/WebAssembly/binaryen#building).
 
@@ -22,9 +23,10 @@ To compile all features for ASM target:
 ```bash
 wasm-pack build --target bundler
 BINARYEN_ROOT/bin/wasm2js --pedantic -o didkit_wasm_bg1.js didkit_wasm_bg.wasm
-sed -i '0,/didkit_wasm_bg.wasm/s//didkit_wasm_bg1.js/' wasm/pkg/didkit_wasm_bg.js #if on macOS change 0 to 1
+./repack.sh
 npm install
 npm run build
+npm run test
 ```
 
 To compile all features plus `wasm32_c` on `ring`, a C compiler is needed, see
