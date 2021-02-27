@@ -5,3 +5,7 @@ key.jwk
 presentation-signed.jsonld
 presentation-unsigned.jsonld
 presentation-verify-result.json
+auth-verify-result.json
+auth.jsonld
+did.json
+vm.json
