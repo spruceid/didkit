@@ -28,7 +28,7 @@ cd "$(dirname "$0")"
 cargo build -p didkit-cli
 
 # Adjust $PATH to include the didkit executable.
-export PATH=$PWD/../../target/debug:$PATH
+export PATH="$PWD/../../target/debug:$PATH"
 
 # Create a ed25119 keypair if needed.
 if [ -e key.jwk ]; then
