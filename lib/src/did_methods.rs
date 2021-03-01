@@ -1,5 +1,6 @@
 use did_ethr::DIDEthr;
 use did_key::DIDKey;
+use did_sol::DIDSol;
 use did_tezos::DIDTz;
 #[cfg(feature = "did-web")]
 use did_web::DIDWeb;
@@ -11,6 +12,7 @@ lazy_static! {
         methods.insert(&DIDKey);
         methods.insert(&DIDTz);
         methods.insert(&DIDEthr);
+        methods.insert(&DIDSol);
         #[cfg(feature = "did-web")]
         methods.insert(&DIDWeb);
         methods
