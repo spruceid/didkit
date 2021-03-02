@@ -22,8 +22,8 @@ const key = DIDKit.generateEd25519Key();
 
 // There are two helpful functions to obtain a DID and the `did:key`
 // `verificationMethod` from the key.
-const did = DIDKit.keyToDID(key);
-const verificationMethod = DIDKit.keyToVerificationMethod(key);
+const did = DIDKit.keyToDID('key', key);
+const verificationMethod = DIDKit.keyToVerificationMethod('key', key);
 ```
 
 ### Issuing a Credential
