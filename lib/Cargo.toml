@@ -15,7 +15,7 @@ secp256k1 = ["ssi/libsecp256k1", "did-tezos/secp256k1", "did-key/secp256k1"]
 #didkit_cbindings = { path = "cbindings/" }
 ssi = { path = "../../ssi", default-features = false }
 did-key = { path = "../../ssi/did-key" }
-did-tezos = { path = "../../ssi/did-tezos" }
+did-tezos = { path = "../../ssi/did-tezos" , optional = true}
 did-ethr = { path = "../../ssi/did-ethr" }
 did-sol = { path = "../../ssi/did-sol" }
 did-web = { path = "../../ssi/did-web", optional = true }
