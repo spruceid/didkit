@@ -5,7 +5,7 @@ members = [
   "lib",
   "lib/cbindings",
   "lib/node/native",
-  "lib/wasm"
+  "lib/web"
 ]
 
 default-members = [

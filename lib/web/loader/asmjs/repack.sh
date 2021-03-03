@@ -1,7 +1,7 @@
 cat didkit_wasm_bg.js | \
   sed -e 's/export const __wb/const __wb/' | \
   tail -n +3 | \
-  cat >> didkit-output.js
+  cat > didkit-output.js
 
 echo 'const wasm = {};' >> didkit-output.js
 

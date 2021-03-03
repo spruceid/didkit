@@ -6,6 +6,8 @@
 
 Android SDK and NDK for Linux x86\_64. The Android SDK is expected to be installed at `~/Android/Sdk`. If it is somewhere else instead, you can specify it with a Make variable, e.g. `make ANDROID_SDK_ROOT=/other/location/android-sdk`
 
+DISCLAIMER: NDK 23 is currently in beta, so it might not have all the prebuilt tools used in the build process, please stick to using a stable version, for example NDK 22.
+
 Rust Android targets are also required. To install those with `rustup`, run:
 ```sh
 $ make -C ../ install-rustup-android
