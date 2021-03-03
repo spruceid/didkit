@@ -145,37 +145,32 @@ $(TARGET)/test/node.stamp: $(NODE_SRC) | $(TARGET)/test
 
 ## WASM
 
-WASM_SRC=wasm/Cargo.toml wasm/loader/package.json wasm/loader/webpack.config.js wasm/loader/didkit-loader.js $(wildcard wasm/src/*.rs)
+WEB_SRC=web/Cargo.toml $(wildcard web/src/*.rs)
+WASM_SRC=web/loader/wasm/package.json web/loader/wasm/webpack.config.js web/loader/wasm/didkit-loader.js $(WEB_SRC)
 
 .PHONY: install-wasm-pack
 install-wasm-pack:
 	 curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh 
 
 $(TARGET)/test/wasm.stamp: $(WASM_SRC) | $(TARGET)/test
-	cd wasm && wasm-pack build --target web
-	npm --prefix wasm/loader install
-	npm --prefix wasm/loader run build
-	rm -f $(TARGET)/test/asmjs.stamp
-	touch $@ 
+	cd web && wasm-pack build --target web --out-dir pkg/wasm
+	npm --prefix web/loader/wasm install
+	npm --prefix web/loader/wasm run build
+	touch $@
 
 ## WASM-ASM-JS
 
-ASM_SRC=wasm/Cargo.toml wasm/asm/package.json wasm/asm/webpack.config.js $(WASM_SRC)
+ASM_SRC=web/loader/asmjs/package.json web/loader/asmjs/webpack.config.js $(WEB_SRC)
 
-BINARYEN_ROOT="$(HOME)/binaryen"
+BINARYEN_ROOT?="$(HOME)/binaryen"
 
-wasm/asm/didkit-output.js: $(ASM_SRC)
-	cd wasm && wasm-pack build --target bundler
-	cd wasm/pkg && $(BINARYEN_ROOT)/bin/wasm2js --pedantic -o didkit_wasm_bg1.js didkit_wasm_bg.wasm
-	cd wasm/asm && ./repack.sh
-
-wasm/asm/didkit-asm.min.js: wasm/asm/didkit-output.js
-	npm --prefix wasm/asm install
-	npm --prefix wasm/asm run build
-
-$(TARGET)/test/asmjs.stamp: wasm/asm/didkit-asm.min.js | $(TARGET)/test
-	npm --prefix wasm/asm run test
-	rm -f $(TARGET)/test/wasm.stamp
+$(TARGET)/test/asmjs.stamp: $(ASM_SRC) | $(TARGET)/test
+	cd web && wasm-pack build --target bundler --out-dir pkg/asmjs
+	cd web/pkg/asmjs && $(BINARYEN_ROOT)/bin/wasm2js --pedantic -o didkit_wasm_bg1.js didkit_wasm_bg.wasm
+	cd web/loader/asmjs && ./repack.sh
+	npm --prefix web/loader/asmjs install
+	npm --prefix web/loader/asmjs run build
+	npm --prefix web/loader/asmjs run test
 	touch $@ 
 
 ## Cleanup
