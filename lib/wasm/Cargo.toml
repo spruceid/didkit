@@ -21,16 +21,16 @@ features = ["wasm"]
 [dependencies.ssi]
 path = "../../../ssi"
 default-features = false
-features = ["ed25519-dalek", "sha2", "rsa", "rand", "libsecp256k1"]
+features = ["ed25519-dalek", "sha2", "rsa", "rand", "libsecp256k1", "p256"]
 
 [dependencies.did-key]
 path = "../../../ssi/did-key"
-features = ["secp256k1"]
+features = ["secp256k1", "p256"]
 
 [dependencies.did-tezos]
 path = "../../../ssi/did-tezos"
 default-features = false
-features = ["secp256k1", "dalek"]
+features = ["secp256k1", "dalek", "p256"]
 optional = true
 
 [dev-dependencies]
