@@ -129,3 +129,6 @@ jobs:
 
     - name: Build Android Archive
       run: make -C lib ../target/test/aar.stamp
+
+    - name: Test Python Package
+      run: make -C lib ../target/test/python.stamp
