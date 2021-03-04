@@ -7,6 +7,8 @@ else
 	OS_NAME=$(shell uname | tr '[:upper:]' '[:lower:]')
 endif
 
+VERSION=$(shell cat Cargo.toml | grep -m 1 version | cut -d' ' -f3 | sed 's/"//g')
+
 .PHONY: test
 test: $(TARGET)/test/c.stamp \
 	$(TARGET)/test/java.stamp \
@@ -40,6 +42,15 @@ $(TARGET)/test/c.stamp: $(TARGET)/cabi-test $(TARGET)/release/libdidkit.so | $(T
 
 $(TARGET)/cabi-test: c/test.c $(TARGET)/release/libdidkit.so $(TARGET)/didkit.h
 	$(CC) -I$(TARGET) -L$(TARGET)/release $< -ldl -ldidkit -o $@
+
+## Python
+$(TARGET)/test/python.stamp: $(TARGET)/release/libdidkit.so | $(TARGET)/test
+	rm -rf python/dist/*
+	python3 -m pip install --upgrade pip build
+	python3 -m build python/
+	python3 -m pip install python/dist/didkit-$(VERSION)-*.whl
+	python3 -m unittest python/didkit/tests.py -v
+	touch $@
 
 ## Java
 
