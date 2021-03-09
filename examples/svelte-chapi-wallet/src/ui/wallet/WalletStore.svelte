@@ -53,10 +53,8 @@
 
     accept = async () => {
       const { verifyCredential } = DIDKit;
-      const verificationMethod = `${data.issuer}#${data.issuer.substring(8)}`;
       const options = JSON.stringify({
-        verificationMethod,
-        proofPurpose: "assertionMethod",
+        /*proofPurpose: "assertionMethod",*/
       });
       const verifyStr = await verifyCredential(JSON.stringify(data), options);
       const verify = JSON.parse(verifyStr);
