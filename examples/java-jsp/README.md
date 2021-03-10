@@ -45,9 +45,9 @@ $ curl -O https://downloads.apache.org/tomcat/tomcat-9/v9.0.43/bin/apache-tomcat
 Set permissions and groups.
 ```bash
 # chgrp -R tomcat /opt/tomcat
-# chmod -R g+r /opt/conf
-# chmod g+x /opt/conf
-# chown -R tomcat /opt/webapps /opt/work /opt/temp /opt/logs
+# chmod -R g+r /opt/tomcat/conf
+# chmod g+x /opt/tomcat/conf
+# chown -R tomcat /opt/tomcat/webapps /opt/tomcat/work /opt/tomcat/temp /opt/tomcat/logs
 ```
 
 Find out where your JAVA_HOME is located.
