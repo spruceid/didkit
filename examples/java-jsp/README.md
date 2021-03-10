@@ -110,9 +110,11 @@ symlink to the local build folder.
 You will then require the Java artifact (`didkit.jar`). This example project
 already has a symlink in the build directory.  All you have to do is run the
 following commands in the root folder to build everything and ensure proper
-linking:
+linking.
 
 ```bash
+$ git clone https://github.com/spruceid/didkit
+$ cd didkit/
 $ cargo build
 # Use libdidkit.so for UNIX-like, didkit.dll for Windows, libdidkit.dylib for MacOS
 $ make -C lib ../target/didkit.jar
@@ -122,9 +124,10 @@ $ make -C lib ../target/didkit.jar
 
 To avoid a complicated Maven setup, the easiest way to be able to include the
 library in the `war` executable is adding it to the local Maven repository. To
-do so, execute the following command:
+do so, execute the following command from `examples/java-jsp`:
 
 ```bash
+$ cd examples/java-jsp
 $ mvn install:install-file \
   -Dfile=didkit.jar \
   -DgroupId=com.spruceid.didkit \
