@@ -120,6 +120,14 @@ $ cargo build
 $ make -C lib ../target/didkit.jar
 ```
 
+To link the library files like described above, you could use one of the
+following commands:
+
+```bash
+# ln -s target/libdidkit.so /usr/lib # on Linux
+# ln -s target/libdidkit.dylib /usr/lib # on MacOS
+```
+
 ## Install `didkit.jar` to local Maven repository
 
 To avoid a complicated Maven setup, the easiest way to be able to include the
