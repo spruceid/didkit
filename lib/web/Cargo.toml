@@ -31,7 +31,6 @@ features = ["secp256k1", "p256"]
 path = "../../../ssi/did-tezos"
 default-features = false
 features = ["secp256k1", "dalek", "p256"]
-optional = true
 
 [dev-dependencies]
 wasm-bindgen-test = "0.2"

@@ -16,14 +16,15 @@ p256 = ["ssi/p256", "did-tezos/p256", "did-key/p256"]
 #didkit_cbindings = { path = "cbindings/" }
 ssi = { path = "../../ssi", default-features = false }
 did-key = { path = "../../ssi/did-key" }
-did-tezos = { path = "../../ssi/did-tezos" , optional = true}
+did-tezos = { path = "../../ssi/did-tezos", default-features = false }
 did-ethr = { path = "../../ssi/did-ethr" }
 did-sol = { path = "../../ssi/did-sol" }
-did-web = { path = "../../ssi/did-web", optional = true }
+did-web = { path = "../../ssi/did-web" }
 serde_json = "1.0"
 jni = "0.17"
-async-trait = "0.1"
 lazy_static = "1.4"
+
+[target.'cfg(not(target_arch = "wasm32"))'.dependencies]
 tokio = { version = "1.0", features = ["rt-multi-thread"] }
 
 [lib]
