@@ -84,7 +84,7 @@ async fn credential_presentation_issue_verify() {
     let client = Client::builder().build_http::<Body>();
 
     // Issue credential
-    let uri = Uri::from_str(&(base.to_string() + "/issue/credentials")).unwrap();
+    let uri = Uri::from_str(&(base.to_string() + "/credentials/issue")).unwrap();
     let body = Body::from(ISSUE_CRED_REQ);
     let req = Request::builder()
         .method("POST")
@@ -101,7 +101,7 @@ async fn credential_presentation_issue_verify() {
     assert!(!vc["proof"].is_null());
 
     // Verify credential
-    let uri = Uri::from_str(&(base.to_string() + "/verify/credentials")).unwrap();
+    let uri = Uri::from_str(&(base.to_string() + "/credentials/verify")).unwrap();
     let verify_cred_req = json!({
       "verifiableCredential": vc,
       "options": {
@@ -126,7 +126,7 @@ async fn credential_presentation_issue_verify() {
     eprintln!("verify credential response: {:?}", response);
 
     // Issue presentation
-    let uri = Uri::from_str(&(base.to_string() + "/prove/presentations")).unwrap();
+    let uri = Uri::from_str(&(base.to_string() + "/credentials/prove")).unwrap();
     let challenge = "a93fdb78-411a-4a34-ab1c-be9968b92f6b";
     let issue_pres_req = json!({
       "presentation": {
@@ -157,7 +157,7 @@ async fn credential_presentation_issue_verify() {
     eprintln!("issue presentation response: {:?}", vp);
 
     // Verify presentation
-    let uri = Uri::from_str(&(base.to_string() + "/verify/presentations")).unwrap();
+    let uri = Uri::from_str(&(base.to_string() + "/presentations/verify")).unwrap();
     let verify_pres_req = json!({
       "verifiablePresentation": vp,
       "options": {
@@ -212,7 +212,7 @@ async fn credential_issue_verify_other_key() {
     let (base, shutdown) = serve(Some(vec![key]));
     let client = Client::builder().build_http::<Body>();
     // Issue credential
-    let uri = Uri::from_str(&(base.to_string() + "/issue/credentials")).unwrap();
+    let uri = Uri::from_str(&(base.to_string() + "/credentials/issue")).unwrap();
     let mut cred_req: Value = serde_json::from_str(ISSUE_CRED_REQ).unwrap();
     cred_req["credential"]["issuer"] = json!(did);
     cred_req["options"]["verificationMethod"] = json!(verification_method);
@@ -234,7 +234,7 @@ async fn credential_issue_verify_other_key() {
     assert_eq!(vc["proof"]["verificationMethod"], verification_method);
 
     // Verify credential
-    let uri = Uri::from_str(&(base.to_string() + "/verify/credentials")).unwrap();
+    let uri = Uri::from_str(&(base.to_string() + "/credentials/verify")).unwrap();
     let verify_cred_req = json!({
       "verifiableCredential": vc,
       "options": {
@@ -265,7 +265,7 @@ async fn invalid_input() {
     let (base, shutdown) = serve(None);
     let client = Client::builder().build_http::<Body>();
 
-    let uri = Uri::from_str(&(base + "/issue/credentials")).unwrap();
+    let uri = Uri::from_str(&(base + "/credentials/issue")).unwrap();
     let req = Request::builder()
         .method("POST")
         .uri(uri)
@@ -282,7 +282,7 @@ async fn non_json_input() {
     let (base, shutdown) = serve(None);
     let client = Client::builder().build_http::<Body>();
 
-    let uri = Uri::from_str(&(base + "/issue/credentials")).unwrap();
+    let uri = Uri::from_str(&(base + "/credentials/issue")).unwrap();
     let body = Body::from(ISSUE_CRED_REQ);
     let req = Request::builder()
         .method("POST")
@@ -301,7 +301,7 @@ async fn non_json_accept() {
     let (base, shutdown) = serve(None);
     let client = Client::builder().build_http::<Body>();
 
-    let uri = Uri::from_str(&(base + "/issue/credentials")).unwrap();
+    let uri = Uri::from_str(&(base + "/credentials/issue")).unwrap();
     let body = Body::from(ISSUE_CRED_REQ);
     let req = Request::builder()
         .method("POST")
