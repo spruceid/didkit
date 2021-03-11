@@ -40,8 +40,8 @@ follow the steps in [binaryen](https://github.com/WebAssembly/binaryen#building)
 To compile all features for WASM target:
 ```bash
 wasm-pack build --target web --out-dir pkg/wasm
-npm --prefix web/loader/wasm install
-npm --prefix web/loader/wasm run build
+npm --prefix loader/wasm install
+npm --prefix loader/wasm run build
 ```
 
 To compile all features for ASM target, assuming you're in this folder:
@@ -49,10 +49,18 @@ To compile all features for ASM target, assuming you're in this folder:
 wasm-pack build --target bundler --out-dir pkg/asmjs
 cd pkg/asmjs
 $(BINARYEN_ROOT)/bin/wasm2js --pedantic -o didkit_wasm_bg1.js didkit_wasm_bg.wasm
-cd ..
+cd ../..
 cd loader/asmjs
 ./repack.sh
 npm install
 npm run build
-npm run test
+```
+
+# WASM tests
+
+`loader/wasm` contains tests. To run them you need to serve the files and open
+the page in a browser (you can then see the results in the console). You can
+start a server with
+```bash
+$ npm run serve
 ```

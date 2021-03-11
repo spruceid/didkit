@@ -13,6 +13,10 @@ Rust Android targets are also required. To install those with `rustup`, run:
 $ make -C ../ install-rustup-android
 ```
 
+The following are also required for the compilation of the vendored openssl:
+- Perl; and
+- Clang (to be installed with the NDK, which should be included with CMake when if you use Android Studio).
+
 ## Build
 
 ```sh

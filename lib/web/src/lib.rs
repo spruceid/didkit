@@ -40,6 +40,37 @@ pub fn getVersion() -> String {
     VERSION.into()
 }
 
+async fn resolve_did(did: String, input_metadata: String) -> Result<String, String> {
+    let (res_meta, doc, _) = DID_METHODS
+        .to_resolver()
+        .resolve(
+            &did,
+            &serde_json::from_str(&input_metadata).or_else(|e| Err(e.to_string()))?,
+        )
+        .await;
+
+    if let Some(error) = res_meta.error {
+        return Err(error);
+    }
+
+    if let Some(d) = doc {
+        Ok(serde_json::to_string(&d).or_else(|e| Err(e.to_string()))?)
+    } else {
+        Err("No document resolved.".to_string())
+    }
+}
+
+#[wasm_bindgen]
+#[allow(non_snake_case)]
+pub fn resolveDID(did: String, input_metadata: String) -> Promise {
+    future_to_promise(async {
+        match resolve_did(did, input_metadata).await {
+            Ok(string) => Ok(string.into()),
+            Err(err) => Err(err.into()),
+        }
+    })
+}
+
 #[cfg(feature = "generate")]
 fn generate_ed25519_key() -> Result<String, Error> {
     let jwk = JWK::generate_ed25519()?;
