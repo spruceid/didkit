@@ -144,6 +144,17 @@ $ mvn install:install-file \
   -Dpackaging=jar
 ```
 
+## Create `data` directory
+
+We will create a directory to store our database and key file and give `tomcat`
+user the appropriate permissions:
+
+```bash
+# mkdir /opt/tomcat/data
+# chown tomcat:tomcat /opt/tomcat/data
+# chmod u+wrx /opt/tomcat/data
+```
+
 ## Generate `.war` file
 
 To generate the `war` file, execute:

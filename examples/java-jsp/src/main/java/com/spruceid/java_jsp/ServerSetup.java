@@ -14,7 +14,7 @@ public class ServerSetup implements ServletContextListener {
     private Connection connection = null;
 
     private void initializeKey(ServletContextEvent sce) throws Exception {
-        final Path file = Paths.get("key.jwk");
+        final Path file = Paths.get("/opt/tomcat/data/key.jwk");
         Utils.createKeyIfNotExists(file);
         final String key = Utils.loadKey(file);
         sce.getServletContext().setAttribute("key", key);
@@ -22,7 +22,7 @@ public class ServerSetup implements ServletContextListener {
 
     private void initializeDatabase(ServletContextEvent sce) throws Exception {
         Class.forName("org.sqlite.JDBC");
-        connection = DriverManager.getConnection("jdbc:sqlite:users.db");
+        connection = DriverManager.getConnection("jdbc:sqlite:/opt/tomcat/data/users.db");
         sce.getServletContext().setAttribute("db", connection);
 
         final PreparedStatement statement = connection.prepareStatement(create);
