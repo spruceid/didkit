@@ -553,13 +553,20 @@ impl Service<Request<Body>> for DIDKitHTTPSvc {
     fn call(&mut self, req: Request<Body>) -> Self::Future {
         let path = req.uri().path();
         match path {
+            // vc-http-api 0.0.1
             "/issue/credentials" => return self.issue_credentials(req),
             "/verify/credentials" => return self.verify_credentials(req),
             "/prove/presentations" => return self.prove_presentations(req),
             "/verify/presentations" => return self.verify_presentations(req),
+            // vc-http-api 0.0.2-unstable
+            "/credentials/issue" => return self.issue_credentials(req),
+            "/credentials/verify" => return self.verify_credentials(req),
+            "/credentials/prove" => return self.prove_presentations(req),
+            "/presentations/verify" => return self.verify_presentations(req),
             _ => {}
         };
         if path.starts_with("/identifiers/") {
+            // DID Resolution HTTP(S) binding
             return self.resolve_dereference(req);
         }
         self.not_found()

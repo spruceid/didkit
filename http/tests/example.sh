@@ -79,7 +79,7 @@ EOF
 # standard input. DIDKit creates a linked data proof to add to the credential,
 # and outputs the resulting newly-issued verifiable credential on standard
 # output, which we save to a file.
-if ! curl -fsS $didkit_url/issue/credentials \
+if ! curl -fsS $didkit_url/credentials/issue \
 	-H 'Content-Type: application/json' \
 	-o credential-signed.jsonld \
 	-d @- <<EOF
@@ -105,7 +105,7 @@ echo
 # verification using the given verification method and proof purpose. DIDKit
 # outputs the verification result as JSON. If verification is successful, the
 # command completes successfully (returns exit code 0).
-if ! curl -fsS $didkit_url/verify/credentials \
+if ! curl -fsS $didkit_url/credentials/verify \
 	-H 'Content-Type: application/json' \
 	-o credential-verify-result.json \
 	-d @- <<EOF
@@ -143,7 +143,7 @@ EOF
 # verifiable presentation. DIDKit signs the presentation with a linked data
 # proof, using the given keypair, verification method and proof type. We save
 # the resulting newly created verifiable presentation to a file.
-if ! curl -fsS $didkit_url/prove/presentations \
+if ! curl -fsS $didkit_url/credentials/prove \
 	-H 'Content-Type: application/json' \
 	-o presentation-signed.jsonld \
 	-d @- <<EOF
@@ -166,7 +166,7 @@ echo
 # Verify verifiable presentation.
 # Pass the verifiable presentation back to didkit for verification.
 # Examine the verification result JSON.
-if ! curl -fsS $didkit_url/verify/presentations \
+if ! curl -fsS $didkit_url/presentations/verify \
 	-H 'Content-Type: application/json' \
 	-o presentation-verify-result.json \
 	-d @- <<EOF
