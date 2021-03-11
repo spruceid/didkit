@@ -172,3 +172,10 @@ restart the server.
 ```
 
 The example should now be accessible on http://localhost:8080/java-jsp-0.1/
+
+## CHAPI Wallet
+
+To sign in and receive your credentials, you will need a CHAPI Wallet. To provide
+an easy way to test out this example and others we host our `svelte-chapi-wallet`
+example implementation over at
+[https://demo-wallet.spruceid.com](https://demo-wallet.spruceid.com).
