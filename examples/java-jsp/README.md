@@ -95,6 +95,19 @@ Optionally, enable it at start-up with:
 # systemctl enable tomcat
 ```
 
+#### Create `data` directory
+
+We will create a directory to store our database and key file and give `tomcat`
+user the appropriate permissions:
+
+```bash
+# mkdir /opt/tomcat/data
+# chown tomcat:tomcat /opt/tomcat/data
+# chmod u+wrx /opt/tomcat/data
+```
+
+## Building
+
 ### Build DIDKit
 
 The web application makes use of DIDKit to handle credentials and presentations,
@@ -128,7 +141,7 @@ following commands:
 # ln -s target/libdidkit.dylib /usr/lib # on MacOS
 ```
 
-## Install `didkit.jar` to local Maven repository
+### Install `didkit.jar` to local Maven repository
 
 To avoid a complicated Maven setup, the easiest way to be able to include the
 library in the `war` executable is adding it to the local Maven repository. To
@@ -144,18 +157,7 @@ $ mvn install:install-file \
   -Dpackaging=jar
 ```
 
-## Create `data` directory
-
-We will create a directory to store our database and key file and give `tomcat`
-user the appropriate permissions:
-
-```bash
-# mkdir /opt/tomcat/data
-# chown tomcat:tomcat /opt/tomcat/data
-# chmod u+wrx /opt/tomcat/data
-```
-
-## Generate `.war` file
+### Generate `.war` file
 
 To generate the `war` file, execute:
 
@@ -179,3 +181,17 @@ To sign in and receive your credentials, you will need a CHAPI Wallet. To provid
 an easy way to test out this example and others we host our `svelte-chapi-wallet`
 example implementation over at
 [https://demo-wallet.spruceid.com](https://demo-wallet.spruceid.com).
+
+## Troubleshooting
+
+### The Apache Tomcat Native library which allows using OpenSSL was not found on the java.library.path
+
+If you encounter an error which says that the Apache Tomcat Native library is
+missing, you will have to install it, there's documentation on how to build it
+[here](http://tomcat.apache.org/native-doc/), but your system's package manager
+might have a package for it like in the examples below:
+
+```bash
+# apt-get install libtcnative-1 # On Ubuntu
+$ brew install tomcat-native # On MacOS
+```
