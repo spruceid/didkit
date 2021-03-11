@@ -39,13 +39,9 @@ public class SignUpServlet extends HttpServlet {
             save.setQueryTimeout(5);
             save.setString(1, username);
             save.setString(2, hash);
-            final boolean result = save.execute();
+            save.executeUpdate();
 
-            if (result) {
-                res.sendRedirect("index.jsp");
-            } else {
-                res.sendError(500);
-            }
+            res.sendRedirect("index.jsp");
         } catch (SQLException e) {
             System.err.println(e.getMessage());
             res.sendError(500);
