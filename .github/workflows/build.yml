@@ -29,7 +29,7 @@ jobs:
       with:
         repository: spruceid/ssi
         path: ssi
-        ref: ae4ac0070e20b94f974be5064ad393af06063121
+        ref: 02d2f05b80d86ca12873431e80c23d237058cebe
 
     - name: Cache Cargo registry and build artifacts
       uses: actions/cache@v2
@@ -64,7 +64,7 @@ jobs:
         DID_METHOD: tz
       run: http/tests/example.sh
 
-    - name: Checkout vc-http-api
+    - name: Checkout vc-http-api v0.0.1
       uses: actions/checkout@v2
       with:
         repository: spruceid/vc-http-api
@@ -76,6 +76,19 @@ jobs:
       run: |
         npm i
         ./vendors/spruce/test.sh
+
+    - name: Checkout vc-http-api v0.0.2
+      uses: actions/checkout@v2
+      with:
+        repository: spruceid/vc-http-api
+        path: didkit/http/tests/vc-http-api/vc-http-api
+        ref: df9d1bf9540771d114f5b4c4348777378a3f0447
+
+    - name: Run vc-http-api v0.0.2 test suite
+      working-directory: didkit/http/tests/vc-http-api
+      run: |
+        npm install
+        npm test
 
     - name: Install Rust Android targets
       run: make -C lib install-rustup-android
