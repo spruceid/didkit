@@ -99,7 +99,7 @@ $(TARGET)/didkit.aar: $(TARGET)/didkit.jar android/AndroidManifest.xml android/R
 	$(ANDROID_TOOLS)/aapt package -f -S android/res -F $@ --ignore-assets '.*:*~:README.md' android
 
 $(TARGET)/%/release/libdidkit.so: $(RUST_SRC)
-	PATH=$(TOOLCHAIN)/bin:$(PATH) \
+	PATH=$(TOOLCHAIN)/bin:"$(PATH)" \
 	cargo build --lib --release --target $*
 	$(TOOLCHAIN)/bin/llvm-strip $@
 
