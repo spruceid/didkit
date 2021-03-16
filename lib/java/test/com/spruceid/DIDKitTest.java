@@ -71,11 +71,11 @@ class DIDKitTest {
 
         // Resolve DID
         String resolutionResult = DIDKit.resolveDID(did, "{}");
-        assert vpResult.contains("\"didDocument\":{");
+        assert resolutionResult.contains("\"didDocument\":{");
 
         // Dereference DID URL
         String dereferencingResult = DIDKit.dereferenceDIDURL(verificationMethod, "{}");
-        assert vpResult.startsWith("[{");
+        assert dereferencingResult.startsWith("[{");
 
         // Create a DIDAuth VP
         vpOptions = "{"
