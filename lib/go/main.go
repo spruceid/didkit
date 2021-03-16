@@ -1,12 +1,8 @@
-package main
+package didkit
 
 // #cgo LDFLAGS: -Wl,-R${SRCDIR} -L${SRCDIR} -ldidkit
 // #include <didkit.h>
 import "C"
-
-import (
-	"fmt"
-)
 
 type DIDKitError struct {
 	code    int
@@ -17,162 +13,147 @@ func (e *DIDKitError) Error() string {
 	return e.message
 }
 
-func NewDIDKitError() error {
+func GetDIDKitError() error {
 	code := int(C.didkit_error_code())
 	message := C.GoString(C.didkit_error_message())
 	return &DIDKitError{code, message}
 }
 
-func generateEd25519Key() (string, error) {
+func GetVersion() string {
+	return C.GoString(C.didkit_get_version())
+}
+
+func GenerateEd25519Key() (string, error) {
 	result_pointer := C.didkit_vc_generate_ed25519_key()
 	if result_pointer != nil {
 		result := C.GoString(result_pointer)
 		C.didkit_free_string(result_pointer)
 		return result, nil
 	}
-	return "", NewDIDKitError()
+	return "", GetDIDKitError()
 }
 
-func keyToDid(methodName string, key string) (string, error) {
+func KeyToDID(methodName string, key string) (string, error) {
 	result_pointer := C.didkit_key_to_did(C.CString(methodName), C.CString(key))
 	if result_pointer != nil {
 		result := C.GoString(result_pointer)
 		C.didkit_free_string(result_pointer)
 		return result, nil
 	}
-	return "", NewDIDKitError()
+	return "", GetDIDKitError()
 }
 
-func keyToVerificationMethod(methodName string, key string) (string, error) {
+func KeyToVerificationMethod(methodName string, key string) (string, error) {
 	result_pointer := C.didkit_key_to_verification_method(
-		C.CString(methodName), 
-		C.CString(key)
+		C.CString(methodName),
+		C.CString(key),
 	)
 	if result_pointer != nil {
 		result := C.GoString(result_pointer)
 		C.didkit_free_string(result_pointer)
 		return result, nil
 	}
-	return "", NewDIDKitError()
+	return "", GetDIDKitError()
 }
 
-func issueCredential(
+func IssueCredential(
 	credential string,
 	options string,
-	key string)
-(string, error) {
+	key string,
+) (string, error) {
 	result_pointer := C.didkit_vc_issue_credential(
 		C.CString(credential),
 		C.CString(options),
-		C.CString(key)
+		C.CString(key),
 	)
 	if result_pointer != nil {
 		result := C.GoString(result_pointer)
 		C.didkit_free_string(result_pointer)
 		return result, nil
 	}
-	return "", NewDIDKitError()
+	return "", GetDIDKitError()
 }
 
-func verifyCredential(credential string, options string) (string, error) {
+func VerifyCredential(credential string, options string) (string, error) {
 	result_pointer := C.didkit_vc_verify_credential(
 		C.CString(credential),
-		C.CString(options)
+		C.CString(options),
 	)
 	if result_pointer != nil {
 		result := C.GoString(result_pointer)
 		C.didkit_free_string(result_pointer)
 		return result, nil
 	}
-	return "", NewDIDKitError()
+	return "", GetDIDKitError()
 }
 
-func issuePresentation(
+func IssuePresentation(
 	presentation string,
 	options string,
-	key string
+	key string,
 ) (string, error) {
 	result_pointer := C.didkit_vc_issue_presentation(
 		C.CString(presentation),
 		C.CString(options),
-		C.CString(key)
+		C.CString(key),
 	)
 	if result_pointer != nil {
 		result := C.GoString(result_pointer)
 		C.didkit_free_string(result_pointer)
 		return result, nil
 	}
-	return "", NewDIDKitError()
+	return "", GetDIDKitError()
 }
 
-func verifyPresentation(presentation string, options string) (string, error) {
+func VerifyPresentation(presentation string, options string) (string, error) {
 	result_pointer := C.didkit_vc_verify_presentation(
 		C.CString(presentation),
-		C.CString(options)
+		C.CString(options),
 	)
 	if result_pointer != nil {
 		result := C.GoString(result_pointer)
 		C.didkit_free_string(result_pointer)
 		return result, nil
 	}
-	return "", NewDIDKitError()
+	return "", GetDIDKitError()
 }
 
-func didResolve(did string, inputMetadata string) (string, error) {
+func ResolveDID(did string, inputMetadata string) (string, error) {
 	result_pointer := C.didkit_did_resolve(
 		C.CString(did),
-		C.CString(inputMetadata)
+		C.CString(inputMetadata),
 	)
 	if result_pointer != nil {
 		result := C.GoString(result_pointer)
 		C.didkit_free_string(result_pointer)
 		return result, nil
 	}
-	return "", NewDIDKitError()
+	return "", GetDIDKitError()
 }
 
-func didUrlDereference(didUrl string, inputMetadata string) (string, error) {
+func DereferenceDIDUrl(didUrl string, inputMetadata string) (string, error) {
 	result_pointer := C.didkit_did_url_dereference(
 		C.CString(didUrl),
-		C.CString(inputMetadata)
+		C.CString(inputMetadata),
 	)
 	if result_pointer != nil {
 		result := C.GoString(result_pointer)
 		C.didkit_free_string(result_pointer)
 		return result, nil
 	}
-	return "", NewDIDKitError()
+	return "", GetDIDKitError()
 }
 
-func didAuth(did string, options string, key string) (string, error) {
+func DIDAuth(did string, options string, key string) (string, error) {
 	result_pointer := C.didkit_did_auth(
 		C.CString(did),
 		C.CString(options),
-		C.CString(key)
+		C.CString(key),
 	)
 	if result_pointer != nil {
 		result := C.GoString(result_pointer)
 		C.didkit_free_string(result_pointer)
 		return result, nil
 	}
-	return "", NewDIDKitError()
-}
-
-func getVersion() string {
-	return C.GoString(C.didkit_get_version())
-}
-
-func main() {
-	fmt.Println(getVersion())
-	fmt.Println(generateEd25519Key())
-	fmt.Println(keyToDid("", ""))
-	fmt.Println(keyToVerificationMethod("", ""))
-	fmt.Println(issueCredential("", "", ""))
-	fmt.Println(verifyCredential("", ""))
-	fmt.Println(issuePresentation("", "", ""))
-	fmt.Println(verifyPresentation("", ""))
-	fmt.Println(didResolve("", ""))
-	fmt.Println(didUrlDereference("", ""))
-	fmt.Println(didAuth("", "", ""))
-	return
+	return "", GetDIDKitError()
 }
