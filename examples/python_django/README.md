@@ -5,6 +5,7 @@ application.
 
 ## Dependencies
 
+- Rust ([installation instructions](https://www.rust-lang.org/tools/install))
 - Python 3
 - Pip
 
