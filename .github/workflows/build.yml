@@ -98,20 +98,6 @@ jobs:
         dart --disable-analytics
         flutter --suppress-analytics config --no-analytics
 
-    - name: Install Android SDK
-      uses: android-actions/setup-android@v2
-
-    - name: Cache Android NDK
-      id: ndk-cache
-      uses: actions/cache@v2
-      with:
-        path: ${{ env.ANDROID_SDK_ROOT }}/ndk-bundle
-        key: ${{ runner.os }}-ndk-bundle
-
-    - name: Install Android NDK
-      if: steps.ndk-cache.outputs.cache-hit != 'true'
-      run: $ANDROID_SDK_ROOT/tools/bin/sdkmanager ndk-bundle
-
     - name: Test C FFI
       run: make -C lib ../target/test/c.stamp
 
