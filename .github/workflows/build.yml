@@ -19,6 +19,22 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
+    - name: Free up disk space
+      working-directory: /
+      run: |
+        sudo rm -rf \
+          /home/linuxbrew \
+          /opt/az \
+          /opt/ghc \
+          /opt/hostedtoolcache/CodeQL \
+          /opt/hostedtoolcache/PyPy \
+          /usr/local/julia1.5.4 \
+          /usr/local/lib/node_modules/netlify-cli \
+          /usr/local/share/powershell \
+          /usr/share/dotnet \
+          /usr/share/miniconda \
+          /usr/share/swift
+
     - name: Checkout DIDKit repository
       uses: actions/checkout@v2
       with:
@@ -131,3 +147,6 @@ jobs:
 
     - name: Test Python Package
       run: make -C lib ../target/test/python.stamp
+
+    - name: Check final disk usage
+      run: df -h /
