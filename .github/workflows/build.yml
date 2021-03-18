@@ -96,10 +96,8 @@ jobs:
     - name: Install wasm-pack
       run: make -C lib install-wasm-pack
 
-    - name: Install JDK
-      uses: actions/setup-java@v1
-      with:
-        java-version: 1.8
+    - name: Use system JDK
+      run: echo "$JAVA_HOME/bin" >> $GITHUB_PATH
 
     - name: Install Flutter
       uses: subosito/flutter-action@v1
