@@ -37,8 +37,8 @@ jobs:
         path: |
           ~/.cargo/registry
           ~/.cargo/git
-          target
-        key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.toml', 'lib/Makefile', '**.rs') }}
+          didkit/target
+        key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.toml', 'didkit/lib/Makefile', '**.rs') }}
         restore-keys: |
           ${{ runner.os }}-cargo-
 
