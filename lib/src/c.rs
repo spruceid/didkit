@@ -56,17 +56,14 @@ pub extern "C" fn didkit_vc_generate_ed25519_key() -> *const c_char {
 
 // Convert JWK to did:key DID
 fn key_to_did(
-    method_name_ptr: *const c_char,
+    method_pattern_ptr: *const c_char,
     key_json_ptr: *const c_char,
 ) -> Result<*const c_char, Error> {
-    let method_name = unsafe { CStr::from_ptr(method_name_ptr) }.to_str()?;
+    let method_pattern = unsafe { CStr::from_ptr(method_pattern_ptr) }.to_str()?;
     let key_json = unsafe { CStr::from_ptr(key_json_ptr) }.to_str()?;
     let key: JWK = serde_json::from_str(key_json)?;
-    let did_method = DID_METHODS
-        .get(&method_name)
-        .ok_or(Error::UnknownDIDMethod)?;
-    let did = did_method
-        .generate(&Source::Key(&key))
+    let did = DID_METHODS
+        .generate(&Source::KeyAndPattern(&key, &method_pattern))
         .ok_or(Error::UnableToGenerateDID)?;
     Ok(CString::new(did)?.into_raw())
 }
@@ -78,22 +75,22 @@ fn key_to_did(
 /// with [`didkit_free_string`].  On failure, returns `NULL`; the error message can be retrieved
 /// with [`didkit_error_message`].
 pub extern "C" fn didkit_key_to_did(
-    method_name: *const c_char,
+    method_pattern: *const c_char,
     jwk: *const c_char,
 ) -> *const c_char {
-    ccchar_or_error(key_to_did(method_name, jwk))
+    ccchar_or_error(key_to_did(method_pattern, jwk))
 }
 
 // Convert JWK to did:key DID URI for verificationMethod
 fn key_to_verification_method(
-    method_name_ptr: *const c_char,
+    method_pattern_ptr: *const c_char,
     key_json_ptr: *const c_char,
 ) -> Result<*const c_char, Error> {
-    let method_name = unsafe { CStr::from_ptr(method_name_ptr) }.to_str()?;
+    let method_pattern = unsafe { CStr::from_ptr(method_pattern_ptr) }.to_str()?;
     let key_json = unsafe { CStr::from_ptr(key_json_ptr) }.to_str()?;
     let key: JWK = serde_json::from_str(key_json)?;
     let did_method = DID_METHODS
-        .get(&method_name)
+        .get(&method_pattern)
         .ok_or(Error::UnknownDIDMethod)?;
     let did = did_method
         .generate(&Source::Key(&key))
@@ -111,10 +108,10 @@ fn key_to_verification_method(
 /// error message can be retrieved using [`didkit_error_message`].
 #[no_mangle]
 pub extern "C" fn didkit_key_to_verification_method(
-    method_name: *const c_char,
+    method_pattern: *const c_char,
     jwk: *const c_char,
 ) -> *const c_char {
-    ccchar_or_error(key_to_verification_method(method_name, jwk))
+    ccchar_or_error(key_to_verification_method(method_pattern, jwk))
 }
 
 // Issue Credential

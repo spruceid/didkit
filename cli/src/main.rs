@@ -28,15 +28,15 @@ pub enum DIDKit {
         #[structopt(flatten)]
         key: KeyArg,
     },
-    /// Output a DID for a given JWK and DID method name.
+    /// Output a DID for a given JWK and DID method name or pattern.
     KeyToDID {
-        method_name: String,
+        method_pattern: String,
         #[structopt(flatten)]
         key: KeyArg,
     },
-    /// Output a verificationMethod DID URL for a JWK and DID method name
+    /// Output a verificationMethod DID URL for a JWK and DID method name/pattern
     KeyToVerificationMethod {
-        method_name: Option<String>,
+        method_pattern: Option<String>,
         #[structopt(flatten)]
         key: KeyArg,
     },
@@ -296,39 +296,37 @@ fn main() {
             println!("{}", did);
         }
 
-        DIDKit::KeyToDID { method_name, key } => {
+        DIDKit::KeyToDID {
+            method_pattern,
+            key,
+        } => {
             let jwk = key.get_jwk();
-            let did_method = DID_METHODS
-                .get(&method_name)
-                .ok_or(Error::UnknownDIDMethod)
-                .unwrap();
-            let did = did_method
-                .generate(&Source::Key(&jwk))
+            let did = DID_METHODS
+                .generate(&Source::KeyAndPattern(&jwk, &method_pattern))
                 .ok_or(Error::UnableToGenerateDID)
                 .unwrap();
             println!("{}", did);
         }
 
-        DIDKit::KeyToVerificationMethod { method_name, key } => {
-            let method_name = match method_name {
-                Some(name) => name,
+        DIDKit::KeyToVerificationMethod {
+            method_pattern,
+            key,
+        } => {
+            let method_pattern = match method_pattern {
+                Some(pattern) => pattern,
                 None => {
                     eprintln!(
-                        "didkit: key-to-verification-method should be used with method name option"
+                        "didkit: key-to-verification-method should be used with method pattern option"
                     );
                     "key".to_string()
                 }
             };
-            let did_method = DID_METHODS
-                .get(&method_name)
-                .ok_or(Error::UnknownDIDMethod)
-                .unwrap();
             let jwk = key.get_jwk();
-            let did = did_method
-                .generate(&Source::Key(&jwk))
+            let did = DID_METHODS
+                .generate(&Source::KeyAndPattern(&jwk, &method_pattern))
                 .ok_or(Error::UnableToGenerateDID)
                 .unwrap();
-            let did_resolver = did_method.to_resolver();
+            let did_resolver = DID_METHODS.to_resolver();
             let vm = rt
                 .block_on(get_verification_method(&did, did_resolver))
                 .ok_or(Error::UnableToGetVerificationMethod)

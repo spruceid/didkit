@@ -28,37 +28,29 @@ pub fn generate_ed25519_key(mut cx: FunctionContext) -> JsResult<JsValue> {
 }
 
 pub fn key_to_did(mut cx: FunctionContext) -> JsResult<JsString> {
-    let did_method: String = arg!(cx, 0, String);
+    let method_pattern: String = arg!(cx, 0, String);
     let key: JWK = arg!(cx, 1, JWK);
 
-    let did_method = throws!(
-        cx,
-        DID_METHODS.get(&did_method).ok_or(DIDKitError::UnknownDIDMethod)
-    )?;
     let did = throws!(
         cx,
-        did_method
-            .generate(&Source::Key(&key))
+        DID_METHODS
+            .generate(&Source::KeyAndPattern(&key, &method_pattern))
             .ok_or(DIDKitError::UnableToGenerateDID)
     )?;
     Ok(cx.string(did))
 }
 
 pub fn key_to_verification_method(mut cx: FunctionContext) -> JsResult<JsString> {
-    let did_method: String = arg!(cx, 0, String);
+    let method_pattern: String = arg!(cx, 0, String);
     let key: JWK = arg!(cx, 1, JWK);
 
-    let did_method = throws!(
-        cx,
-        DID_METHODS.get(&did_method).ok_or(DIDKitError::UnknownDIDMethod)
-    )?;
     let did = throws!(
         cx,
-        did_method
-            .generate(&Source::Key(&key))
+        DID_METHODS
+            .generate(&Source::KeyAndPattern(&key, &method_pattern))
             .ok_or(DIDKitError::UnableToGenerateDID)
     )?;
-    let did_resolver = did_method.to_resolver();
+    let did_resolver = DID_METHODS.to_resolver();
     let rt = throws!(cx, runtime::get())?;
     let vm = throws!(
         cx,

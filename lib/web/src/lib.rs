@@ -85,32 +85,26 @@ pub fn generateEd25519Key() -> Result<String, JsValue> {
     map_jsvalue(generate_ed25519_key())
 }
 
-fn key_to_did(method_name: String, jwk: String) -> Result<String, Error> {
+fn key_to_did(method_pattern: String, jwk: String) -> Result<String, Error> {
     let key: JWK = serde_json::from_str(&jwk)?;
-    let did_method = DID_METHODS
-        .get(&method_name)
-        .ok_or(Error::UnknownDIDMethod)?;
-    let did = did_method
-        .generate(&Source::Key(&key))
+    let did = DID_METHODS
+        .generate(&Source::KeyAndPattern(&key, &method_pattern))
         .ok_or(Error::UnableToGenerateDID)?;
     Ok(did)
 }
 
 #[wasm_bindgen]
 #[allow(non_snake_case)]
-pub fn keyToDID(method_name: String, jwk: String) -> Result<String, JsValue> {
-    map_jsvalue(key_to_did(method_name, jwk))
+pub fn keyToDID(method_pattern: String, jwk: String) -> Result<String, JsValue> {
+    map_jsvalue(key_to_did(method_pattern, jwk))
 }
 
-async fn key_to_verification_method(method_name: String, jwk: String) -> Result<String, Error> {
+async fn key_to_verification_method(method_pattern: String, jwk: String) -> Result<String, Error> {
     let key: JWK = serde_json::from_str(&jwk)?;
-    let did_method = DID_METHODS
-        .get(&method_name)
-        .ok_or(Error::UnknownDIDMethod)?;
-    let did = did_method
-        .generate(&Source::Key(&key))
+    let did = DID_METHODS
+        .generate(&Source::KeyAndPattern(&key, &method_pattern))
         .ok_or(Error::UnableToGenerateDID)?;
-    let did_resolver = did_method.to_resolver();
+    let did_resolver = DID_METHODS.to_resolver();
     let vm = get_verification_method(&did, did_resolver)
         .await
         .ok_or(Error::UnableToGetVerificationMethod)?;
@@ -119,8 +113,8 @@ async fn key_to_verification_method(method_name: String, jwk: String) -> Result<
 
 #[wasm_bindgen]
 #[allow(non_snake_case)]
-pub fn keyToVerificationMethod(method_name: String, jwk: String) -> Promise {
-    map_async_jsvalue(key_to_verification_method(method_name, jwk))
+pub fn keyToVerificationMethod(method_pattern: String, jwk: String) -> Promise {
+    map_async_jsvalue(key_to_verification_method(method_pattern, jwk))
 }
 
 #[cfg(any(
