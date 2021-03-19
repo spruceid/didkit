@@ -18,6 +18,7 @@ ssi = { path = "../../ssi", default-features = false }
 did-method-key = { path = "../../ssi/did-key" }
 did-tezos = { path = "../../ssi/did-tezos", default-features = false }
 did-ethr = { path = "../../ssi/did-ethr" }
+did-pkh = { path = "../../ssi/did-pkh" }
 did-sol = { path = "../../ssi/did-sol" }
 did-web = { path = "../../ssi/did-web" }
 serde_json = "1.0"

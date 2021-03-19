@@ -42,6 +42,7 @@ Given a [JWK][] and a supported DID method name or pattern, output the correspon
 - `tz` - [did:tz][] ([Ed25519][], [P-256][] [Secp256k1][])
 - `ethr` - [did:ethr][] ([Secp256k1][])
 - `sol` - `did:sol` ([Ed25519][])
+- `pkh:[…]` - `did:pkh` ([Ed25519][], [P-256][] [Secp256k1][])
 
 ### `didkit vc-issue-credential`
 
