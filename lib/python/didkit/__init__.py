@@ -31,11 +31,11 @@ didkit.didkit_error_code.argtype = ()
 didkit.didkit_vc_generate_ed25519_key.restype = c_void_p
 didkit.didkit_vc_generate_ed25519_key.argtype = ()
 
-# String keyToDID(String methodName, String key)
+# String keyToDID(String methodPattern, String key)
 didkit.didkit_key_to_did.restype = c_void_p
 didkit.didkit_key_to_did.argtype = (c_char_p, c_char_p)
 
-# String keyToVerificationMethod(String methodName, String key)
+# String keyToVerificationMethod(String methodPattern, String key)
 didkit.didkit_key_to_verification_method.restype = c_void_p
 didkit.didkit_key_to_verification_method.argtype = (c_char_p, c_char_p)
 
@@ -98,8 +98,8 @@ def generateEd25519Key():
     return key_str
 
 
-def keyToDID(methodName, key):
-    did = didkit.didkit_key_to_did(methodName.encode(), key.encode())
+def keyToDID(methodPattern, key):
+    did = didkit.didkit_key_to_did(methodPattern.encode(), key.encode())
     if not did:
         raise DIDKitException.lastError()
     did_str = cast(did, c_char_p).value.decode()
@@ -107,8 +107,8 @@ def keyToDID(methodName, key):
     return did_str
 
 
-def keyToVerificationMethod(methodName, key):
-    vm = didkit.didkit_key_to_verification_method(methodName.encode(),
+def keyToVerificationMethod(methodPattern, key):
+    vm = didkit.didkit_key_to_verification_method(methodPattern.encode(),
                                                   key.encode())
     if not vm:
         raise DIDKitException.lastError()

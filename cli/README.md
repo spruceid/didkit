@@ -23,20 +23,25 @@ Output help about `didkit` and its subcommands.
 
 Generate a Ed25519 keypair and output it in [JWK format](https://tools.ietf.org/html/rfc8037#appendix-A.1).
 
-### `didkit key-to-did <method_name>`
+### `didkit key-to-did <method_pattern>`
 
-Given a [JWK][] and a DID method name, output the corresponding DID.
+Given a [JWK][] and a supported DID method name or pattern, output the corresponding DID.
 
-Currently, this only supports [Ed25519](https://tools.ietf.org/html/rfc8037#appendix-A.2) keys, [did:key][] and [did:web][].
+### `didkit key-to-verification-method <method_pattern>`
 
-### `didkit key-to-verification-method <method_name>`
-
-Given a Ed25519 [JWK][] and a supported DID method name, output the corresponding [verificationMethod][].
+Given a [JWK][] and a supported DID method name or pattern, output the corresponding [verificationMethod][].
 
 #### Options
 
 - `-k, --key-path <file>` (required, conflicts with jwk) - Filename of JWK file
 - `-j, --jwk <jwk>` (required, conflicts with key-path) - JWK.
+
+#### Supported DID method names and patterns
+
+- `key` - [did:key][] ([Ed25519][], [P-256][] [Secp256k1][])
+- `tz` - [did:tz][] ([Ed25519][], [P-256][] [Secp256k1][])
+- `ethr` - [did:ethr][] ([Secp256k1][])
+- `sol` - `did:sol` ([Ed25519][])
 
 ### `didkit vc-issue-credential`
 
@@ -177,9 +182,14 @@ See the included [shell script](tests/example.sh).
 [vc-http-api]: https://w3c-ccg.github.io/vc-http-api/
 [RsaSignature2018]: https://w3c-ccg.github.io/lds-rsa2018/
 [Ed25519VerificationKey2018]: https://w3c-ccg.github.io/lds-ed25519-2018/
+[Ed25519]: https://tools.ietf.org/html/rfc8037#appendix-A.2
+[P-256]: https://tools.ietf.org/html/rfc7518#section-6.2.1.1
+[Secp256k1]: https://tools.ietf.org/html/rfc8812#section-3.1
 
 [did:key]: https://w3c-ccg.github.io/did-method-key/
 [did:web]: https://w3c-ccg.github.io/did-method-web/
+[did:tz]: https://did-tezos.spruceid.com/
+[did:ethr]: https://github.com/decentralized-identity/ethr-did-resolver/blob/master/doc/did-method-spec.md
 
 [proof options]: https://w3c-ccg.github.io/ld-proofs/#dfn-proof-options
 [ld-proofs-overview]: https://w3c-ccg.github.io/ld-proofs/#linked-data-proof-overview

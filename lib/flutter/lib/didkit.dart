@@ -95,16 +95,16 @@ class DIDKit {
     return did_key_string;
   }
 
-  static String keyToDID(String methodName, String key) {
-    final did = key_to_did(Utf8.toUtf8(methodName), Utf8.toUtf8(key));
+  static String keyToDID(String methodPattern, String key) {
+    final did = key_to_did(Utf8.toUtf8(methodPattern), Utf8.toUtf8(key));
     if (did.address == nullptr.address) throw lastError();
     final did_string = Utf8.fromUtf8(did);
     free_string(did);
     return did_string;
   }
 
-  static String keyToVerificationMethod(String methodName, String key) {
-    final vm = key_to_verification_method(Utf8.toUtf8(methodName), Utf8.toUtf8(key));
+  static String keyToVerificationMethod(String methodPattern, String key) {
+    final vm = key_to_verification_method(Utf8.toUtf8(methodPattern), Utf8.toUtf8(key));
     if (vm.address == nullptr.address) throw lastError();
     final vm_string = Utf8.fromUtf8(vm);
     free_string(vm);

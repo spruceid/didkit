@@ -54,17 +54,14 @@ pub extern "system" fn Java_com_spruceid_DIDKit_generateEd25519Key(
 
 fn key_to_did(
     env: &JNIEnv,
-    method_name_jstring: JString,
+    method_pattern_jstring: JString,
     key_jstring: JString,
 ) -> Result<jstring, Error> {
     let key_json: String = env.get_string(key_jstring).unwrap().into();
-    let method_name: String = env.get_string(method_name_jstring).unwrap().into();
+    let method_pattern: String = env.get_string(method_pattern_jstring).unwrap().into();
     let key: JWK = serde_json::from_str(&key_json)?;
-    let did_method = DID_METHODS
-        .get(&method_name)
-        .ok_or(Error::UnknownDIDMethod)?;
-    let did = did_method
-        .generate(&Source::Key(&key))
+    let did = DID_METHODS
+        .generate(&Source::KeyAndPattern(&key, &method_pattern))
         .ok_or(Error::UnableToGenerateDID)?;
     Ok(env.new_string(did).unwrap().into_inner())
 }
@@ -73,27 +70,24 @@ fn key_to_did(
 pub extern "system" fn Java_com_spruceid_DIDKit_keyToDID(
     env: JNIEnv,
     _class: JClass,
-    method_name: JString,
+    method_pattern: JString,
     jwk: JString,
 ) -> jstring {
-    jstring_or_error(&env, key_to_did(&env, method_name, jwk))
+    jstring_or_error(&env, key_to_did(&env, method_pattern, jwk))
 }
 
 fn key_to_verification_method(
     env: &JNIEnv,
-    method_name_jstring: JString,
+    method_pattern_jstring: JString,
     key_jstring: JString,
 ) -> Result<jstring, Error> {
     let key_json: String = env.get_string(key_jstring).unwrap().into();
-    let method_name: String = env.get_string(method_name_jstring).unwrap().into();
+    let method_pattern: String = env.get_string(method_pattern_jstring).unwrap().into();
     let key: JWK = serde_json::from_str(&key_json)?;
-    let did_method = DID_METHODS
-        .get(&method_name)
-        .ok_or(Error::UnknownDIDMethod)?;
-    let did = did_method
-        .generate(&Source::Key(&key))
+    let did = DID_METHODS
+        .generate(&Source::KeyAndPattern(&key, &method_pattern))
         .ok_or(Error::UnableToGenerateDID)?;
-    let did_resolver = did_method.to_resolver();
+    let did_resolver = DID_METHODS.to_resolver();
     let rt = runtime::get()?;
     let verification_method = rt
         .block_on(get_verification_method(&did, did_resolver))
@@ -105,10 +99,10 @@ fn key_to_verification_method(
 pub extern "system" fn Java_com_spruceid_DIDKit_keyToVerificationMethod(
     env: JNIEnv,
     _class: JClass,
-    method_name: JString,
+    method_pattern: JString,
     jwk: JString,
 ) -> jstring {
-    jstring_or_error(&env, key_to_verification_method(&env, method_name, jwk))
+    jstring_or_error(&env, key_to_verification_method(&env, method_pattern, jwk))
 }
 
 fn issue_credential(
