@@ -55,12 +55,6 @@ That will give you the DIDKit CLI and HTTP server executables located at
 Both the CLI and HTTP server are containerised and available under
 `ghcr.io/spruceid/didkit-(cli|http)`.
 
-The image are private for now, so a [Personal Access Token](https://docs.github.com/en/free-pro-team@latest/github/authenticating-to-github/creating-a-personal-access-token)
-is required. Once created you can login like so:
-```bash
-$ docker login ghcr.io -u USERNAME --password-stdin
-```
-
 You can use the images like CLIs:
 ```bash
 $ docker run ghcr.io/spruceid/didkit-cli:latest --help
