@@ -1,7 +1,7 @@
 name: didkit
 description: A new flutter plugin project.
 version: 0.0.1
-author: Charles E. Lehner <charles.lehner@spruceid.com>
+author: Spruce Systems, Inc.
 homepage: https://github.com/spruceid/didkit/tree/main/lib/flutter
 
 environment:

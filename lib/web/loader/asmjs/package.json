@@ -1,5 +1,6 @@
 {
   "name": "didkit-asm-loader",
+  "author": "Spruce Systems, Inc.",
   "collaborators": [
     "Tiago Nascimento <tiago.nascimento@spruceid.com>",
     "Gregorio Granado Magalhaes <gregorio.magalhaes@spruceid.com"

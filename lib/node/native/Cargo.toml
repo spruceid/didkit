@@ -1,7 +1,7 @@
 [package]
 name = "didkit-node"
 version = "0.1.0"
-authors = ["Tiago Nascimento <tiago.nascimento@spruceid.com>"]
+authors = ["Spruce Systems, Inc."]
 build = "build.rs"
 edition = "2018"
 exclude = ["artifacts.json", "index.node"]

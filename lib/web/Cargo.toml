@@ -1,7 +1,7 @@
 [package]
 name = "didkit-wasm"
 version = "0.1.0"
-authors = ["Tiago Nascimento <tiago.nascimento@spruceid.com>"]
+authors = ["Spruce Systems, Inc."]
 edition = "2018"
 
 [dependencies]

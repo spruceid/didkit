@@ -1,6 +1,7 @@
 {
   "name": "vc-http-api-didkit-test-runner",
   "version": "0.0.1",
+  "author": "Spruce Systems, Inc.",
   "description": "Test didkit-http with vc-http-api-test-server",
   "scripts": {
     "test": "node test.js"

@@ -3,7 +3,7 @@
   "version": "0.0.1",
   "description": "",
   "main": "lib/index.js",
-  "author": "Tiago Nascimento <tiago.nascimento@spruceid.com>",
+  "author": "Spruce Systems, Inc.",
   "license": "MIT",
   "dependencies": {
     "neon-cli": "^0.5.3",
