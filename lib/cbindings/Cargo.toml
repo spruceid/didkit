@@ -1,5 +1,5 @@
 [package]
-name = "didkit_cbindings"
+name = "didkit-cbindings"
 version = "0.1.0"
 authors = ["Charles E. Lehner <charles.lehner@spruceid.com>"]
 edition = "2018"

@@ -1,5 +1,5 @@
 [package]
-name = "didkit_node"
+name = "didkit-node"
 version = "0.1.0"
 authors = ["Tiago Nascimento <tiago.nascimento@spruceid.com>"]
 build = "build.rs"
