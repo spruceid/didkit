@@ -42,7 +42,7 @@ const DIDKitHTTP = require('./didkit-http');
       json: false,
       roots: [path.join(__dirname, 'vc-http-api', 'packages', 'vc-http-api-test-server')],
       globals: JSON.stringify({ suiteConfig: config }),
-      testTimeout: 20e3
+      testTimeout: 60e3
     },
     [process.cwd()]
   );
