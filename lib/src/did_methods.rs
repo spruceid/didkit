@@ -1,5 +1,6 @@
 use did_ethr::DIDEthr;
 use did_method_key::DIDKey;
+use did_onion::DIDOnion;
 use did_pkh::DIDPKH;
 use did_sol::DIDSol;
 use did_tezos::DIDTz;
@@ -8,6 +9,7 @@ use ssi::did::DIDMethods;
 
 lazy_static! {
     static ref DIDTZ: DIDTz = DIDTz::default();
+    static ref DIDONION: DIDOnion = DIDOnion::default();
     pub static ref DID_METHODS: DIDMethods<'static> = {
         let mut methods = DIDMethods::default();
         methods.insert(&DIDKey);
@@ -16,6 +18,7 @@ lazy_static! {
         methods.insert(&DIDSol);
         methods.insert(&DIDWeb);
         methods.insert(&DIDPKH);
+        methods.insert(&*DIDONION);
         methods
     };
 }
