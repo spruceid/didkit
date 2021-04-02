@@ -9,7 +9,7 @@ use serde::Serialize;
 use serde_json::Value;
 use structopt::{clap::AppSettings, clap::ArgGroup, StructOpt};
 
-use did_key::DIDKey;
+use did_method_key::DIDKey;
 use didkit::{
     dereference, get_verification_method, runtime, DIDMethod, DIDResolver,
     DereferencingInputMetadata, Error, LinkedDataProofOptions, Metadata, ProofPurpose,

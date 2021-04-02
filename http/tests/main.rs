@@ -203,7 +203,7 @@ async fn credential_presentation_issue_verify() {
 
 #[tokio::test]
 async fn credential_issue_verify_other_key() {
-    use did_key::DIDKey;
+    use did_method_key::DIDKey;
     use didkit::{get_verification_method, DIDMethod, Source};
     let key = JWK::generate_ed25519().unwrap();
     let did = DIDKey.generate(&Source::Key(&key)).unwrap();

@@ -1,5 +1,5 @@
 use did_ethr::DIDEthr;
-use did_key::DIDKey;
+use did_method_key::DIDKey;
 use did_sol::DIDSol;
 use did_tezos::DIDTz;
 use did_web::DIDWeb;

@@ -23,4 +23,4 @@ ssi = { path = "../../ssi", default-features = false }
 percent-encoding = "2.1"
 
 [dev-dependencies]
-did-key = { path = "../../ssi/did-key" }
+did-method-key = { path = "../../ssi/did-key" }

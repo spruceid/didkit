@@ -23,7 +23,7 @@ path = "../../../ssi"
 default-features = false
 features = ["ed25519-dalek", "sha2", "rsa", "rand", "libsecp256k1", "p256"]
 
-[dependencies.did-key]
+[dependencies.did-method-key]
 path = "../../../ssi/did-key"
 features = ["secp256k1", "p256"]
 

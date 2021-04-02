@@ -15,7 +15,7 @@ didkit = { path = "../lib", features = ["http-did"] }
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
 structopt = "0.3"
-did-key = { path = "../../ssi/did-key" }
+did-method-key = { path = "../../ssi/did-key" }
 ssi = { path = "../../ssi", default-features = false }
 
 [dev-dependencies]
