@@ -3,7 +3,7 @@ use did_method_key::DIDKey;
 use did_onion::DIDOnion;
 use did_pkh::DIDPKH;
 use did_sol::DIDSol;
-use did_tezos::DIDTz;
+use did_tz::DIDTz;
 use did_web::DIDWeb;
 use ssi::did::DIDMethods;
 

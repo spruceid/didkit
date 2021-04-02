@@ -9,14 +9,14 @@ default = ["ring"]
 ring = ["ssi/ring"]
 wasm = []
 http-did = ["ssi/http-did"]
-secp256k1 = ["ssi/libsecp256k1", "did-tezos/secp256k1", "did-method-key/secp256k1"]
-p256 = ["ssi/p256", "did-tezos/p256", "did-method-key/p256"]
+secp256k1 = ["ssi/libsecp256k1", "did-tz/secp256k1", "did-method-key/secp256k1"]
+p256 = ["ssi/p256", "did-tz/p256", "did-method-key/p256"]
 
 [dependencies]
 #didkit_cbindings = { path = "cbindings/" }
 ssi = { path = "../../ssi", default-features = false }
 did-method-key = { path = "../../ssi/did-key" }
-did-tezos = { path = "../../ssi/did-tezos", default-features = false }
+did-tz = { path = "../../ssi/did-tezos", default-features = false }
 did-ethr = { path = "../../ssi/did-ethr" }
 did-pkh = { path = "../../ssi/did-pkh" }
 did-sol = { path = "../../ssi/did-sol" }

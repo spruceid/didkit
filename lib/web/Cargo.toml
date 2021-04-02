@@ -27,7 +27,7 @@ features = ["ed25519-dalek", "sha2", "rsa", "rand", "libsecp256k1", "p256"]
 path = "../../../ssi/did-key"
 features = ["secp256k1", "p256"]
 
-[dependencies.did-tezos]
+[dependencies.did-tz]
 path = "../../../ssi/did-tezos"
 default-features = false
 features = ["secp256k1", "dalek", "p256"]
