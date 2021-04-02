@@ -5,6 +5,48 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+### Added
+- Add Node.js package, using [Neon][].
+- Add WASM package, using [wasm-pack][].
+- Add ASM.js package, using [Binaryen][].
+- Add Python package.
+- Add [Svelte][] [CHAPI][] wallet example.
+- Add Java [Spring Boot][] example.
+- Add [JavaServer Pages (JSP)][jsp] example.
+- Add [Django][] example.
+- Add [Flask][] example.
+- Add Resolve DID command.
+- Add Dereference DID URL command.
+- Add DIDAuth command.
+- Add fallback resolver option for CLI and HTTP server.
+- Allow using multiple DID methods in `example.sh`.
+- Support Rust stable.
+- Support iOS, with static library and Flutter plugin.
+- Enable `did:web`.
+- Enable `did:sol`.
+- Enable `did:onion`.
+- Enable `did:pkh`.
+- Enable `P-256` curve.
+- Enable HTTP(S) in WASM, for parity with other platforms.
+- Enable external signing for WASM.
+- Add test driver for [vc-http-api-test-server][] (`vc-http-api v0.0.2`).
+- Public GCHR container images.
+
+### Changed
+- Use Flutter `dev` channel.
+- Update `async-std` dependency version.
+- Use [Tokio][] runtime.
+- Use `vc-http-api` controller pattern routes.
+- Update [`ssi` since `v0.1.0`][ssi-0.2.0-pre]
+- Change method name to method pattern for `key-to-did`/`keyToDID` and `key-to-verification-method`/`keyToVerificationMethod`.
+
+### Fixed
+- Fixed optionality of `ssi` features.
+- Enable `http2`, to fix build.
+- Improve `PATH` quoting, for Windows.
+
+### Security
+- Update `node-notifier` dev dependency.
 
 ## [0.1.0] - 2021-01-27
 [Initial release][]
@@ -23,13 +65,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Apache License, Version 2.0.
 - Third-party copyright notices.
 
+[Binaryen]: https://github.com/WebAssembly/binaryen#building
+[CHAPI]: https://w3c-ccg.github.io/credential-handler-api/
+[Django]: https://www.djangoproject.com/
+[Flask]: https://palletsprojects.com/p/flask/
 [Initial release]: https://sprucesystems.medium.com/didkit-v0-1-is-live-d0ea6638dbc9
-[did:key]: https://w3c-ccg.github.io/did-method-key/
-[did:web]: https://w3c-ccg.github.io/did-method-web/
-[did:tz]: https://did-tezos-draft.spruceid.com/
-[vc-http-api-0.1.1]: https://w3c-ccg.github.io/vc-http-api/versions/v0.0.1/
-[vc-data-model]: https://w3c.github.io/vc-data-model/
+[Neon]: https://www.neon-bindings.com
+[Spring Boot]: https://spring.io/projects/spring-boot
+[Svelte]: https://svelte.dev/
+[Tokio]: https://tokio.rs/
 [Verifiable Presentations]: https://w3c.github.io/vc-data-model/#presentations-0
+[did:key]: https://w3c-ccg.github.io/did-method-key/
+[did:tz]: https://did-tezos-draft.spruceid.com/
+[did:web]: https://w3c-ccg.github.io/did-method-web/
+[jsp]: https://www.oracle.com/java/technologies/jspt.html
+[ssi-0.2.0-pre]: https://github.com/spruceid/ssi/compare/v0.1.0...1ecb3d90a0fdd06a4ae3b34064a908918b51a230
+[vc-data-model]: https://w3c.github.io/vc-data-model/
+[vc-http-api-0.1.1]: https://w3c-ccg.github.io/vc-http-api/versions/v0.0.1/
+[vc-http-api-test-server]: https://github.com/w3c-ccg/vc-http-api/tree/b4df10d/packages/vc-http-api-test-server
+[wasm-pack]: https://rustwasm.github.io/wasm-pack/
 
 [Unreleased]: https://github.com/spruceid/didkit/compare/v0.1.0...HEAD
 [0.1.0]: https://github.com/spruceid/didkit/releases/tag/v0.1.0
