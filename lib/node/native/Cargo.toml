@@ -5,6 +5,7 @@ authors = ["Spruce Systems, Inc."]
 build = "build.rs"
 edition = "2018"
 exclude = ["artifacts.json", "index.node"]
+publish = false
 
 [lib]
 name = "didkit_node"
@@ -14,7 +15,7 @@ crate-type = ["cdylib"]
 neon-build = "0.6.0"
 
 [dependencies]
-ssi = { path = "../../../../ssi" }
+ssi = { version = "0.2", path = "../../../../ssi" }
 didkit = { path = "../../", default-features = false }
 neon = "0.6.0"
 neon-serde = { git = "https://github.com/theosirian/neon-serde" }
