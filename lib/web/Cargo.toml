@@ -12,6 +12,7 @@ js-sys = "0.3"
 getrandom = { version = "0.2", features = ["js"] }
 rand = { version = "0.7", features = ["wasm-bindgen"] }
 chrono = { version = "0.4", features = ["wasmbind"] }
+wee_alloc = "0.4.5"
 
 [dependencies.didkit]
 path = "../"
