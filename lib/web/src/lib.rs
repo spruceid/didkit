@@ -366,3 +366,15 @@ async fn did_auth(
 pub fn DIDAuth(holder: String, linked_data_proof_options: String, key: String) -> Promise {
     map_async_jsvalue(did_auth(holder, linked_data_proof_options, key))
 }
+
+async fn jwk_from_tezos(tz_pk: String) -> Result<String, Error> {
+    let jwk = ssi::tzkey::jwk_from_tezos_key(&tz_pk)?;
+    let jwk_json = serde_json::to_string(&jwk)?;
+    Ok(jwk_json)
+}
+
+#[wasm_bindgen]
+#[allow(non_snake_case)]
+pub fn JWKFromTezos(tz: String) -> Promise {
+    map_async_jsvalue(jwk_from_tezos(tz))
+}
