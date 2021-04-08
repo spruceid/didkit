@@ -17,6 +17,9 @@ const DID_KEY_JSON: &'static str = include_str!("../../cli/tests/ed25519-key.jwk
 const DID_KEY: &'static str = "did:key:z6MkiVpwA241guqtKWAkohHpcAry7S94QQb6ukW3GcCsugbK";
 const VERIFICATION_METHOD: &'static str = "did:key:z6MkiVpwA241guqtKWAkohHpcAry7S94QQb6ukW3GcCsugbK#z6MkiVpwA241guqtKWAkohHpcAry7S94QQb6ukW3GcCsugbK";
 
+const DID_KEY_K256: &'static str = "did:key:zQ3shokFTS3brHcDQrn82RUDfCZESWL1ZdCEJwekUDPQiYBme";
+const DID_KEY_P256: &'static str = "did:key:zrurwcJZss4ruepVNu1H3xmSirvNbzgBk9qrCktB6kaewXnJAhYWwtP3bxACqBpzjZdN7TyHNzzGGSSH5qvZsSDir9z";
+
 const ISSUE_CRED_REQ: &str = r#"{
     "credential": {
         "@context": "https://www.w3.org/2018/credentials/v1",
@@ -353,6 +356,14 @@ async fn resolve_dereference() {
     assert_eq!(result.did_document.unwrap().id, DID_KEY);
     assert_eq!(res_meta.content_type.unwrap(), TYPE_DID_LD_JSON);
     assert_eq!(http_content_type, TYPE_DID_RESOLUTION);
+
+    // Resolve more DIDs
+    let uri = Uri::from_str(&format!("{}/identifiers/{}", base, DID_KEY_K256)).unwrap();
+    let resp = client.get(uri).await.unwrap();
+    assert_eq!(resp.status(), 200);
+    let uri = Uri::from_str(&format!("{}/identifiers/{}", base, DID_KEY_P256)).unwrap();
+    let resp = client.get(uri).await.unwrap();
+    assert_eq!(resp.status(), 200);
 
     // Dereference DID URL
     let uri_string = format!(

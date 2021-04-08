@@ -4,6 +4,9 @@ use std::process::{Command, Stdio};
 
 static BIN: &str = env!("CARGO_BIN_EXE_didkit");
 
+const DID_KEY_K256: &'static str = "did:key:zQ3shokFTS3brHcDQrn82RUDfCZESWL1ZdCEJwekUDPQiYBme";
+const DID_KEY_P256: &'static str = "did:key:zrurwcJZss4ruepVNu1H3xmSirvNbzgBk9qrCktB6kaewXnJAhYWwtP3bxACqBpzjZdN7TyHNzzGGSSH5qvZsSDir9z";
+
 #[test]
 fn generate_key() {
     Command::new(BIN)
@@ -146,6 +149,20 @@ fn didkit_cli() {
     assert_ne!(res_result["didResolutionMetadata"], Value::Null);
     assert_ne!(res_result["didDocumentMetadata"], Value::Null);
     assert_eq!(res_result["didResolutionMetadata"]["error"], Value::Null);
+
+    // Resolve more DIDs
+    let resolve = Command::new(BIN)
+        .args(&["did-resolve", DID_KEY_K256])
+        .stderr(Stdio::inherit())
+        .output()
+        .unwrap();
+    assert!(resolve.status.success());
+    let resolve = Command::new(BIN)
+        .args(&["did-resolve", DID_KEY_P256])
+        .stderr(Stdio::inherit())
+        .output()
+        .unwrap();
+    assert!(resolve.status.success());
 
     // Dereference a DID URL to a verification method
     let deref = Command::new(BIN)
