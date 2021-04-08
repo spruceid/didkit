@@ -5,7 +5,7 @@ authors = ["Spruce Systems, Inc."]
 edition = "2018"
 
 [features]
-default = ["ring"]
+default = ["ring", "secp256k1", "p256"]
 ring = ["ssi/ring"]
 wasm = []
 http-did = ["ssi/http-did"]
