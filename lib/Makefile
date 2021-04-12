@@ -48,9 +48,12 @@ $(TARGET)/test/python.stamp: $(TARGET)/release/libdidkit.so | $(TARGET)/test
 	rm -rf python/dist/*
 	python3 -m pip install --upgrade pip build
 	python3 -m build python/
+	touch $@
+
+.PHONY: install-python
+install-python: $(TARGET)/test/python.stamp
 	python3 -m pip install python/dist/didkit-$(VERSION)-*.whl
 	python3 -m unittest python/didkit/tests.py -v
-	touch $@
 
 ## Java
 

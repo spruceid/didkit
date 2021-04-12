@@ -129,4 +129,4 @@ jobs:
       run: make -C lib ../target/test/aar.stamp
 
     - name: Test Python Package
-      run: make -C lib ../target/test/python.stamp
+      run: make -C lib install-python
