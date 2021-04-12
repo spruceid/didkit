@@ -6,6 +6,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.1] - 2021-04-13
+### Fixed
+- Include readme and license files in `didkit` crate.
+
 ## [0.2.0] - 2021-04-12
 ### Added
 - Add Node.js package, using [Neon][].
@@ -87,6 +91,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [vc-http-api-test-server]: https://github.com/w3c-ccg/vc-http-api/tree/b4df10d/packages/vc-http-api-test-server
 [wasm-pack]: https://rustwasm.github.io/wasm-pack/
 
-[Unreleased]: https://github.com/spruceid/didkit/compare/v0.2.0...HEAD
+[Unreleased]: https://github.com/spruceid/didkit/compare/v0.2.1...HEAD
+[0.2.1]: https://github.com/spruceid/didkit/releases/tag/v0.2.1
 [0.2.0]: https://github.com/spruceid/didkit/releases/tag/v0.2.0
 [0.1.0]: https://github.com/spruceid/didkit/releases/tag/v0.1.0
