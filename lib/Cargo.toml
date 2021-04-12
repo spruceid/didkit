@@ -5,13 +5,17 @@ authors = ["Spruce Systems, Inc."]
 edition = "2018"
 description = "Library for Verifiable Credentials and Decentralized Identifiers."
 license = "Apache-2.0"
+license-file = "LICENSE"
 homepage = "https://spruceid.dev/docs/didkit/"
 repository = "https://github.com/spruceid/didkit/"
 documentation = "https://docs.rs/didkit/"
 keywords = ["ssi", "did"]
+readme = "README.md"
 
 include = [
-  "/src"
+  "/src",
+  "/README.md",
+  "/LICENSE"
 ]
 
 [features]
