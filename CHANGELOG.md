@@ -5,6 +5,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+
+## [0.2.0] - 2021-04-12
 ### Added
 - Add Node.js package, using [Neon][].
 - Add WASM package, using [wasm-pack][].
@@ -85,5 +87,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [vc-http-api-test-server]: https://github.com/w3c-ccg/vc-http-api/tree/b4df10d/packages/vc-http-api-test-server
 [wasm-pack]: https://rustwasm.github.io/wasm-pack/
 
-[Unreleased]: https://github.com/spruceid/didkit/compare/v0.1.0...HEAD
+[Unreleased]: https://github.com/spruceid/didkit/compare/v0.2.0...HEAD
+[0.2.0]: https://github.com/spruceid/didkit/releases/tag/v0.2.0
 [0.1.0]: https://github.com/spruceid/didkit/releases/tag/v0.1.0
