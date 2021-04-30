@@ -34,6 +34,47 @@ Install the package
 python3 -m pip install dist/didkit-`cat setup.cfg | grep version | cut -d' ' -f3`-*.whl
 ```
 
+## Publishing
+### **OBS: After each platform build the folders _`build/`_ and _`didkit.egg-info`_ must be removed, otherwise the previous builds binaries are included in the new wheel.**
+
+Refeer to [cross compile](/CROSS.md) for information on how to build from linux
+to other platforms.
+
+
+```bash
+python3 setup.py bdist_wheel -p $PLATFORM
+```
+
+Valid values for `$PLATFORM` are the following:
+ - `manylinux_GLIBCMAJOR_GLIBCMINOR_ARCH` for linux builds
+ - `macosx-10.MACOSX_DEPLOYMENT_TARGET_ARCH` for macOS builds
+ - `win-amd64` for Windows builds
+
+`GLIBC` version can be found running `ldd --version` at the shell, `ARCH` can be
+found running `uname -a`.
+
+Example publishing from linux for linux:
+```bash
+ldd --version
+ldd (Ubuntu GLIBC 2.31-0ubuntu9.2) 2.31
+uname -a
+x86_64 x86_64 x86_64 GNU/Linux
+python3 setup.py bdist_wheel -p manylinux_2_31-x86_64
+```
+
+Example publishing from linux for macOS:
+ - `MACOSX_DEPLOYMENT_TARGET=10.10` (this is set when buildng for mac)
+```bash
+uname -a
+x86_64
+python3 setup.py bdist_wheel -p macosx.10.10-x86_64
+```
+
+Example publishing from linux for Windows:
+```bash
+python3 setup.py bdist_wheel -p win-amd64
+```
+
 ## Maturity Disclaimer
 In the v0.1 release on January 27th, 2021, DIDKit has not yet undergone a
 formal security audit and to desired levels of confidence for suitable use in
