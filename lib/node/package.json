@@ -1,16 +1,16 @@
 {
   "name": "didkit",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "",
-  "main": "lib/index.js",
+  "main": "index.js",
   "author": "Spruce Systems, Inc.",
   "license": "MIT",
   "dependencies": {
     "@mapbox/node-pre-gyp": "^1.0.4",
-    "neon-cli": "^0.5.3",
     "node-notifier": "^8.0.1"
   },
   "devDependencies": {
+    "cargo-cp-artifact": "^0.1.0",
     "eslint": "^7.19.0",
     "eslint-config-prettier": "^7.2.0",
     "eslint-plugin-prettier": "^3.3.1",
@@ -20,9 +20,9 @@
     "uuid": "^8.3.2"
   },
   "scripts": {
-    "build": "neon build",
-    "build-release": "neon build --release",
-    "install": "node-pre-gyp install --fallback-to-build=false || neon build",
+    "build": "cargo-cp-artifact -ac didkit-node index.node -- cargo build --message-format=json-render-diagnostics",
+    "build-release": "cargo-cp-artifact -ac didkit-node index.node -- cargo build --release --message-format=json-render-diagnostics",
+    "install": "node-pre-gyp install --fallback-to-build=false || npm run build-release",
     "lint": "eslint .",
     "package": "node-pre-gyp package",
     "spec": "jest",
@@ -35,18 +35,17 @@
     "url": "git+https://github.com/spruceid/didkit.git"
   },
   "files": [
-    "native/index.node",
-    "native/Cargo.toml",
-    "native/build.rs",
-    "native/src",
-    "lib"
+    "index.node",
+    "Cargo.toml",
+    "src",
+    "index.js"
   ],
   "binary": {
     "module_name": "index",
     "host": "https://github.com/spruceid/didkit/releases/download/",
     "remote_path": "{version}",
     "package_name": "node-{node_abi}-{platform}-{arch}.tar.gz",
-    "module_path": "./native",
+    "module_path": "./",
     "pkg_path": "."
   },
   "jest": {

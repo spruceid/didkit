@@ -2,25 +2,23 @@
 name = "didkit-node"
 version = "0.1.0"
 authors = ["Spruce Systems, Inc."]
-build = "build.rs"
 edition = "2018"
 exclude = ["artifacts.json", "index.node"]
 
 [lib]
-name = "didkit_node"
 crate-type = ["cdylib"]
 
 [build-dependencies]
-neon-build = "0.6.0"
+neon-build = "0.8.1"
 
 [dependencies]
 serde = "1.0"
 
 [dependencies.ssi]
-path = "../../../../ssi"
+path = "../../../ssi"
 
 [dependencies.didkit]
-path = "../../"
+path = "../"
 default-features = false
 
 [dependencies.tokio]
@@ -30,7 +28,8 @@ features = ["rt-multi-thread"]
 [dependencies.neon]
 version = "0.8.1"
 default-features = false
-features = ["napi-4"]
+features = ["napi-6"]
 
 [dependencies.neon-serde]
 git = "https://github.com/spruceid/neon-serde"
+rev = "408b7253d17a8efd9ce79b8247ac1b4e07174f30"

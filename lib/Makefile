@@ -149,11 +149,10 @@ $(TARGET)/test/flutter.stamp: flutter/lib/didkit.dart flutter/test/didkit_test.d
 
 ## Node
 
-NODE_SRC=node/package.json node/lib/index.js node/native/Cargo.toml $(wildcard node/native/src/*.rs)
+NODE_SRC=node/package.json node/index.js node/Cargo.toml $(wildcard node/src/*.rs)
 
 $(TARGET)/test/node.stamp: $(NODE_SRC) | $(TARGET)/test
 	cd node && npm install
-	cd node && npm run build
 	cd node && npm run test
 	touch $@
 
