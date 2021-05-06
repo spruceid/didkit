@@ -14,9 +14,23 @@ crate-type = ["cdylib"]
 neon-build = "0.6.0"
 
 [dependencies]
-ssi = { path = "../../../../ssi" }
-didkit = { path = "../../", default-features = false }
-neon = "0.6.0"
-neon-serde = { git = "https://github.com/theosirian/neon-serde" }
 serde = "1.0"
-tokio = { version = "1.0", features = ["rt-multi-thread"] }
+
+[dependencies.ssi]
+path = "../../../../ssi"
+
+[dependencies.didkit]
+path = "../../"
+default-features = false
+
+[dependencies.tokio]
+version = "1.0"
+features = ["rt-multi-thread"]
+
+[dependencies.neon]
+version = "0.8.1"
+default-features = false
+features = ["napi-4"]
+
+[dependencies.neon-serde]
+git = "https://github.com/spruceid/neon-serde"
