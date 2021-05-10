@@ -1,6 +1,6 @@
 [package]
 name = "didkit-node"
-version = "0.1.0"
+version = "0.2.2"
 authors = ["Spruce Systems, Inc."]
 edition = "2018"
 exclude = ["artifacts.json", "index.node"]
@@ -15,10 +15,10 @@ neon-build = "0.8.1"
 serde = "1.0"
 
 [dependencies.ssi]
-path = "../../../ssi"
+version = "0.2.1"
 
 [dependencies.didkit]
-path = "../"
+version = "0.2.1"
 default-features = false
 
 [dependencies.tokio]
