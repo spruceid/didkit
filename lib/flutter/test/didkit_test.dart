@@ -11,10 +11,14 @@ void main() {
   });
 
   test('exceptions', () async {
-    expect(() => DIDKit.issueCredential('', '', ''), throwsA(isInstanceOf<DIDKitException>()));
-    expect(() => DIDKit.issuePresentation('', '', ''), throwsA(isInstanceOf<DIDKitException>()));
-    expect(() => DIDKit.verifyCredential('', ''), throwsA(isInstanceOf<DIDKitException>()));
-    expect(() => DIDKit.verifyPresentation('', ''), throwsA(isInstanceOf<DIDKitException>()));
+    expect(() => DIDKit.issueCredential('', '', ''),
+        throwsA(isInstanceOf<DIDKitException>()));
+    expect(() => DIDKit.issuePresentation('', '', ''),
+        throwsA(isInstanceOf<DIDKitException>()));
+    expect(() => DIDKit.verifyCredential('', ''),
+        throwsA(isInstanceOf<DIDKitException>()));
+    expect(() => DIDKit.verifyPresentation('', ''),
+        throwsA(isInstanceOf<DIDKitException>()));
   });
 
   test('generateEd25519Key', () async {
@@ -38,25 +42,23 @@ void main() {
     final did = DIDKit.keyToDID('key', key);
     final verificationMethod = DIDKit.keyToVerificationMethod('key', key);
     final options = {
-        'proofPurpose': 'assertionMethod',
-        'verificationMethod': verificationMethod
+      'proofPurpose': 'assertionMethod',
+      'verificationMethod': verificationMethod
     };
     final credential = {
-        '@context': 'https://www.w3.org/2018/credentials/v1',
-        'id': 'http://example.org/credentials/3731',
-        'type': ['VerifiableCredential'],
-        'issuer': did,
-        'issuanceDate': '2020-08-19T21:41:50Z',
-        'credentialSubject': {
-           'id': 'did:example:d23dd687a7dc6787646f2eb98d0'
-        }
+      '@context': 'https://www.w3.org/2018/credentials/v1',
+      'id': 'http://example.org/credentials/3731',
+      'type': ['VerifiableCredential'],
+      'issuer': did,
+      'issuanceDate': '2020-08-19T21:41:50Z',
+      'credentialSubject': {'id': 'did:example:d23dd687a7dc6787646f2eb98d0'}
     };
-    final vc = DIDKit.issueCredential(jsonEncode(credential), jsonEncode(options), key);
+    final vc = DIDKit.issueCredential(
+        jsonEncode(credential), jsonEncode(options), key);
 
-    final verifyOptions = {
-        'proofPurpose': 'assertionMethod'
-    };
-    final verifyResult = jsonDecode(DIDKit.verifyCredential(vc, jsonEncode(verifyOptions)));
+    final verifyOptions = {'proofPurpose': 'assertionMethod'};
+    final verifyResult =
+        jsonDecode(DIDKit.verifyCredential(vc, jsonEncode(verifyOptions)));
     expect(verifyResult['errors'], isEmpty);
   });
 
@@ -65,31 +67,29 @@ void main() {
     final did = DIDKit.keyToDID('key', key);
     final verificationMethod = DIDKit.keyToVerificationMethod('key', key);
     final options = {
-        'proofPurpose': 'authentication',
-        'verificationMethod': verificationMethod
+      'proofPurpose': 'authentication',
+      'verificationMethod': verificationMethod
     };
     final presentation = {
-        '@context': ['https://www.w3.org/2018/credentials/v1'],
-        'id': 'http://example.org/presentations/3731',
-        'type': ['VerifiablePresentation'],
-        'holder': did,
-        'verifiableCredential': {
-            '@context': 'https://www.w3.org/2018/credentials/v1',
-            'id': 'http://example.org/credentials/3731',
-            'type': ['VerifiableCredential'],
-            'issuer': 'did:example:30e07a529f32d234f6181736bd3',
-            'issuanceDate': '2020-08-19T21:41:50Z',
-            'credentialSubject': {
-                'id': 'did:example:d23dd687a7dc6787646f2eb98d0'
-            }
-        }
+      '@context': ['https://www.w3.org/2018/credentials/v1'],
+      'id': 'http://example.org/presentations/3731',
+      'type': ['VerifiablePresentation'],
+      'holder': did,
+      'verifiableCredential': {
+        '@context': 'https://www.w3.org/2018/credentials/v1',
+        'id': 'http://example.org/credentials/3731',
+        'type': ['VerifiableCredential'],
+        'issuer': 'did:example:30e07a529f32d234f6181736bd3',
+        'issuanceDate': '2020-08-19T21:41:50Z',
+        'credentialSubject': {'id': 'did:example:d23dd687a7dc6787646f2eb98d0'}
+      }
     };
-    final vc = DIDKit.issuePresentation(jsonEncode(presentation), jsonEncode(options), key);
+    final vc = DIDKit.issuePresentation(
+        jsonEncode(presentation), jsonEncode(options), key);
 
-    final verifyOptions = {
-        'proofPurpose': 'authentication'
-    };
-    final verifyResult = jsonDecode(DIDKit.verifyPresentation(vc, jsonEncode(verifyOptions)));
+    final verifyOptions = {'proofPurpose': 'authentication'};
+    final verifyResult =
+        jsonDecode(DIDKit.verifyPresentation(vc, jsonEncode(verifyOptions)));
     expect(verifyResult['errors'], isEmpty);
   });
 
@@ -103,7 +103,8 @@ void main() {
   test('dereferenceDIDURL', () async {
     final key = DIDKit.generateEd25519Key();
     final verificationMethod = DIDKit.keyToVerificationMethod('key', key);
-    final derefResult = jsonDecode(DIDKit.dereferenceDIDURL(verificationMethod, '{}'));
+    final derefResult =
+        jsonDecode(DIDKit.dereferenceDIDURL(verificationMethod, '{}'));
     expect(derefResult, isList);
   });
 
@@ -119,10 +120,8 @@ void main() {
       'challenge': challenge
     });
     final vp = DIDKit.DIDAuth(did, proofOptions, key);
-    final verifyOptions = jsonEncode({
-      'proofPurpose': 'assertionMethod',
-      'challenge': challenge
-    });
+    final verifyOptions =
+        jsonEncode({'proofPurpose': 'assertionMethod', 'challenge': challenge});
     final verification = DIDKit.verifyPresentation(vp, verifyOptions);
     final verifyResult = jsonDecode(verification);
     expect(verifyResult['errors'], isEmpty);

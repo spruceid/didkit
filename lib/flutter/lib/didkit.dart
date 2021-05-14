@@ -4,10 +4,12 @@ import 'dart:ffi';
 import 'dart:io';
 import 'package:ffi/ffi.dart';
 
-// TODO: support macOS, Windows
+// TODO: support Windows
 final DynamicLibrary lib = Platform.isAndroid || Platform.isLinux
     ? DynamicLibrary.open('libdidkit.so')
-    : DynamicLibrary.process();
+    : Platform.isMacOS
+        ? DynamicLibrary.open('libdidkit.dylib')
+        : DynamicLibrary.process();
 
 final get_version =
     lib.lookupFunction<Pointer<Utf8> Function(), Pointer<Utf8> Function()>(

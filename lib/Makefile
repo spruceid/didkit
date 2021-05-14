@@ -7,6 +7,12 @@ else
 	OS_NAME=$(shell uname | tr '[:upper:]' '[:lower:]')
 endif
 
+ifeq ($(OS_NAME),darwin)
+	LIB_NAME=libdidkit.dylib
+else 
+	LIB_NAME=libdidkit.so
+endif
+
 VERSION=$(shell cat Cargo.toml | grep -m 1 version | cut -d' ' -f3 | sed 's/"//g')
 
 .PHONY: test
@@ -27,16 +33,16 @@ android/res $(TARGET)/test $(TARGET)/jvm:
 RUST_SRC=Cargo.toml $(wildcard src/*.rs src/*/*.rs src/*/*/*.rs)
 
 $(TARGET)/didkit.h: cbindgen.toml cbindings/build.rs cbindings/Cargo.toml $(RUST_SRC)
-	cargo build -p didkit_cbindings
+	cargo build -p didkit-cbindings
 	test -s $@ && touch $@
 
-$(TARGET)/release/libdidkit.so: $(RUST_SRC)
+$(TARGET)/release/$(LIB_NAME): $(RUST_SRC)
 	cargo build --lib --release
-	strip $@
+	strip $@ || true
 
 ## C
 
-$(TARGET)/test/c.stamp: $(TARGET)/cabi-test $(TARGET)/release/libdidkit.so | $(TARGET)/test
+$(TARGET)/test/c.stamp: $(TARGET)/cabi-test $(TARGET)/release/$(LIB_NAME) | $(TARGET)/test
 	LD_LIBRARY_PATH=$(TARGET)/release $(TARGET)/cabi-test
 	touch $@
 
@@ -44,7 +50,7 @@ $(TARGET)/cabi-test: c/test.c $(TARGET)/release/libdidkit.so $(TARGET)/didkit.h
 	$(CC) -I$(TARGET) -L$(TARGET)/release $< -ldl -ldidkit -o $@
 
 ## Python
-$(TARGET)/test/python.stamp: $(TARGET)/release/libdidkit.so | $(TARGET)/test
+$(TARGET)/test/python.stamp: $(TARGET)/release/$(LIB_NAME) | $(TARGET)/test
 	rm -rf python/dist/*
 	python3 -m pip install --upgrade pip build
 	python3 -m build python/
@@ -63,7 +69,7 @@ $(TARGET)/test/java.stamp: \
 	$(TARGET)/jvm/com/spruceid/DIDKit.class \
 	$(TARGET)/jvm/com/spruceid/DIDKitException.class \
 	$(TARGET)/jvm/com/spruceid/DIDKitTest.class \
-	$(TARGET)/release/libdidkit.so | $(TARGET)/test
+	$(TARGET)/release/$(LIB_NAME) | $(TARGET)/test
 	java -Djava.class.path=$(TARGET)/jvm \
 		-Djava.library.path=$(TARGET)/release \
 		com.spruceid.DIDKitTest
@@ -129,7 +135,7 @@ IOS_LIBS=\
 	$(TARGET)/aarch64-apple-ios/release/libdidkit.a \
 	$(TARGET)/x86_64-apple-ios/release/libdidkit.a
 
-$(TARGET)/test/ios.stamp: $(TARGET)/universal/release/libdidkit.a | $(TARGET)/test
+$(TARGET)/test/ios.stamp: $(TARGET)/universal/release/libdidkit.a $(TARGET)/didkit.h | $(TARGET)/test
 	touch $@
 
 $(TARGET)/universal/release/libdidkit.a: $(IOS_LIBS)
@@ -138,12 +144,12 @@ $(TARGET)/universal/release/libdidkit.a: $(IOS_LIBS)
 
 $(TARGET)/%/release/libdidkit.a: $(RUST_SRC)
 	cargo build --lib --release --target $*
-	#$(TOOLCHAIN)/bin/llvm-strip $@
+	#strip $@
 
 ## Flutter
 
-$(TARGET)/test/flutter.stamp: flutter/lib/didkit.dart flutter/test/didkit_test.dart $(TARGET)/release/libdidkit.so | $(TARGET)/test
-	cd flutter && LD_LIBRARY_PATH=$$PWD \
+$(TARGET)/test/flutter.stamp: flutter/lib/didkit.dart flutter/test/didkit_test.dart $(TARGET)/release/$(LIB_NAME) | $(TARGET)/test
+	cd flutter && LD_LIBRARY_PATH=$(shell pwd) \
 		flutter --suppress-analytics test
 	touch $@
 
