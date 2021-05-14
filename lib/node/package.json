@@ -1,6 +1,6 @@
 {
   "name": "@spruceid/didkit",
-  "version": "0.2.2",
+  "version": "0.2.3",
   "description": "",
   "main": "index.js",
   "author": "Spruce Systems, Inc.",
@@ -35,9 +35,9 @@
     "url": "git+https://github.com/spruceid/didkit.git"
   },
   "files": [
-    "index.node",
     "Cargo.toml",
     "src",
+    "index.d.ts",
     "index.js"
   ],
   "binary": {
