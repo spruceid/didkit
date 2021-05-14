@@ -149,7 +149,7 @@ $(TARGET)/%/release/libdidkit.a: $(RUST_SRC)
 ## Flutter
 
 $(TARGET)/test/flutter.stamp: flutter/lib/didkit.dart flutter/test/didkit_test.dart $(TARGET)/release/$(LIB_NAME) | $(TARGET)/test
-	cd flutter && LD_LIBRARY_PATH=$(shell pwd) \
+	cd flutter && LD_LIBRARY_PATH=$(shell pwd)/flutter \
 		flutter --suppress-analytics test
 	touch $@
 
