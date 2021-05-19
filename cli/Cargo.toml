@@ -29,6 +29,10 @@ serde_json = "1.0"
 structopt = "0.3"
 did-method-key = { version = "0.1", path = "../../ssi/did-key" }
 ssi = { version = "0.2", path = "../../ssi", default-features = false }
+thiserror = "1.0"
+bytes = "1.0"
+base64 = "0.12"
+sshkeys = "0.3"
 
 [dev-dependencies]
 tokio = { version = "1.0", features = ["macros", "process"] }

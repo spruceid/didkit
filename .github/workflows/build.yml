@@ -29,7 +29,7 @@ jobs:
       with:
         repository: spruceid/ssi
         path: ssi
-        ref: 2f07a6f0d9bdbcc33b2906d3b9a927480d86ead3
+        ref: b0900a6d0254caef457161d10653f3ac8f5138d3
         submodules: true
 
     - name: Cache Cargo registry and build artifacts
@@ -51,6 +51,9 @@ jobs:
 
     - name: Test CLI
       run: cli/tests/example.sh
+
+    - name: Test CLI with ssh-agent
+      run: cli/tests/ssh-agent.sh
 
     - name: Test HTTP server
       run: http/tests/example.sh

@@ -10,6 +10,7 @@ use sshkeys::PublicKey;
 use structopt::{clap::AppSettings, clap::ArgGroup, StructOpt};
 
 use did_method_key::DIDKey;
+use didkit::generate_proof;
 use didkit::{
     dereference, get_verification_method, runtime, DIDMethod, DIDResolver,
     DereferencingInputMetadata, Error, LinkedDataProofOptions, Metadata, ProofFormat, ProofPurpose,
@@ -161,7 +162,7 @@ pub struct ProofOptions {
 }
 
 #[derive(StructOpt, Debug)]
-#[structopt(group = ArgGroup::with_name("key_group").required(true))]
+#[structopt(group = ArgGroup::with_name("key_group").multiple(true).required(true))]
 pub struct KeyArg {
     #[structopt(env, short, long, parse(from_os_str), group = "key_group")]
     key_path: Option<PathBuf>,
@@ -176,17 +177,24 @@ pub struct KeyArg {
         help = "WARNING: you should not use this through the CLI in a production environment, prefer its environment variable."
     )]
     jwk: Option<JWK>,
+    /// Request signature using SSH Agent
+    #[structopt(short = "S", long, group = "key_group")]
+    ssh_agent: bool,
 }
 
 impl KeyArg {
     fn get_jwk(&self) -> JWK {
+        self.get_jwk_opt()
+            .expect("Key path or JWK option is required")
+    }
+    fn get_jwk_opt(&self) -> Option<JWK> {
         match &self.key_path {
             Some(p) => {
                 let key_file = File::open(p).unwrap();
                 let key_reader = BufReader::new(key_file);
-                serde_json::from_reader(key_reader).unwrap()
+                Some(serde_json::from_reader(key_reader).unwrap())
             }
-            None => self.jwk.clone().unwrap(),
+            None => self.jwk.clone(),
         }
     }
 }
@@ -288,9 +296,31 @@ mod tests {
     }
 }
 
+fn ssh_auth_sock_err() {
+    eprintln!(
+        r#"didkit: missing SSH_AUTH_SOCK environmental variable for SSH Agent usage.
+To use DIDKit with SSH Agent, ssh-agent must be running and $SSH_AUTH_SOCK
+set. For more info, see the manual for ssh-agent(1) and ssh-add(1).
+"#
+    );
+    std::process::exit(1);
+}
+
 fn main() {
     let rt = runtime::get().unwrap();
     let opt = DIDKit::from_args();
+
+    use std::env::VarError;
+    let ssh_agent_sock = match std::env::var("SSH_AUTH_SOCK") {
+        Ok(string) => Some(string),
+        Err(VarError::NotPresent) => None,
+        Err(VarError::NotUnicode(_)) => panic!("Unable to parse SSH_AUTH_SOCK"),
+    };
+    let ssh_agent_sock_opt = match ssh_agent_sock {
+        Some(ref path) => Some(&path[..]),
+        None => None,
+    };
+
     match opt {
         DIDKit::GenerateEd25519Key => {
             let jwk = JWK::generate_ed25519().unwrap();
@@ -354,22 +384,33 @@ fn main() {
         }
 
         DIDKit::VCIssueCredential { key, proof_options } => {
-            let key: JWK = key.get_jwk();
             let credential_reader = BufReader::new(stdin());
             let mut credential: VerifiableCredential =
                 serde_json::from_reader(credential_reader).unwrap();
             let proof_format = proof_options.proof_format.clone();
+            let jwk_opt: Option<JWK> = key.get_jwk_opt();
+            if key.ssh_agent && ssh_agent_sock.is_none() {
+                ssh_auth_sock_err();
+            }
             let options = LinkedDataProofOptions::from(proof_options);
             match proof_format {
                 ProofFormat::JWT => {
+                    if ssh_agent_sock_opt.is_some() {
+                        todo!("ssh-agent for JWT not implemented");
+                    }
                     let jwt = rt
-                        .block_on(credential.generate_jwt(Some(&key), &options))
+                        .block_on(credential.generate_jwt(jwk_opt.as_ref(), &options))
                         .unwrap();
                     print!("{}", jwt);
                 }
                 ProofFormat::LDP => {
                     let proof = rt
-                        .block_on(credential.generate_proof(&key, &options))
+                        .block_on(generate_proof(
+                            &credential,
+                            jwk_opt.as_ref(),
+                            options,
+                            ssh_agent_sock_opt,
+                        ))
                         .unwrap();
                     credential.add_proof(proof);
                     let stdout_writer = BufWriter::new(stdout());
@@ -418,22 +459,33 @@ fn main() {
         }
 
         DIDKit::VCIssuePresentation { key, proof_options } => {
-            let key: JWK = key.get_jwk();
             let presentation_reader = BufReader::new(stdin());
             let mut presentation: VerifiablePresentation =
                 serde_json::from_reader(presentation_reader).unwrap();
+            let jwk_opt: Option<JWK> = key.get_jwk_opt();
+            if key.ssh_agent && ssh_agent_sock.is_none() {
+                ssh_auth_sock_err();
+            }
             let proof_format = proof_options.proof_format.clone();
             let options = LinkedDataProofOptions::from(proof_options);
             match proof_format {
                 ProofFormat::JWT => {
+                    if ssh_agent_sock_opt.is_some() {
+                        todo!("ssh-agent for JWT not implemented");
+                    }
                     let jwt = rt
-                        .block_on(presentation.generate_jwt(Some(&key), &options))
+                        .block_on(presentation.generate_jwt(jwk_opt.as_ref(), &options))
                         .unwrap();
                     print!("{}", jwt);
                 }
                 ProofFormat::LDP => {
                     let proof = rt
-                        .block_on(presentation.generate_proof(&key, &options))
+                        .block_on(generate_proof(
+                            &presentation,
+                            jwk_opt.as_ref(),
+                            options,
+                            ssh_agent_sock_opt,
+                        ))
                         .unwrap();
                     presentation.add_proof(proof);
                     let stdout_writer = BufWriter::new(stdout());
@@ -551,21 +603,32 @@ fn main() {
             holder,
             proof_options,
         } => {
-            let key: JWK = key.get_jwk();
             let mut presentation = VerifiablePresentation::default();
             presentation.holder = Some(ssi::vc::URI::String(holder));
             let proof_format = proof_options.proof_format.clone();
+            let jwk_opt: Option<JWK> = key.get_jwk_opt();
+            if key.ssh_agent && ssh_agent_sock.is_none() {
+                ssh_auth_sock_err();
+            }
             let options = LinkedDataProofOptions::from(proof_options);
             match proof_format {
                 ProofFormat::JWT => {
+                    if ssh_agent_sock_opt.is_some() {
+                        todo!("ssh-agent for JWT not implemented");
+                    }
                     let jwt = rt
-                        .block_on(presentation.generate_jwt(Some(&key), &options))
+                        .block_on(presentation.generate_jwt(jwk_opt.as_ref(), &options))
                         .unwrap();
                     print!("{}", jwt);
                 }
                 ProofFormat::LDP => {
                     let proof = rt
-                        .block_on(presentation.generate_proof(&key, &options))
+                        .block_on(generate_proof(
+                            &presentation,
+                            jwk_opt.as_ref(),
+                            options,
+                            ssh_agent_sock_opt,
+                        ))
                         .unwrap();
                     presentation.add_proof(proof);
                     let stdout_writer = BufWriter::new(stdout());

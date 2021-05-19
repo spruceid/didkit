@@ -6,6 +6,8 @@ pub mod error;
 pub mod jni;
 #[cfg(not(feature = "wasm"))]
 pub mod runtime;
+#[cfg(not(feature = "wasm"))]
+pub mod ssh_agent;
 
 #[macro_use]
 extern crate lazy_static;
@@ -96,4 +98,44 @@ impl FromStr for ProofFormat {
             _ => Err(format!("Unexpected proof format: {}", s))?,
         }
     }
+}
+
+#[derive(thiserror::Error, Debug)]
+pub enum GenerateProofError {
+    #[cfg(not(feature = "wasm"))]
+    #[error("Unable to sign: {0}")]
+    Sign(#[from] crate::ssh_agent::SignError),
+    #[error("SSI: {0}")]
+    SSI(#[from] ssi::error::Error),
+    #[error("IO: {0}")]
+    IO(#[from] std::io::Error),
+    #[error("WASM support for ssh-agent is not enabled")]
+    NoWASM,
+}
+
+pub async fn generate_proof(
+    document: &(dyn ssi::ldp::LinkedDataDocument + Sync),
+    key: Option<&JWK>,
+    options: LinkedDataProofOptions,
+    ssh_agent_sock_path_opt: Option<&str>,
+) -> Result<ssi::vc::Proof, GenerateProofError> {
+    use ssi::ldp::LinkedDataProofs;
+    let proof = match ssh_agent_sock_path_opt {
+        #[cfg(feature = "wasm")]
+        Some(sock_path) => {
+            return Err(GenerateProofError::NoWASM);
+        }
+        #[cfg(not(feature = "wasm"))]
+        Some(sock_path) => {
+            use tokio::net::UnixStream;
+            let mut ssh_agent_sock = UnixStream::connect(sock_path).await?;
+            crate::ssh_agent::generate_proof(&mut ssh_agent_sock, document, options, key).await?
+        }
+        None => {
+            let jwk = key.expect("JWK, Key Path, or SSH Agent option is required.");
+            LinkedDataProofs::sign(document, &options, &jwk).await?
+        }
+    };
+
+    Ok(proof)
 }
