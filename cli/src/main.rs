@@ -6,6 +6,7 @@ use std::str::FromStr;
 use chrono::prelude::*;
 use serde::Serialize;
 use serde_json::Value;
+use sshkeys::PublicKey;
 use structopt::{clap::AppSettings, clap::ArgGroup, StructOpt};
 
 use did_method_key::DIDKey;
@@ -38,6 +39,12 @@ pub enum DIDKit {
         method_pattern: Option<String>,
         #[structopt(flatten)]
         key: KeyArg,
+    },
+    /// Convert a SSH public key to a JWK
+    SshPkToJwk {
+        #[structopt(parse(try_from_str=PublicKey::from_string))]
+        /// SSH Public Key
+        ssh_pk: PublicKey,
     },
 
     /*
@@ -312,6 +319,12 @@ fn main() {
                 .ok_or(Error::UnableToGenerateDID)
                 .unwrap();
             println!("{}", did);
+        }
+
+        DIDKit::SshPkToJwk { ssh_pk } => {
+            let jwk = ssi::ssh::ssh_pkk_to_jwk(&ssh_pk.kind).unwrap();
+            let stdout_writer = BufWriter::new(stdout());
+            serde_json::to_writer_pretty(stdout_writer, &jwk).unwrap();
         }
 
         DIDKit::KeyToVerificationMethod {
