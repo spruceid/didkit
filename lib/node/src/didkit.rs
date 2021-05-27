@@ -5,12 +5,12 @@ use didkit::error::Error as DIDKitError;
 use didkit::error::{didkit_error_code, didkit_error_message};
 use didkit::get_verification_method;
 use didkit::runtime;
-use didkit::LinkedDataProofOptions;
 use didkit::Source;
 use didkit::VerifiableCredential;
 use didkit::VerifiablePresentation;
 use didkit::DID_METHODS;
 use didkit::JWK;
+use didkit::{JWTOrLDPOptions, LinkedDataProofOptions, ProofFormat};
 
 use crate::error::Error;
 use crate::{arg, throws};
@@ -62,14 +62,32 @@ pub fn key_to_verification_method(mut cx: FunctionContext) -> JsResult<JsString>
 
 pub fn issue_credential(mut cx: FunctionContext) -> JsResult<JsValue> {
     let mut credential = arg!(cx, 0, VerifiableCredential);
-    let options = arg!(cx, 1, LinkedDataProofOptions);
+    let options = arg!(cx, 1, JWTOrLDPOptions);
     let key = arg!(cx, 2, JWK);
+    let proof_format = options.proof_format.unwrap_or_default();
 
     let rt = throws!(cx, runtime::get())?;
-    let proof = throws!(cx, rt.block_on(credential.generate_proof(&key, &options)))?;
-    credential.add_proof(proof);
-
-    let vc = throws!(cx, neon_serde::to_value(&mut cx, &credential))?;
+    let vc = match proof_format {
+        ProofFormat::JWT => {
+            let jwt = throws!(
+                cx,
+                rt.block_on(credential.generate_jwt(Some(&key), &options.ldp_options))
+            )?;
+            cx.string(jwt).as_value(&mut cx)
+        }
+        ProofFormat::LDP => {
+            let proof = throws!(
+                cx,
+                rt.block_on(credential.generate_proof(&key, &options.ldp_options))
+            )?;
+            credential.add_proof(proof);
+            throws!(cx, neon_serde::to_value(&mut cx, &credential))?
+        }
+        _ => throws!(
+            cx,
+            Err(DIDKitError::UnknownProofFormat(proof_format.to_string()))
+        )?,
+    };
     Ok(vc)
 }
 

@@ -10,6 +10,11 @@ set -e
 did_method=${DID_METHOD:-key}
 # More info about did:key: https://w3c-ccg.github.io/did-method-key/
 
+# Allow setting proof format using environmental variables.
+proof_format=${PROOF_FORMAT:-ldp}
+vc_proof_format=${VC_PROOF_FORMAT:-$proof_format}
+vp_proof_format=${VP_PROOF_FORMAT:-$proof_format}
+
 # Pretty-print JSON using jq or json_pp if available.
 print_json() {
 	file=${1?file}
@@ -81,13 +86,14 @@ EOF
 # output, which we save to a file.
 if ! curl -fsS $didkit_url/credentials/issue \
 	-H 'Content-Type: application/json' \
-	-o credential-signed.jsonld \
+	-o credential-signed \
 	-d @- <<EOF
 {
   "credential": $(cat credential-unsigned.jsonld),
   "options": {
     "verificationMethod": "$verification_method",
-    "proofPurpose": "assertionMethod"
+    "proofPurpose": "assertionMethod",
+    "proofFormat": "$vc_proof_format"
   }
 }
 EOF
@@ -97,8 +103,21 @@ then
 fi
 
 echo 'Issued verifiable credential:'
-print_json credential-signed.jsonld
+if [ "$vc_proof_format" = jwt ]; then
+	cat credential-signed
+else
+	print_json credential-signed
+fi
 echo
+
+# Encode credential as JSON for presenting.
+if [ "$vc_proof_format" = jwt ]; then
+	echo -n '"'
+	cat credential-signed
+	echo -n '"'
+else
+	cat credential-signed
+fi > credential-signed.json
 
 # Verify verifiable credential.
 # We pass the newly-issued verifiable credential back to didkit for
@@ -110,10 +129,11 @@ if ! curl -fsS $didkit_url/credentials/verify \
 	-o credential-verify-result.json \
 	-d @- <<EOF
 {
-  "verifiableCredential": $(cat credential-signed.jsonld),
+  "verifiableCredential": $(cat credential-signed.json),
   "options": {
     "verificationMethod": "$verification_method",
-    "proofPurpose": "assertionMethod"
+    "proofPurpose": "assertionMethod",
+    "proofFormat": "$vc_proof_format"
   }
 }
 EOF
@@ -134,7 +154,7 @@ cat > presentation-unsigned.jsonld <<EOF
 	"id": "http://example.org/presentations/3731",
 	"type": ["VerifiablePresentation"],
 	"holder": "$did",
-	"verifiableCredential": $(cat credential-signed.jsonld)
+	"verifiableCredential": $(cat credential-signed.json)
 }
 EOF
 
@@ -145,23 +165,38 @@ EOF
 # the resulting newly created verifiable presentation to a file.
 if ! curl -fsS $didkit_url/credentials/prove \
 	-H 'Content-Type: application/json' \
-	-o presentation-signed.jsonld \
+	-o presentation-signed \
 	-d @- <<EOF
 {
   "presentation": $(cat presentation-unsigned.jsonld),
   "options": {
     "verificationMethod": "$verification_method",
-    "proofPurpose": "authentication"
+    "proofPurpose": "authentication",
+    "proofFormat": "$vp_proof_format"
   }
 }
 EOF
 then
 	echo 'Unable to issue presentation.'
+	cat presentation-signed
 	exit 1
 fi
 echo 'Issued verifiable presentation:'
-print_json presentation-signed.jsonld
+if [ "$vp_proof_format" = jwt ]; then
+	cat presentation-signed
+else
+	print_json presentation-signed
+fi
 echo
+
+# Encode presentation as JSON for verification.
+if [ "$vp_proof_format" = jwt ]; then
+	echo -n '"'
+	cat presentation-signed
+	echo -n '"'
+else
+	cat presentation-signed
+fi > presentation-signed.json
 
 # Verify verifiable presentation.
 # Pass the verifiable presentation back to didkit for verification.
@@ -171,10 +206,11 @@ if ! curl -fsS $didkit_url/presentations/verify \
 	-o presentation-verify-result.json \
 	-d @- <<EOF
 {
-  "verifiablePresentation": $(cat presentation-signed.jsonld),
+  "verifiablePresentation": $(cat presentation-signed.json),
   "options": {
     "verificationMethod": "$verification_method",
-    "proofPurpose": "authentication"
+    "proofPurpose": "authentication",
+    "proofFormat": "$vp_proof_format"
   }
 }
 EOF
@@ -182,6 +218,7 @@ then
 	echo 'Unable to verify presentation.'
 	exit 1
 fi
+# TODO: allow either format if proofFormat is unset?
 echo 'Verified verifiable presentation:'
 print_json presentation-verify-result.json
 echo

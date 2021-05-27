@@ -9,6 +9,11 @@ set -e
 did_method=${DID_METHOD:-key}
 # More info about did:key: https://w3c-ccg.github.io/did-method-key/
 
+# Allow setting proof format using environmental variables.
+proof_format=${PROOF_FORMAT:-ldp}
+vc_proof_format=${VC_PROOF_FORMAT:-$proof_format}
+vp_proof_format=${VP_PROOF_FORMAT:-$proof_format}
+
 # Pretty-print JSON using jq or json_pp if available.
 print_json() {
 	file=${1?file}
@@ -75,10 +80,15 @@ didkit vc-issue-credential \
 	-k key.jwk \
 	-v "$verification_method" \
 	-p assertionMethod \
+	-f "$vc_proof_format" \
 	< credential-unsigned.jsonld \
-	> credential-signed.jsonld
+	> credential-signed
 echo 'Issued verifiable credential:'
-print_json credential-signed.jsonld
+if [ "$vc_proof_format" = jwt ]; then
+	cat credential-signed
+else
+	print_json credential-signed
+fi
 echo
 
 # Verify verifiable credential.
@@ -89,7 +99,8 @@ echo
 if ! didkit vc-verify-credential \
 	-v "$verification_method" \
 	-p assertionMethod \
-	< credential-signed.jsonld \
+	-f "$vc_proof_format" \
+	< credential-signed \
 	> credential-verify-result.json
 then
 	echo 'Unable to verify credential:'
@@ -100,6 +111,15 @@ echo 'Verified verifiable credential:'
 print_json credential-verify-result.json
 echo
 
+# Encode credential as JSON for presenting.
+if [ "$vc_proof_format" = jwt ]; then
+	echo -n '"'
+	cat credential-signed
+	echo -n '"'
+else
+	cat credential-signed
+fi > credential-signed.json
+
 # Create presentation embedding verifiable credential.
 # Prepare to present the verifiable credential by wrapping it in a
 # Verifiable Presentation. The id here is an arbitrary URL for example purposes.
@@ -109,7 +129,7 @@ cat > presentation-unsigned.jsonld <<EOF
 	"id": "http://example.org/presentations/3731",
 	"type": ["VerifiablePresentation"],
 	"holder": "$did",
-	"verifiableCredential": $(cat credential-signed.jsonld)
+	"verifiableCredential": $(cat credential-signed.json)
 }
 EOF
 
@@ -122,10 +142,15 @@ didkit vc-issue-presentation \
 	-k key.jwk \
 	-v "$verification_method" \
 	-p authentication \
+	-f "$vp_proof_format" \
 	< presentation-unsigned.jsonld \
-	> presentation-signed.jsonld
+	> presentation-signed
 echo 'Issued verifiable presentation:'
-print_json presentation-signed.jsonld
+if [ "$vp_proof_format" = jwt ]; then
+	cat presentation-signed
+else
+	print_json presentation-signed
+fi
 echo
 
 # Verify verifiable presentation.
@@ -134,7 +159,8 @@ echo
 if ! didkit vc-verify-presentation \
 	-v "$verification_method" \
 	-p authentication \
-	< presentation-signed.jsonld \
+	-f "$vp_proof_format" \
+	< presentation-signed \
 	> presentation-verify-result.json
 then
 	echo 'Unable to verify presentation:'
@@ -175,17 +201,27 @@ if ! didkit did-auth \
 	-p authentication \
 	-C "$challenge" \
 	-v "$verification_method" \
-	> auth.jsonld
+	-f "$vp_proof_format" \
+	> auth
 then
 	echo 'Unable to create DIDAuth response'
 	exit 1
 fi
 
+echo 'Generated DIDAuth verifiable presentation:'
+if [ "$vp_proof_format" = jwt ]; then
+	cat auth
+else
+	print_json auth
+fi
+echo
+
 # Verify DID auth
 if ! didkit vc-verify-presentation \
 	-p authentication \
 	-C "$challenge" \
-	< auth.jsonld \
+	-f "$vp_proof_format" \
+	< auth \
 	> auth-verify-result.json
 then
 	echo 'Unable to verify DIDAuth presentation:'

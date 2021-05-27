@@ -7,9 +7,9 @@ use std::task::{Context, Poll};
 
 use didkit::resolve_key;
 use didkit::{
-    dereference as dereference_did_url, Content, ContentMetadata, DIDResolver,
-    DereferencingInputMetadata, LinkedDataProofOptions, ProofPurpose, ResolutionResult,
-    VerifiableCredential, VerifiablePresentation, VerificationResult, JWK,
+    dereference as dereference_did_url, Content, ContentMetadata, CredentialOrJWT, DIDResolver,
+    DereferencingInputMetadata, JWTOrLDPOptions, LinkedDataProofOptions, ProofFormat,
+    ResolutionResult, VerifiableCredential, VerifiablePresentation, VerificationResult, JWK,
 };
 use didkit_cli::opts::ResolverOptions;
 use ssi::did_resolve::{
@@ -31,19 +31,26 @@ use serde_json::json;
 use tower_service::Service;
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
+#[serde(untagged)]
+pub enum PresentationOrJWT {
+    VP(VerifiablePresentation),
+    JWT(String),
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
 #[serde(deny_unknown_fields)]
 pub struct IssueCredentialRequest {
     pub credential: VerifiableCredential,
-    pub options: Option<LinkedDataProofOptions>,
+    pub options: Option<JWTOrLDPOptions>,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
 #[serde(deny_unknown_fields)]
 pub struct VerifyCredentialRequest {
-    pub verifiable_credential: VerifiableCredential,
-    pub options: Option<LinkedDataProofOptions>,
+    pub verifiable_credential: CredentialOrJWT,
+    pub options: Option<JWTOrLDPOptions>,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -51,15 +58,15 @@ pub struct VerifyCredentialRequest {
 #[serde(deny_unknown_fields)]
 pub struct ProvePresentationRequest {
     pub presentation: VerifiablePresentation,
-    pub options: Option<LinkedDataProofOptions>,
+    pub options: Option<JWTOrLDPOptions>,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
 #[serde(deny_unknown_fields)]
 pub struct VerifyPresentationRequest {
-    pub verifiable_presentation: VerifiablePresentation,
-    pub options: Option<LinkedDataProofOptions>,
+    pub verifiable_presentation: PresentationOrJWT,
+    pub options: Option<JWTOrLDPOptions>,
 }
 
 pub type IssueCredentialResponse = VerifiableCredential;
@@ -205,20 +212,45 @@ impl DIDKitHTTPSvc {
                 }
             };
             let options = issue_req.options.unwrap_or_default();
+            let proof_format = options.proof_format.unwrap_or_default();
             let resolver = resolver_options.to_resolver();
-            let key = match pick_key(&keys, &options, &resolver).await {
+            let key = match pick_key(&keys, &options.ldp_options, &resolver).await {
                 Some(key) => key,
                 None => return Self::missing_key().await,
             };
             let mut credential = issue_req.credential;
-            let proof = match credential.generate_proof(key, &options).await {
-                Ok(reader) => reader,
-                Err(err) => {
-                    return Self::response(StatusCode::BAD_REQUEST, err.to_string()).await;
+            let body = match proof_format {
+                ProofFormat::JWT => {
+                    let jwt = match credential
+                        .generate_jwt(Some(&key), &options.ldp_options)
+                        .await
+                    {
+                        Ok(reader) => reader,
+                        Err(err) => {
+                            return Self::response(StatusCode::BAD_REQUEST, err.to_string()).await;
+                        }
+                    };
+                    Body::from(jwt.into_bytes())
+                }
+                ProofFormat::LDP => {
+                    let proof = match credential.generate_proof(key, &options.ldp_options).await {
+                        Ok(reader) => reader,
+                        Err(err) => {
+                            return Self::response(StatusCode::BAD_REQUEST, err.to_string()).await;
+                        }
+                    };
+                    credential.add_proof(proof);
+                    Body::from(serde_json::to_vec_pretty(&credential)?)
+                }
+                _ => {
+                    return Self::response(
+                        StatusCode::BAD_REQUEST,
+                        format!("Unknown proof format: {}", proof_format),
+                    )
+                    .await;
                 }
             };
-            credential.add_proof(proof);
-            let body = Body::from(serde_json::to_vec_pretty(&credential)?);
+
             Response::builder()
                 .status(StatusCode::CREATED)
                 .header(CONTENT_TYPE, "application/json")
@@ -249,9 +281,27 @@ impl DIDKitHTTPSvc {
                     return Self::response(StatusCode::BAD_REQUEST, err.to_string()).await;
                 }
             };
-            let credential = verify_req.verifiable_credential;
             let resolver = resolver_options.to_resolver();
-            let result = credential.verify(verify_req.options, &resolver).await;
+            let options = verify_req.options.unwrap_or_default();
+            let ldp_options = options.ldp_options;
+            let result = match (options.proof_format, verify_req.verifiable_credential) {
+                (Some(ProofFormat::LDP), CredentialOrJWT::Credential(vc))
+                | (None, CredentialOrJWT::Credential(vc)) => {
+                    vc.verify(Some(ldp_options), &resolver).await
+                }
+                (Some(ProofFormat::JWT), CredentialOrJWT::JWT(vc_jwt))
+                | (None, CredentialOrJWT::JWT(vc_jwt)) => {
+                    VerifiableCredential::verify_jwt(&vc_jwt, Some(ldp_options), &resolver).await
+                }
+                (Some(proof_format), vc) => {
+                    let err_msg = format!(
+                        "Credential/proof format mismatch. Proof format: {}, credential: {}",
+                        proof_format,
+                        serde_json::to_string(&vc)?
+                    );
+                    return Self::response(StatusCode::BAD_REQUEST, err_msg).await;
+                }
+            };
             let body = Body::from(serde_json::to_vec_pretty(&result)?);
             Response::builder()
                 .status(match result.errors.is_empty() {
@@ -287,25 +337,45 @@ impl DIDKitHTTPSvc {
                     return Self::response(StatusCode::BAD_REQUEST, err.to_string()).await;
                 }
             };
-            let options = issue_req.options.unwrap_or_else(|| {
-                let mut options = LinkedDataProofOptions::default();
-                options.proof_purpose = Some(ProofPurpose::Authentication);
-                options
-            });
+            let options = issue_req
+                .options
+                .unwrap_or_else(JWTOrLDPOptions::default_for_vp);
             let mut presentation = issue_req.presentation;
+            let proof_format = options.proof_format.unwrap_or_default();
+            let ldp_options = options.ldp_options;
             let resolver = resolver_options.to_resolver();
-            let key = match pick_key(&keys, &options, &resolver).await {
+            let key = match pick_key(&keys, &ldp_options, &resolver).await {
                 Some(key) => key,
                 None => return Self::missing_key().await,
             };
-            let proof = match presentation.generate_proof(key, &options).await {
-                Ok(reader) => reader,
-                Err(err) => {
-                    return Self::response(StatusCode::BAD_REQUEST, err.to_string()).await;
+            let body = match proof_format {
+                ProofFormat::JWT => {
+                    let jwt = match presentation.generate_jwt(Some(&key), &ldp_options).await {
+                        Ok(reader) => reader,
+                        Err(err) => {
+                            return Self::response(StatusCode::BAD_REQUEST, err.to_string()).await;
+                        }
+                    };
+                    Body::from(jwt.into_bytes())
+                }
+                ProofFormat::LDP => {
+                    let proof = match presentation.generate_proof(key, &ldp_options).await {
+                        Ok(reader) => reader,
+                        Err(err) => {
+                            return Self::response(StatusCode::BAD_REQUEST, err.to_string()).await;
+                        }
+                    };
+                    presentation.add_proof(proof);
+                    Body::from(serde_json::to_vec_pretty(&presentation)?)
+                }
+                _ => {
+                    return Self::response(
+                        StatusCode::BAD_REQUEST,
+                        format!("Unknown proof format: {}", proof_format),
+                    )
+                    .await;
                 }
             };
-            presentation.add_proof(proof);
-            let body = Body::from(serde_json::to_vec_pretty(&presentation)?);
             Response::builder()
                 .status(StatusCode::CREATED)
                 .header(CONTENT_TYPE, "application/json")
@@ -336,9 +406,29 @@ impl DIDKitHTTPSvc {
                     return Self::response(StatusCode::BAD_REQUEST, err.to_string()).await;
                 }
             };
-            let presentation = verify_req.verifiable_presentation;
             let resolver = resolver_options.to_resolver();
-            let result = presentation.verify(verify_req.options, &resolver).await;
+            let options = verify_req
+                .options
+                .unwrap_or_else(JWTOrLDPOptions::default_for_vp);
+            let ldp_options = options.ldp_options;
+            let result = match (options.proof_format, verify_req.verifiable_presentation) {
+                (Some(ProofFormat::LDP), PresentationOrJWT::VP(vp))
+                | (None, PresentationOrJWT::VP(vp)) => {
+                    vp.verify(Some(ldp_options), &resolver).await
+                }
+                (Some(ProofFormat::JWT), PresentationOrJWT::JWT(vp_jwt))
+                | (None, PresentationOrJWT::JWT(vp_jwt)) => {
+                    VerifiablePresentation::verify_jwt(&vp_jwt, Some(ldp_options), &resolver).await
+                }
+                (Some(proof_format), vp) => {
+                    let err_msg = format!(
+                        "Presentation/proof format mismatch. Proof format: {}, presentation: {}",
+                        proof_format,
+                        serde_json::to_string(&vp)?
+                    );
+                    return Self::response(StatusCode::BAD_REQUEST, err_msg).await;
+                }
+            };
             let body = Body::from(serde_json::to_vec_pretty(&result)?);
             Response::builder()
                 .header(CONTENT_TYPE, "application/json")

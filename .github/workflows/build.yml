@@ -29,7 +29,7 @@ jobs:
       with:
         repository: spruceid/ssi
         path: ssi
-        ref: 164e2381eb5761b21477e60e2c6494e0f727d184
+        ref: b0900a6d0254caef457161d10653f3ac8f5138d3
         submodules: true
 
     - name: Cache Cargo registry and build artifacts
@@ -64,6 +64,36 @@ jobs:
       env:
         DID_METHOD: tz
       run: http/tests/example.sh
+
+    - name: Test CLI (JWT)
+      env:
+        PROOF_FORMAT: jwt
+      run: cli/tests/example.sh
+
+    - name: Test CLI (JWT VC in LDP VP)
+      env:
+        VC_PROOF_FORMAT: jwt
+      run: cli/tests/example.sh
+
+    - name: Test CLI (LDP VC in JWT VP)
+      env:
+        VP_PROOF_FORMAT: jwt
+      run: cli/tests/example.sh
+
+    - name: Test HTTP server (JWT)
+      env:
+        PROOF_FORMAT: jwt
+      run: http/tests/example.sh
+
+    - name: Test HTTP server (JWT VC in LDP VP)
+      env:
+        VC_PROOF_FORMAT: jwt
+      run: cli/tests/example.sh
+
+    - name: Test HTTP server (LDP VC in JWT VP)
+      env:
+        VP_PROOF_FORMAT: jwt
+      run: cli/tests/example.sh
 
     - name: Checkout vc-http-api v0.0.1
       uses: actions/checkout@v2

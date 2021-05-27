@@ -8,13 +8,13 @@ use crate::error::Error;
 use crate::error::{didkit_error_code, didkit_error_message};
 use crate::get_verification_method;
 use crate::runtime;
-use crate::LinkedDataProofOptions;
 use crate::Source;
 use crate::VerifiableCredential;
 use crate::VerifiablePresentation;
 use crate::DID_METHODS;
 use crate::JWK;
 use crate::{dereference, DereferencingInputMetadata, ResolutionInputMetadata, ResolutionResult};
+use crate::{JWTOrLDPOptions, ProofFormat};
 
 /// The version of the DIDKit library, as a NULL-terminated string
 pub static VERSION_C: &str = concat!(env!("CARGO_PKG_VERSION"), "\0");
@@ -117,20 +117,28 @@ pub extern "C" fn didkit_key_to_verification_method(
 // Issue Credential
 fn issue_credential(
     credential_json_ptr: *const c_char,
-    linked_data_proof_options_json_ptr: *const c_char,
+    proof_options_json_ptr: *const c_char,
     key_json_ptr: *const c_char,
 ) -> Result<*const c_char, Error> {
     let credential_json = unsafe { CStr::from_ptr(credential_json_ptr) }.to_str()?;
-    let linked_data_proof_options_json =
-        unsafe { CStr::from_ptr(linked_data_proof_options_json_ptr) }.to_str()?;
+    let proof_options_json = unsafe { CStr::from_ptr(proof_options_json_ptr) }.to_str()?;
     let key_json = unsafe { CStr::from_ptr(key_json_ptr) }.to_str()?;
     let mut credential = VerifiableCredential::from_json_unsigned(credential_json)?;
     let key: JWK = serde_json::from_str(key_json)?;
-    let options: LinkedDataProofOptions = serde_json::from_str(linked_data_proof_options_json)?;
+    let options: JWTOrLDPOptions = serde_json::from_str(proof_options_json)?;
+    let proof_format = options.proof_format.unwrap_or_default();
     let rt = runtime::get()?;
-    let proof = rt.block_on(credential.generate_proof(&key, &options))?;
-    credential.add_proof(proof);
-    Ok(CString::new(serde_json::to_string(&credential)?)?.into_raw())
+    let out = match proof_format {
+        ProofFormat::JWT => {
+            rt.block_on(credential.generate_jwt(Some(&key), &options.ldp_options))?
+        }
+        ProofFormat::LDP => {
+            let proof = rt.block_on(credential.generate_proof(&key, &options.ldp_options))?;
+            credential.add_proof(proof);
+            serde_json::to_string(&credential)?
+        }
+    };
+    Ok(CString::new(out)?.into_raw())
 }
 #[no_mangle]
 /// Issue a Verifiable Credential. Input parameters are JSON C strings for the unsigned credential
@@ -140,28 +148,38 @@ fn issue_credential(
 /// message can be retrieved using [`didkit_error_message`].
 pub extern "C" fn didkit_vc_issue_credential(
     credential_json: *const c_char,
-    linked_data_proof_options_json: *const c_char,
+    proof_options_json: *const c_char,
     key_json: *const c_char,
 ) -> *const c_char {
     ccchar_or_error(issue_credential(
         credential_json,
-        linked_data_proof_options_json,
+        proof_options_json,
         key_json,
     ))
 }
 
 // Verify Credential
 fn verify_credential(
-    credential_json_ptr: *const c_char,
-    linked_data_proof_options_json_ptr: *const c_char,
+    credential_ptr: *const c_char,
+    proof_options_json_ptr: *const c_char,
 ) -> Result<*const c_char, Error> {
-    let credential_json = unsafe { CStr::from_ptr(credential_json_ptr) }.to_str()?;
-    let linked_data_proof_options_json =
-        unsafe { CStr::from_ptr(linked_data_proof_options_json_ptr) }.to_str()?;
-    let credential = VerifiableCredential::from_json_unsigned(credential_json)?;
-    let options: LinkedDataProofOptions = serde_json::from_str(linked_data_proof_options_json)?;
+    let vc_str = unsafe { CStr::from_ptr(credential_ptr) }.to_str()?;
+    let proof_options_json = unsafe { CStr::from_ptr(proof_options_json_ptr) }.to_str()?;
+    let options: JWTOrLDPOptions = serde_json::from_str(proof_options_json)?;
+    let proof_format = options.proof_format.unwrap_or_default();
     let rt = runtime::get()?;
-    let result = rt.block_on(credential.verify(Some(options), DID_METHODS.to_resolver()));
+    let resolver = DID_METHODS.to_resolver();
+    let result = match proof_format {
+        ProofFormat::JWT => rt.block_on(VerifiableCredential::verify_jwt(
+            &vc_str,
+            Some(options.ldp_options),
+            resolver,
+        )),
+        ProofFormat::LDP => {
+            let vc = VerifiableCredential::from_json_unsigned(vc_str)?;
+            rt.block_on(vc.verify(Some(options.ldp_options), resolver))
+        }
+    };
     Ok(CString::new(serde_json::to_string(&result)?)?.into_raw())
 }
 #[no_mangle]
@@ -175,32 +193,37 @@ fn verify_credential(
 /// containing information about the verification error(s) encountered. A string returned from this
 /// function should be freed using [`didkit_free_string`].
 pub extern "C" fn didkit_vc_verify_credential(
-    credential_json: *const c_char,
-    linked_data_proof_options_json: *const c_char,
+    credential: *const c_char,
+    proof_options_json: *const c_char,
 ) -> *const c_char {
-    ccchar_or_error(verify_credential(
-        credential_json,
-        linked_data_proof_options_json,
-    ))
+    ccchar_or_error(verify_credential(credential, proof_options_json))
 }
 
 // Issue Presentation
 fn issue_presentation(
     presentation_json_ptr: *const c_char,
-    linked_data_proof_options_json_ptr: *const c_char,
+    proof_options_json_ptr: *const c_char,
     key_json_ptr: *const c_char,
 ) -> Result<*const c_char, Error> {
     let presentation_json = unsafe { CStr::from_ptr(presentation_json_ptr) }.to_str()?;
-    let linked_data_proof_options_json =
-        unsafe { CStr::from_ptr(linked_data_proof_options_json_ptr) }.to_str()?;
+    let proof_options_json = unsafe { CStr::from_ptr(proof_options_json_ptr) }.to_str()?;
     let key_json = unsafe { CStr::from_ptr(key_json_ptr) }.to_str()?;
     let mut presentation = VerifiablePresentation::from_json_unsigned(presentation_json)?;
     let key: JWK = serde_json::from_str(key_json)?;
-    let options: LinkedDataProofOptions = serde_json::from_str(linked_data_proof_options_json)?;
+    let options: JWTOrLDPOptions = serde_json::from_str(proof_options_json)?;
+    let proof_format = options.proof_format.unwrap_or_default();
     let rt = runtime::get()?;
-    let proof = rt.block_on(presentation.generate_proof(&key, &options))?;
-    presentation.add_proof(proof);
-    Ok(CString::new(serde_json::to_string(&presentation)?)?.into_raw())
+    let out = match proof_format {
+        ProofFormat::JWT => {
+            rt.block_on(presentation.generate_jwt(Some(&key), &options.ldp_options))?
+        }
+        ProofFormat::LDP => {
+            let proof = rt.block_on(presentation.generate_proof(&key, &options.ldp_options))?;
+            presentation.add_proof(proof);
+            serde_json::to_string(&presentation)?
+        }
+    };
+    Ok(CString::new(out)?.into_raw())
 }
 #[no_mangle]
 /// Issue a Verifiable Presentation. Input parameters are JSON C strings for the unsigned
@@ -210,12 +233,12 @@ fn issue_presentation(
 /// error message can be retrieved using [`didkit_error_message`].
 pub extern "C" fn didkit_vc_issue_presentation(
     presentation_json: *const c_char,
-    linked_data_proof_options_json: *const c_char,
+    proof_options_json: *const c_char,
     key_json: *const c_char,
 ) -> *const c_char {
     ccchar_or_error(issue_presentation(
         presentation_json,
-        linked_data_proof_options_json,
+        proof_options_json,
         key_json,
     ))
 }
@@ -223,21 +246,29 @@ pub extern "C" fn didkit_vc_issue_presentation(
 // Issue Presentation (DIDAuth)
 fn did_auth(
     holder_ptr: *const c_char,
-    linked_data_proof_options_json_ptr: *const c_char,
+    proof_options_json_ptr: *const c_char,
     key_json_ptr: *const c_char,
 ) -> Result<*const c_char, Error> {
     let holder = unsafe { CStr::from_ptr(holder_ptr) }.to_str()?;
-    let linked_data_proof_options_json =
-        unsafe { CStr::from_ptr(linked_data_proof_options_json_ptr) }.to_str()?;
+    let proof_options_json = unsafe { CStr::from_ptr(proof_options_json_ptr) }.to_str()?;
     let key_json = unsafe { CStr::from_ptr(key_json_ptr) }.to_str()?;
     let mut presentation = VerifiablePresentation::default();
     presentation.holder = Some(ssi::vc::URI::String(holder.to_string()));
     let key: JWK = serde_json::from_str(key_json)?;
-    let options: LinkedDataProofOptions = serde_json::from_str(linked_data_proof_options_json)?;
+    let options: JWTOrLDPOptions = serde_json::from_str(proof_options_json)?;
+    let proof_format = options.proof_format.unwrap_or_default();
     let rt = runtime::get()?;
-    let proof = rt.block_on(presentation.generate_proof(&key, &options))?;
-    presentation.add_proof(proof);
-    Ok(CString::new(serde_json::to_string(&presentation)?)?.into_raw())
+    let out = match proof_format {
+        ProofFormat::JWT => {
+            rt.block_on(presentation.generate_jwt(Some(&key), &options.ldp_options))?
+        }
+        ProofFormat::LDP => {
+            let proof = rt.block_on(presentation.generate_proof(&key, &options.ldp_options))?;
+            presentation.add_proof(proof);
+            serde_json::to_string(&presentation)?
+        }
+    };
+    Ok(CString::new(out)?.into_raw())
 }
 #[no_mangle]
 /// Issue a Verifiable Presentation for [DIDAuth](https://w3c-ccg.github.io/vp-request-spec/#did-authentication-request). Input parameters are the holder URI as a C string, and JSON C strings for the linked data proof options and the JWK for signing. On success,
@@ -246,24 +277,35 @@ fn did_auth(
 /// error message can be retrieved using [`didkit_error_message`].
 pub extern "C" fn didkit_did_auth(
     holder: *const c_char,
-    linked_data_proof_options_json: *const c_char,
+    proof_options_json: *const c_char,
     key_json: *const c_char,
 ) -> *const c_char {
-    ccchar_or_error(did_auth(holder, linked_data_proof_options_json, key_json))
+    ccchar_or_error(did_auth(holder, proof_options_json, key_json))
 }
 
 // Verify Presentation
 fn verify_presentation(
-    presentation_json_ptr: *const c_char,
-    linked_data_proof_options_json_ptr: *const c_char,
+    presentation_ptr: *const c_char,
+    proof_options_json_ptr: *const c_char,
 ) -> Result<*const c_char, Error> {
-    let presentation_json = unsafe { CStr::from_ptr(presentation_json_ptr) }.to_str()?;
-    let linked_data_proof_options_json =
-        unsafe { CStr::from_ptr(linked_data_proof_options_json_ptr) }.to_str()?;
-    let presentation = VerifiablePresentation::from_json_unsigned(presentation_json)?;
-    let options: LinkedDataProofOptions = serde_json::from_str(linked_data_proof_options_json)?;
+    let vp_str = unsafe { CStr::from_ptr(presentation_ptr) }.to_str()?;
+    let proof_options_json = unsafe { CStr::from_ptr(proof_options_json_ptr) }.to_str()?;
+    // TODO
+    let options: JWTOrLDPOptions = serde_json::from_str(proof_options_json)?;
+    let proof_format = options.proof_format.unwrap_or_default();
     let rt = runtime::get()?;
-    let result = rt.block_on(presentation.verify(Some(options), DID_METHODS.to_resolver()));
+    let resolver = DID_METHODS.to_resolver();
+    let result = match proof_format {
+        ProofFormat::JWT => rt.block_on(VerifiablePresentation::verify_jwt(
+            &vp_str,
+            Some(options.ldp_options),
+            resolver,
+        )),
+        ProofFormat::LDP => {
+            let vp = VerifiablePresentation::from_json_unsigned(vp_str)?;
+            rt.block_on(vp.verify(Some(options.ldp_options), DID_METHODS.to_resolver()))
+        }
+    };
     Ok(CString::new(serde_json::to_string(&result)?)?.into_raw())
 }
 #[no_mangle]
@@ -277,13 +319,10 @@ fn verify_presentation(
 /// array containing information about the verification error(s) encountered. A string returned
 /// from this function should be freed using [`didkit_free_string`].
 pub extern "C" fn didkit_vc_verify_presentation(
-    presentation_json: *const c_char,
-    linked_data_proof_options_json: *const c_char,
+    presentation: *const c_char,
+    proof_options_json: *const c_char,
 ) -> *const c_char {
-    ccchar_or_error(verify_presentation(
-        presentation_json,
-        linked_data_proof_options_json,
-    ))
+    ccchar_or_error(verify_presentation(presentation, proof_options_json))
 }
 
 // Resolve DID

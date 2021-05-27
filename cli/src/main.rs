@@ -1,6 +1,5 @@
 use std::fs::File;
-use std::io::Write;
-use std::io::{stdin, stdout, BufReader, BufWriter};
+use std::io::{stdin, stdout, BufReader, BufWriter, Read, Write};
 use std::path::PathBuf;
 use std::str::FromStr;
 
@@ -12,7 +11,7 @@ use structopt::{clap::AppSettings, clap::ArgGroup, StructOpt};
 use did_method_key::DIDKey;
 use didkit::{
     dereference, get_verification_method, runtime, DIDMethod, DIDResolver,
-    DereferencingInputMetadata, Error, LinkedDataProofOptions, Metadata, ProofPurpose,
+    DereferencingInputMetadata, Error, LinkedDataProofOptions, Metadata, ProofFormat, ProofPurpose,
     ResolutionInputMetadata, ResolutionResult, Source, VerifiableCredential,
     VerifiablePresentation, DID_METHODS, JWK,
 };
@@ -135,7 +134,9 @@ pub enum DIDKit {
 }
 
 #[derive(StructOpt, Debug)]
+#[non_exhaustive]
 pub struct ProofOptions {
+    // Options as in vc-http-api
     #[structopt(env, short, long)]
     pub verification_method: Option<String>,
     #[structopt(env, short, long)]
@@ -146,6 +147,10 @@ pub struct ProofOptions {
     pub challenge: Option<String>,
     #[structopt(env, short, long)]
     pub domain: Option<String>,
+
+    // Non-standard options
+    #[structopt(env, default_value, short = "f", long)]
+    pub proof_format: ProofFormat,
 }
 
 #[derive(StructOpt, Debug)]
@@ -340,13 +345,27 @@ fn main() {
             let credential_reader = BufReader::new(stdin());
             let mut credential: VerifiableCredential =
                 serde_json::from_reader(credential_reader).unwrap();
+            let proof_format = proof_options.proof_format.clone();
             let options = LinkedDataProofOptions::from(proof_options);
-            let proof = rt
-                .block_on(credential.generate_proof(&key, &options))
-                .unwrap();
-            credential.add_proof(proof);
-            let stdout_writer = BufWriter::new(stdout());
-            serde_json::to_writer(stdout_writer, &credential).unwrap();
+            match proof_format {
+                ProofFormat::JWT => {
+                    let jwt = rt
+                        .block_on(credential.generate_jwt(Some(&key), &options))
+                        .unwrap();
+                    print!("{}", jwt);
+                }
+                ProofFormat::LDP => {
+                    let proof = rt
+                        .block_on(credential.generate_proof(&key, &options))
+                        .unwrap();
+                    credential.add_proof(proof);
+                    let stdout_writer = BufWriter::new(stdout());
+                    serde_json::to_writer(stdout_writer, &credential).unwrap();
+                }
+                _ => {
+                    panic!("Unknown proof format: {:?}", proof_format);
+                }
+            }
         }
 
         DIDKit::VCVerifyCredential {
@@ -354,12 +373,30 @@ fn main() {
             resolver_options,
         } => {
             let resolver = resolver_options.to_resolver();
-            let credential_reader = BufReader::new(stdin());
-            let credential: VerifiableCredential =
-                serde_json::from_reader(credential_reader).unwrap();
+            let mut credential_reader = BufReader::new(stdin());
+            let proof_format = proof_options.proof_format.clone();
             let options = LinkedDataProofOptions::from(proof_options);
-            credential.validate_unsigned().unwrap();
-            let result = rt.block_on(credential.verify(Some(options), &resolver));
+            let result = match proof_format {
+                ProofFormat::JWT => {
+                    let mut jwt = String::new();
+                    credential_reader.read_to_string(&mut jwt).unwrap();
+                    rt.block_on(VerifiableCredential::verify_jwt(
+                        &jwt,
+                        Some(options),
+                        &resolver,
+                    ))
+                }
+                ProofFormat::LDP => {
+                    let credential: VerifiableCredential =
+                        serde_json::from_reader(credential_reader).unwrap();
+                    credential.validate_unsigned().unwrap();
+                    rt.block_on(credential.verify(Some(options), &resolver))
+                }
+                _ => {
+                    panic!("Unknown proof format: {:?}", proof_format);
+                }
+            };
+
             let stdout_writer = BufWriter::new(stdout());
             serde_json::to_writer(stdout_writer, &result).unwrap();
             if result.errors.len() > 0 {
@@ -372,13 +409,27 @@ fn main() {
             let presentation_reader = BufReader::new(stdin());
             let mut presentation: VerifiablePresentation =
                 serde_json::from_reader(presentation_reader).unwrap();
+            let proof_format = proof_options.proof_format.clone();
             let options = LinkedDataProofOptions::from(proof_options);
-            let proof = rt
-                .block_on(presentation.generate_proof(&key, &options))
-                .unwrap();
-            presentation.add_proof(proof);
-            let stdout_writer = BufWriter::new(stdout());
-            serde_json::to_writer(stdout_writer, &presentation).unwrap();
+            match proof_format {
+                ProofFormat::JWT => {
+                    let jwt = rt
+                        .block_on(presentation.generate_jwt(Some(&key), &options))
+                        .unwrap();
+                    print!("{}", jwt);
+                }
+                ProofFormat::LDP => {
+                    let proof = rt
+                        .block_on(presentation.generate_proof(&key, &options))
+                        .unwrap();
+                    presentation.add_proof(proof);
+                    let stdout_writer = BufWriter::new(stdout());
+                    serde_json::to_writer(stdout_writer, &presentation).unwrap();
+                }
+                _ => {
+                    panic!("Unexpected proof format: {:?}", proof_format);
+                }
+            }
         }
 
         DIDKit::VCVerifyPresentation {
@@ -386,12 +437,29 @@ fn main() {
             resolver_options,
         } => {
             let resolver = resolver_options.to_resolver();
-            let presentation_reader = BufReader::new(stdin());
-            let presentation: VerifiablePresentation =
-                serde_json::from_reader(presentation_reader).unwrap();
+            let mut presentation_reader = BufReader::new(stdin());
+            let proof_format = proof_options.proof_format.clone();
             let options = LinkedDataProofOptions::from(proof_options);
-            presentation.validate_unsigned().unwrap();
-            let result = rt.block_on(presentation.verify(Some(options), &resolver));
+            let result = match proof_format {
+                ProofFormat::JWT => {
+                    let mut jwt = String::new();
+                    presentation_reader.read_to_string(&mut jwt).unwrap();
+                    rt.block_on(VerifiablePresentation::verify_jwt(
+                        &jwt,
+                        Some(options),
+                        &resolver,
+                    ))
+                }
+                ProofFormat::LDP => {
+                    let presentation: VerifiablePresentation =
+                        serde_json::from_reader(presentation_reader).unwrap();
+                    presentation.validate_unsigned().unwrap();
+                    rt.block_on(presentation.verify(Some(options), &resolver))
+                }
+                _ => {
+                    panic!("Unexpected proof format: {:?}", proof_format);
+                }
+            };
             let stdout_writer = BufWriter::new(stdout());
             serde_json::to_writer(stdout_writer, &result).unwrap();
             if result.errors.len() > 0 {
@@ -473,13 +541,27 @@ fn main() {
             let key: JWK = key.get_jwk();
             let mut presentation = VerifiablePresentation::default();
             presentation.holder = Some(ssi::vc::URI::String(holder));
+            let proof_format = proof_options.proof_format.clone();
             let options = LinkedDataProofOptions::from(proof_options);
-            let proof = rt
-                .block_on(presentation.generate_proof(&key, &options))
-                .unwrap();
-            presentation.add_proof(proof);
-            let stdout_writer = BufWriter::new(stdout());
-            serde_json::to_writer(stdout_writer, &presentation).unwrap();
+            match proof_format {
+                ProofFormat::JWT => {
+                    let jwt = rt
+                        .block_on(presentation.generate_jwt(Some(&key), &options))
+                        .unwrap();
+                    print!("{}", jwt);
+                }
+                ProofFormat::LDP => {
+                    let proof = rt
+                        .block_on(presentation.generate_proof(&key, &options))
+                        .unwrap();
+                    presentation.add_proof(proof);
+                    let stdout_writer = BufWriter::new(stdout());
+                    serde_json::to_writer(stdout_writer, &presentation).unwrap();
+                }
+                _ => {
+                    panic!("Unexpected proof format: {:?}", proof_format);
+                }
+            }
         }
     }
 }

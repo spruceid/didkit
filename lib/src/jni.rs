@@ -7,7 +7,6 @@ use jni::JNIEnv;
 use crate::error::Error;
 use crate::get_verification_method;
 use crate::runtime;
-use crate::LinkedDataProofOptions;
 use crate::ResolutionResult;
 use crate::Source;
 use crate::VerifiableCredential;
@@ -15,6 +14,7 @@ use crate::VerifiablePresentation;
 use crate::DID_METHODS;
 use crate::JWK;
 use crate::{dereference, DereferencingInputMetadata, ResolutionInputMetadata};
+use crate::{JWTOrLDPOptions, ProofFormat};
 
 pub static VERSION: &str = env!("CARGO_PKG_VERSION");
 pub static DIDKIT_EXCEPTION_CLASS: &str = "com/spruceid/DIDKitException";
@@ -108,23 +108,28 @@ pub extern "system" fn Java_com_spruceid_DIDKit_keyToVerificationMethod(
 fn issue_credential(
     env: &JNIEnv,
     credential_jstring: JString,
-    linked_data_proof_options_jstring: JString,
+    proof_options_jstring: JString,
     key_jstring: JString,
 ) -> Result<jstring, Error> {
     let credential_json: String = env.get_string(credential_jstring).unwrap().into();
-    let linked_data_proof_options_json: String = env
-        .get_string(linked_data_proof_options_jstring)
-        .unwrap()
-        .into();
+    let proof_options_json: String = env.get_string(proof_options_jstring).unwrap().into();
     let key_json: String = env.get_string(key_jstring).unwrap().into();
     let mut credential = VerifiableCredential::from_json_unsigned(&credential_json)?;
     let key: JWK = serde_json::from_str(&key_json)?;
-    let options: LinkedDataProofOptions = serde_json::from_str(&linked_data_proof_options_json)?;
+    let options: JWTOrLDPOptions = serde_json::from_str(&proof_options_json)?;
     let rt = runtime::get()?;
-    let proof = rt.block_on(credential.generate_proof(&key, &options))?;
-    credential.add_proof(proof);
-    let vc_json = serde_json::to_string(&credential)?;
-    Ok(env.new_string(vc_json).unwrap().into_inner())
+    let proof_format = options.proof_format.unwrap_or_default();
+    let vc_string = match proof_format {
+        ProofFormat::JWT => {
+            rt.block_on(credential.generate_jwt(Some(&key), &options.ldp_options))?
+        }
+        ProofFormat::LDP => {
+            let proof = rt.block_on(credential.generate_proof(&key, &options.ldp_options))?;
+            credential.add_proof(proof);
+            serde_json::to_string(&credential)?
+        }
+    };
+    Ok(env.new_string(vc_string).unwrap().into_inner())
 }
 
 #[no_mangle]
@@ -141,18 +146,25 @@ pub extern "system" fn Java_com_spruceid_DIDKit_issueCredential(
 fn verify_credential(
     env: &JNIEnv,
     vc_jstring: JString,
-    linked_data_proof_options_jstring: JString,
+    proof_options_jstring: JString,
 ) -> Result<jstring, Error> {
-    let vc_json: String = env.get_string(vc_jstring).unwrap().into();
-    let linked_data_proof_options_json: String = env
-        .get_string(linked_data_proof_options_jstring)
-        .unwrap()
-        .into();
-    let vc = VerifiableCredential::from_json_unsigned(&vc_json)?;
-    let options: LinkedDataProofOptions = serde_json::from_str(&linked_data_proof_options_json)?;
+    let vc_string: String = env.get_string(vc_jstring).unwrap().into();
+    let proof_options_json: String = env.get_string(proof_options_jstring).unwrap().into();
+    let options: JWTOrLDPOptions = serde_json::from_str(&proof_options_json)?;
+    let proof_format = options.proof_format.unwrap_or_default();
     let resolver = DID_METHODS.to_resolver();
     let rt = runtime::get()?;
-    let result = rt.block_on(vc.verify(Some(options), resolver));
+    let result = match proof_format {
+        ProofFormat::JWT => rt.block_on(VerifiableCredential::verify_jwt(
+            &vc_string,
+            Some(options.ldp_options),
+            resolver,
+        )),
+        ProofFormat::LDP => {
+            let vc = VerifiableCredential::from_json_unsigned(&vc_string)?;
+            rt.block_on(vc.verify(Some(options.ldp_options), resolver))
+        }
+    };
     let result_json = serde_json::to_string(&result)?;
     Ok(env.new_string(result_json).unwrap().into_inner())
 }
@@ -170,23 +182,28 @@ pub extern "system" fn Java_com_spruceid_DIDKit_verifyCredential(
 fn issue_presentation(
     env: &JNIEnv,
     presentation_jstring: JString,
-    linked_data_proof_options_jstring: JString,
+    proof_options_jstring: JString,
     key_jstring: JString,
 ) -> Result<jstring, Error> {
     let presentation_json: String = env.get_string(presentation_jstring).unwrap().into();
-    let linked_data_proof_options_json: String = env
-        .get_string(linked_data_proof_options_jstring)
-        .unwrap()
-        .into();
+    let proof_options_json: String = env.get_string(proof_options_jstring).unwrap().into();
     let key_json: String = env.get_string(key_jstring).unwrap().into();
     let mut presentation = VerifiablePresentation::from_json_unsigned(&presentation_json)?;
     let key: JWK = serde_json::from_str(&key_json)?;
-    let options: LinkedDataProofOptions = serde_json::from_str(&linked_data_proof_options_json)?;
+    let options: JWTOrLDPOptions = serde_json::from_str(&proof_options_json)?;
+    let proof_format = options.proof_format.unwrap_or_default();
     let rt = runtime::get()?;
-    let proof = rt.block_on(presentation.generate_proof(&key, &options))?;
-    presentation.add_proof(proof);
-    let vp_json = serde_json::to_string(&presentation)?;
-    Ok(env.new_string(vp_json).unwrap().into_inner())
+    let vp_string = match proof_format {
+        ProofFormat::JWT => {
+            rt.block_on(presentation.generate_jwt(Some(&key), &options.ldp_options))?
+        }
+        ProofFormat::LDP => {
+            let proof = rt.block_on(presentation.generate_proof(&key, &options.ldp_options))?;
+            presentation.add_proof(proof);
+            serde_json::to_string(&presentation)?
+        }
+    };
+    Ok(env.new_string(vp_string).unwrap().into_inner())
 }
 
 #[no_mangle]
@@ -203,24 +220,29 @@ pub extern "system" fn Java_com_spruceid_DIDKit_issuePresentation(
 fn did_auth(
     env: &JNIEnv,
     holder_jstring: JString,
-    linked_data_proof_options_jstring: JString,
+    proof_options_jstring: JString,
     key_jstring: JString,
 ) -> Result<jstring, Error> {
     let holder: String = env.get_string(holder_jstring).unwrap().into();
-    let linked_data_proof_options_json: String = env
-        .get_string(linked_data_proof_options_jstring)
-        .unwrap()
-        .into();
+    let proof_options_json: String = env.get_string(proof_options_jstring).unwrap().into();
     let key_json: String = env.get_string(key_jstring).unwrap().into();
     let mut presentation = VerifiablePresentation::default();
     presentation.holder = Some(ssi::vc::URI::String(holder));
     let key: JWK = serde_json::from_str(&key_json)?;
-    let options: LinkedDataProofOptions = serde_json::from_str(&linked_data_proof_options_json)?;
+    let options: JWTOrLDPOptions = serde_json::from_str(&proof_options_json)?;
+    let proof_format = options.proof_format.unwrap_or_default();
     let rt = runtime::get()?;
-    let proof = rt.block_on(presentation.generate_proof(&key, &options))?;
-    presentation.add_proof(proof);
-    let vp_json = serde_json::to_string(&presentation)?;
-    Ok(env.new_string(vp_json).unwrap().into_inner())
+    let vp_string = match proof_format {
+        ProofFormat::JWT => {
+            rt.block_on(presentation.generate_jwt(Some(&key), &options.ldp_options))?
+        }
+        ProofFormat::LDP => {
+            let proof = rt.block_on(presentation.generate_proof(&key, &options.ldp_options))?;
+            presentation.add_proof(proof);
+            serde_json::to_string(&presentation)?
+        }
+    };
+    Ok(env.new_string(vp_string).unwrap().into_inner())
 }
 
 #[no_mangle]
@@ -237,18 +259,25 @@ pub extern "system" fn Java_com_spruceid_DIDKit_DIDAuth(
 fn verify_presentation(
     env: &JNIEnv,
     vp_jstring: JString,
-    linked_data_proof_options_jstring: JString,
+    proof_options_jstring: JString,
 ) -> Result<jstring, Error> {
-    let vp_json: String = env.get_string(vp_jstring).unwrap().into();
-    let linked_data_proof_options_json: String = env
-        .get_string(linked_data_proof_options_jstring)
-        .unwrap()
-        .into();
-    let vp = VerifiablePresentation::from_json_unsigned(&vp_json)?;
-    let options: LinkedDataProofOptions = serde_json::from_str(&linked_data_proof_options_json)?;
+    let vp_string: String = env.get_string(vp_jstring).unwrap().into();
+    let proof_options_json: String = env.get_string(proof_options_jstring).unwrap().into();
+    let options: JWTOrLDPOptions = serde_json::from_str(&proof_options_json)?;
     let resolver = DID_METHODS.to_resolver();
     let rt = runtime::get()?;
-    let result = rt.block_on(vp.verify(Some(options), resolver));
+    let proof_format = options.proof_format.unwrap_or_default();
+    let result = match proof_format {
+        ProofFormat::JWT => rt.block_on(VerifiablePresentation::verify_jwt(
+            &vp_string,
+            Some(options.ldp_options),
+            resolver,
+        )),
+        ProofFormat::LDP => {
+            let vp = VerifiablePresentation::from_json_unsigned(&vp_string)?;
+            rt.block_on(vp.verify(Some(options.ldp_options), resolver))
+        }
+    };
     let result_json = serde_json::to_string(&result)?;
     Ok(env.new_string(result_json).unwrap().into_inner())
 }

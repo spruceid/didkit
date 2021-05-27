@@ -24,7 +24,7 @@ class DIDKitTest {
         }
         assert threw;
 
-        // Issue Credential
+        // Issue Credential (LDP)
         String credential = "{"
             + "   \"@context\": \"https://www.w3.org/2018/credentials/v1\","
             + "   \"id\": \"http://example.org/credentials/3731\","
@@ -40,15 +40,30 @@ class DIDKitTest {
             + "  \"verificationMethod\": \"" + verificationMethod + "\""
             + "}";
         String vc = DIDKit.issueCredential(credential, vcOptions, jwk);
+        // Issue Credential (JWT)
+        String vcOptionsJwt = "{"
+            + "  \"proofPurpose\": \"assertionMethod\","
+            + "  \"proofFormat\": \"jwt\","
+            + "  \"verificationMethod\": \"" + verificationMethod + "\""
+            + "}";
+        String vcJwt = DIDKit.issueCredential(credential, vcOptionsJwt, jwk);
 
-        // Verify Credential
+        // Verify Credential (LDP)
         String vcVerifyOptions = "{"
             + "  \"proofPurpose\": \"assertionMethod\""
             + "}";
         String vcResult = DIDKit.verifyCredential(vc, vcVerifyOptions);
         assert vcResult.contains("\"errors\":[]");
 
-        // Issue Presentation
+        // Verify Credential (JWT)
+        vcVerifyOptions = "{"
+            + "  \"proofPurpose\": \"assertionMethod\","
+            + "  \"proofFormat\": \"jwt\""
+            + "}";
+        vcResult = DIDKit.verifyCredential(vcJwt, vcVerifyOptions);
+        assert vcResult.contains("\"errors\":[]");
+
+        // Issue Presentation (LDP)
         String presentation = "{"
             + "   \"@context\": [\"https://www.w3.org/2018/credentials/v1\"],"
             + "   \"id\": \"http://example.org/presentations/3731\","
@@ -62,11 +77,27 @@ class DIDKitTest {
             + "}";
         String vp = DIDKit.issuePresentation(presentation, vpOptions, jwk);
 
-        // Verify Presentation
+        // Issue Presentation (JWT)
+        String vpOptionsJwt = "{"
+            + "  \"proofPurpose\": \"authentication\","
+            + "  \"proofFormat\": \"jwt\","
+            + "  \"verificationMethod\": \"" + verificationMethod + "\""
+            + "}";
+        String vpJwt = DIDKit.issuePresentation(presentation, vpOptions, jwk);
+
+        // Verify Presentation (LDP)
         String vpVerifyOptions = "{"
             + "  \"proofPurpose\": \"authentication\""
             + "}";
         String vpResult = DIDKit.verifyPresentation(vp, vpVerifyOptions);
+        assert vpResult.contains("\"errors\":[]");
+
+        // Verify Presentation (JWT)
+        vpVerifyOptions = "{"
+            + "  \"proofPurpose\": \"authentication\","
+            + "  \"proofFormat\": \"jwt\""
+            + "}";
+        vpResult = DIDKit.verifyPresentation(vpJwt, vpVerifyOptions);
         assert vpResult.contains("\"errors\":[]");
 
         // Resolve DID
@@ -77,7 +108,7 @@ class DIDKitTest {
         String dereferencingResult = DIDKit.dereferenceDIDURL(verificationMethod, "{}");
         assert dereferencingResult.startsWith("[{");
 
-        // Create a DIDAuth VP
+        // Create a DIDAuth VP (LDP)
         vpOptions = "{"
             + "  \"proofPurpose\": \"authentication\","
             + "  \"domain\": \"example.org\","
@@ -85,12 +116,30 @@ class DIDKitTest {
             + "}";
         vp = DIDKit.DIDAuth(did, vpOptions, jwk);
 
-        // Verify Presentation
+        // Create a DIDAuth VP (JWT)
+        vpOptions = "{"
+            + "  \"proofPurpose\": \"authentication\","
+            + "  \"proofFormat\": \"jwt\","
+            + "  \"domain\": \"example.org\","
+            + "  \"verificationMethod\": \"" + verificationMethod + "\""
+            + "}";
+        vpJwt = DIDKit.DIDAuth(did, vpOptions, jwk);
+
+        // Verify DIDAuth VP (LDP)
         vpVerifyOptions = "{"
             + "  \"domain\": \"example.org\","
             + "  \"proofPurpose\": \"authentication\""
             + "}";
         vpResult = DIDKit.verifyPresentation(vp, vpVerifyOptions);
+        assert vpResult.contains("\"errors\":[]");
+
+        // Verify DIDAuth VP (JWT)
+        vpVerifyOptions = "{"
+            + "  \"domain\": \"example.org\","
+            + "  \"proofPurpose\": \"authentication\","
+            + "  \"proofFormat\": \"jwt\""
+            + "}";
+        vpResult = DIDKit.verifyPresentation(vpJwt, vpVerifyOptions);
         assert vpResult.contains("\"errors\":[]");
     }
 }

@@ -15,6 +15,7 @@ use didkit::VerifiableCredential;
 use didkit::VerifiablePresentation;
 use didkit::DID_METHODS;
 use didkit::JWK;
+use didkit::{JWTOrLDPOptions, ProofFormat};
 
 pub static VERSION: &str = env!("CARGO_PKG_VERSION");
 
@@ -128,16 +129,31 @@ pub fn keyToVerificationMethod(method_pattern: String, jwk: String) -> Promise {
 ))]
 async fn issue_credential(
     credential: String,
-    linked_data_proof_options: String,
+    proof_options: String,
     key: String,
 ) -> Result<String, Error> {
     let mut credential = VerifiableCredential::from_json_unsigned(&credential)?;
     let key: JWK = serde_json::from_str(&key)?;
-    let options: LinkedDataProofOptions = serde_json::from_str(&linked_data_proof_options)?;
-    let proof = credential.generate_proof(&key, &options).await?;
-    credential.add_proof(proof);
-    let vc_json = serde_json::to_string(&credential)?;
-    Ok(vc_json)
+    let options: JWTOrLDPOptions = serde_json::from_str(&proof_options)?;
+    let proof_format = options.proof_format.unwrap_or_default();
+    let vc_string = match proof_format {
+        ProofFormat::JWT => {
+            let vc_jwt = credential
+                .generate_jwt(Some(&key), &options.ldp_options)
+                .await?;
+            vc_jwt
+        }
+        ProofFormat::LDP => {
+            let proof = credential
+                .generate_proof(&key, &options.ldp_options)
+                .await?;
+            credential.add_proof(proof);
+            let vc_json = serde_json::to_string(&credential)?;
+            vc_json
+        }
+        _ => Err(Error::UnknownProofFormat(proof_format.to_string()))?,
+    };
+    Ok(vc_string)
 }
 
 #[wasm_bindgen]
@@ -151,12 +167,8 @@ async fn issue_credential(
         not(feature = "verify")
     )
 ))]
-pub fn issueCredential(
-    credential: String,
-    linked_data_proof_options: String,
-    key: String,
-) -> Promise {
-    map_async_jsvalue(issue_credential(credential, linked_data_proof_options, key))
+pub fn issueCredential(credential: String, proof_options: String, key: String) -> Promise {
+    map_async_jsvalue(issue_credential(credential, proof_options, key))
 }
 
 async fn prepare_issue_credential(
@@ -224,10 +236,20 @@ pub fn completeIssueCredential(
         not(feature = "verify")
     )
 ))]
-async fn verify_credential(vc: String, linked_data_proof_options: String) -> Result<String, Error> {
-    let vc = VerifiableCredential::from_json_unsigned(&vc)?;
-    let options: LinkedDataProofOptions = serde_json::from_str(&linked_data_proof_options)?;
-    let result = vc.verify(Some(options), DID_METHODS.to_resolver()).await;
+async fn verify_credential(vc_string: String, proof_options: String) -> Result<String, Error> {
+    let options: JWTOrLDPOptions = serde_json::from_str(&proof_options)?;
+    let proof_format = options.proof_format.unwrap_or_default();
+    let resolver = DID_METHODS.to_resolver();
+    let result = match proof_format {
+        ProofFormat::JWT => {
+            VerifiableCredential::verify_jwt(&vc_string, Some(options.ldp_options), resolver).await
+        }
+        ProofFormat::LDP => {
+            let vc = VerifiableCredential::from_json_unsigned(&vc_string)?;
+            vc.verify(Some(options.ldp_options), resolver).await
+        }
+        _ => Err(Error::UnknownProofFormat(proof_format.to_string()))?,
+    };
     let result_json = serde_json::to_string(&result)?;
     Ok(result_json)
 }
@@ -243,8 +265,8 @@ async fn verify_credential(vc: String, linked_data_proof_options: String) -> Res
         not(feature = "verify")
     )
 ))]
-pub fn verifyCredential(vc: String, linked_data_proof_options: String) -> Promise {
-    map_async_jsvalue(verify_credential(vc, linked_data_proof_options))
+pub fn verifyCredential(vc: String, proof_options: String) -> Promise {
+    map_async_jsvalue(verify_credential(vc, proof_options))
 }
 
 #[cfg(any(
@@ -258,16 +280,29 @@ pub fn verifyCredential(vc: String, linked_data_proof_options: String) -> Promis
 ))]
 async fn issue_presentation(
     presentation: String,
-    linked_data_proof_options: String,
+    proof_options: String,
     key: String,
 ) -> Result<String, Error> {
     let mut presentation = VerifiablePresentation::from_json_unsigned(&presentation)?;
     let key: JWK = serde_json::from_str(&key)?;
-    let options: LinkedDataProofOptions = serde_json::from_str(&linked_data_proof_options)?;
-    let proof = presentation.generate_proof(&key, &options).await?;
-    presentation.add_proof(proof);
-    let vp_json = serde_json::to_string(&presentation)?;
-    Ok(vp_json)
+    let options: JWTOrLDPOptions = serde_json::from_str(&proof_options)?;
+    let proof_format = options.proof_format.unwrap_or_default();
+    let vp_string = match proof_format {
+        ProofFormat::JWT => {
+            presentation
+                .generate_jwt(Some(&key), &options.ldp_options)
+                .await?
+        }
+        ProofFormat::LDP => {
+            let proof = presentation
+                .generate_proof(&key, &options.ldp_options)
+                .await?;
+            presentation.add_proof(proof);
+            serde_json::to_string(&presentation)?
+        }
+        _ => Err(Error::UnknownProofFormat(proof_format.to_string()))?,
+    };
+    Ok(vp_string)
 }
 
 #[wasm_bindgen]
@@ -281,16 +316,8 @@ async fn issue_presentation(
         not(feature = "verify")
     )
 ))]
-pub fn issuePresentation(
-    presentation: String,
-    linked_data_proof_options: String,
-    key: String,
-) -> Promise {
-    map_async_jsvalue(issue_presentation(
-        presentation,
-        linked_data_proof_options,
-        key,
-    ))
+pub fn issuePresentation(presentation: String, proof_options: String, key: String) -> Promise {
+    map_async_jsvalue(issue_presentation(presentation, proof_options, key))
 }
 
 #[cfg(any(
@@ -302,13 +329,21 @@ pub fn issuePresentation(
         not(feature = "verify")
     )
 ))]
-async fn verify_presentation(
-    vp: String,
-    linked_data_proof_options: String,
-) -> Result<String, Error> {
-    let vp = VerifiablePresentation::from_json_unsigned(&vp)?;
-    let options: LinkedDataProofOptions = serde_json::from_str(&linked_data_proof_options)?;
-    let result = vp.verify(Some(options), DID_METHODS.to_resolver()).await;
+async fn verify_presentation(vp_string: String, proof_options: String) -> Result<String, Error> {
+    let options: JWTOrLDPOptions = serde_json::from_str(&proof_options)?;
+    let proof_format = options.proof_format.unwrap_or_default();
+    let resolver = DID_METHODS.to_resolver();
+    let result = match proof_format {
+        ProofFormat::JWT => {
+            VerifiablePresentation::verify_jwt(&vp_string, Some(options.ldp_options), resolver)
+                .await
+        }
+        ProofFormat::LDP => {
+            let vp = VerifiablePresentation::from_json_unsigned(&vp_string)?;
+            vp.verify(Some(options.ldp_options), resolver).await
+        }
+        _ => Err(Error::UnknownProofFormat(proof_format.to_string()))?,
+    };
     let result_json = serde_json::to_string(&result)?;
     Ok(result_json)
 }
@@ -324,8 +359,8 @@ async fn verify_presentation(
         not(feature = "verify")
     )
 ))]
-pub fn verifyPresentation(vp: String, linked_data_proof_options: String) -> Promise {
-    map_async_jsvalue(verify_presentation(vp, linked_data_proof_options))
+pub fn verifyPresentation(vp: String, proof_options: String) -> Promise {
+    map_async_jsvalue(verify_presentation(vp, proof_options))
 }
 
 #[cfg(any(
@@ -337,19 +372,28 @@ pub fn verifyPresentation(vp: String, linked_data_proof_options: String) -> Prom
         not(feature = "verify")
     )
 ))]
-async fn did_auth(
-    holder: String,
-    linked_data_proof_options: String,
-    key: String,
-) -> Result<String, Error> {
+async fn did_auth(holder: String, proof_options: String, key: String) -> Result<String, Error> {
     let mut presentation = VerifiablePresentation::default();
     presentation.holder = Some(ssi::vc::URI::String(holder));
     let key: JWK = serde_json::from_str(&key)?;
-    let options: LinkedDataProofOptions = serde_json::from_str(&linked_data_proof_options)?;
-    let proof = presentation.generate_proof(&key, &options).await?;
-    presentation.add_proof(proof);
-    let vp_json = serde_json::to_string(&presentation)?;
-    Ok(vp_json)
+    let options: JWTOrLDPOptions = serde_json::from_str(&proof_options)?;
+    let proof_format = options.proof_format.unwrap_or_default();
+    let vp_string = match proof_format {
+        ProofFormat::JWT => {
+            presentation
+                .generate_jwt(Some(&key), &options.ldp_options)
+                .await?
+        }
+        ProofFormat::LDP => {
+            let proof = presentation
+                .generate_proof(&key, &options.ldp_options)
+                .await?;
+            presentation.add_proof(proof);
+            serde_json::to_string(&presentation)?
+        }
+        _ => Err(Error::UnknownProofFormat(proof_format.to_string()))?,
+    };
+    Ok(vp_string)
 }
 
 #[wasm_bindgen]
