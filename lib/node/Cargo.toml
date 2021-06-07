@@ -16,10 +16,12 @@ serde = "1.0"
 
 [dependencies.ssi]
 version = "0.2.1"
+path = "../../../ssi"
 
 [dependencies.didkit]
 version = "0.2.1"
 default-features = false
+path = "../"
 
 [dependencies.tokio]
 version = "1.0"
