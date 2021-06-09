@@ -6,15 +6,6 @@ use std::ptr;
 use crate::error::Error;
 #[cfg(doc)]
 use crate::error::{didkit_error_code, didkit_error_message};
-use crate::get_verification_method;
-use crate::runtime;
-use crate::LinkedDataProofOptions;
-use crate::Source;
-use crate::VerifiableCredential;
-use crate::VerifiablePresentation;
-use crate::DID_METHODS;
-use crate::JWK;
-use crate::{dereference, DereferencingInputMetadata, ResolutionInputMetadata, ResolutionResult};
 
 /// The version of the DIDKit library, as a NULL-terminated string
 pub static VERSION_C: &str = concat!(env!("CARGO_PKG_VERSION"), "\0");
@@ -43,8 +34,8 @@ fn ccchar_or_error(result: Result<*const c_char, Error>) -> *const c_char {
 
 // Generate Ed25519 key
 fn generate_ed25519_key() -> Result<*const c_char, Error> {
-    let jwk = JWK::generate_ed25519()?;
-    Ok(CString::new(serde_json::to_string(&jwk)?)?.into_raw())
+    let jwk_string = crate::generate_ed25519_key()?;
+    Ok(CString::new(jwk_string)?.into_raw())
 }
 /// Generate a new Ed25519 keypair in JWK format. On success, returns a pointer to a
 /// newly-allocated string containing the JWK. The string must be freed with [`didkit_free_string`]. On
@@ -61,10 +52,7 @@ fn key_to_did(
 ) -> Result<*const c_char, Error> {
     let method_pattern = unsafe { CStr::from_ptr(method_pattern_ptr) }.to_str()?;
     let key_json = unsafe { CStr::from_ptr(key_json_ptr) }.to_str()?;
-    let key: JWK = serde_json::from_str(key_json)?;
-    let did = DID_METHODS
-        .generate(&Source::KeyAndPattern(&key, &method_pattern))
-        .ok_or(Error::UnableToGenerateDID)?;
+    let did = crate::key_to_did(method_pattern, key_json)?;
     Ok(CString::new(did)?.into_raw())
 }
 #[no_mangle]
@@ -88,18 +76,7 @@ fn key_to_verification_method(
 ) -> Result<*const c_char, Error> {
     let method_pattern = unsafe { CStr::from_ptr(method_pattern_ptr) }.to_str()?;
     let key_json = unsafe { CStr::from_ptr(key_json_ptr) }.to_str()?;
-    let key: JWK = serde_json::from_str(key_json)?;
-    let did_method = DID_METHODS
-        .get(&method_pattern)
-        .ok_or(Error::UnknownDIDMethod)?;
-    let did = did_method
-        .generate(&Source::Key(&key))
-        .ok_or(Error::UnableToGenerateDID)?;
-    let did_resolver = did_method.to_resolver();
-    let rt = runtime::get()?;
-    let vm = rt
-        .block_on(get_verification_method(&did, did_resolver))
-        .ok_or(Error::UnableToGetVerificationMethod)?;
+    let vm = crate::key_to_verification_method(method_pattern, key_json)?;
     Ok(CString::new(vm)?.into_raw())
 }
 /// Convert a key to a `did:key` DID URI for use in the `verificationMethod` property of a linked data
@@ -124,13 +101,9 @@ fn issue_credential(
     let linked_data_proof_options_json =
         unsafe { CStr::from_ptr(linked_data_proof_options_json_ptr) }.to_str()?;
     let key_json = unsafe { CStr::from_ptr(key_json_ptr) }.to_str()?;
-    let mut credential = VerifiableCredential::from_json_unsigned(credential_json)?;
-    let key: JWK = serde_json::from_str(key_json)?;
-    let options: LinkedDataProofOptions = serde_json::from_str(linked_data_proof_options_json)?;
-    let rt = runtime::get()?;
-    let proof = rt.block_on(credential.generate_proof(&key, &options))?;
-    credential.add_proof(proof);
-    Ok(CString::new(serde_json::to_string(&credential)?)?.into_raw())
+    let vc_string =
+        crate::issue_credential(credential_json, linked_data_proof_options_json, key_json)?;
+    Ok(CString::new(vc_string)?.into_raw())
 }
 #[no_mangle]
 /// Issue a Verifiable Credential. Input parameters are JSON C strings for the unsigned credential
@@ -158,11 +131,8 @@ fn verify_credential(
     let credential_json = unsafe { CStr::from_ptr(credential_json_ptr) }.to_str()?;
     let linked_data_proof_options_json =
         unsafe { CStr::from_ptr(linked_data_proof_options_json_ptr) }.to_str()?;
-    let credential = VerifiableCredential::from_json_unsigned(credential_json)?;
-    let options: LinkedDataProofOptions = serde_json::from_str(linked_data_proof_options_json)?;
-    let rt = runtime::get()?;
-    let result = rt.block_on(credential.verify(Some(options), DID_METHODS.to_resolver()));
-    Ok(CString::new(serde_json::to_string(&result)?)?.into_raw())
+    let result_json = crate::verify_credential(credential_json, linked_data_proof_options_json)?;
+    Ok(CString::new(result_json)?.into_raw())
 }
 #[no_mangle]
 /// Verify a Verifiable Credential. Arguments are a C string containing the Verifiable Credential
@@ -194,13 +164,9 @@ fn issue_presentation(
     let linked_data_proof_options_json =
         unsafe { CStr::from_ptr(linked_data_proof_options_json_ptr) }.to_str()?;
     let key_json = unsafe { CStr::from_ptr(key_json_ptr) }.to_str()?;
-    let mut presentation = VerifiablePresentation::from_json_unsigned(presentation_json)?;
-    let key: JWK = serde_json::from_str(key_json)?;
-    let options: LinkedDataProofOptions = serde_json::from_str(linked_data_proof_options_json)?;
-    let rt = runtime::get()?;
-    let proof = rt.block_on(presentation.generate_proof(&key, &options))?;
-    presentation.add_proof(proof);
-    Ok(CString::new(serde_json::to_string(&presentation)?)?.into_raw())
+    let vp_string =
+        crate::issue_presentation(presentation_json, linked_data_proof_options_json, key_json)?;
+    Ok(CString::new(vp_string)?.into_raw())
 }
 #[no_mangle]
 /// Issue a Verifiable Presentation. Input parameters are JSON C strings for the unsigned
@@ -230,14 +196,8 @@ fn did_auth(
     let linked_data_proof_options_json =
         unsafe { CStr::from_ptr(linked_data_proof_options_json_ptr) }.to_str()?;
     let key_json = unsafe { CStr::from_ptr(key_json_ptr) }.to_str()?;
-    let mut presentation = VerifiablePresentation::default();
-    presentation.holder = Some(ssi::vc::URI::String(holder.to_string()));
-    let key: JWK = serde_json::from_str(key_json)?;
-    let options: LinkedDataProofOptions = serde_json::from_str(linked_data_proof_options_json)?;
-    let rt = runtime::get()?;
-    let proof = rt.block_on(presentation.generate_proof(&key, &options))?;
-    presentation.add_proof(proof);
-    Ok(CString::new(serde_json::to_string(&presentation)?)?.into_raw())
+    let vp_string = crate::did_auth(holder, linked_data_proof_options_json, key_json)?;
+    Ok(CString::new(vp_string)?.into_raw())
 }
 #[no_mangle]
 /// Issue a Verifiable Presentation for [DIDAuth](https://w3c-ccg.github.io/vp-request-spec/#did-authentication-request). Input parameters are the holder URI as a C string, and JSON C strings for the linked data proof options and the JWK for signing. On success,
@@ -260,11 +220,9 @@ fn verify_presentation(
     let presentation_json = unsafe { CStr::from_ptr(presentation_json_ptr) }.to_str()?;
     let linked_data_proof_options_json =
         unsafe { CStr::from_ptr(linked_data_proof_options_json_ptr) }.to_str()?;
-    let presentation = VerifiablePresentation::from_json_unsigned(presentation_json)?;
-    let options: LinkedDataProofOptions = serde_json::from_str(linked_data_proof_options_json)?;
-    let rt = runtime::get()?;
-    let result = rt.block_on(presentation.verify(Some(options), DID_METHODS.to_resolver()));
-    Ok(CString::new(serde_json::to_string(&result)?)?.into_raw())
+    let result_json =
+        crate::verify_presentation(presentation_json, linked_data_proof_options_json)?;
+    Ok(CString::new(result_json)?.into_raw())
 }
 #[no_mangle]
 /// Verify a Verifiable Presentation. Arguments are a C string containing the Verifiable
@@ -297,17 +255,8 @@ fn resolve_did(
     } else {
         unsafe { CStr::from_ptr(input_metadata_json_ptr) }.to_str()?
     };
-    let input_metadata: ResolutionInputMetadata = serde_json::from_str(input_metadata_json)?;
-    let resolver = DID_METHODS.to_resolver();
-    let rt = runtime::get()?;
-    let (res_meta, doc_opt, doc_meta_opt) = rt.block_on(resolver.resolve(did, &input_metadata));
-    let result = ResolutionResult {
-        did_document: doc_opt,
-        did_resolution_metadata: Some(res_meta),
-        did_document_metadata: doc_meta_opt,
-        ..Default::default()
-    };
-    Ok(CString::new(serde_json::to_string(&result)?)?.into_raw())
+    let result_string = crate::resolve_did(did, input_metadata_json)?;
+    Ok(CString::new(result_string)?.into_raw())
 }
 
 #[no_mangle]
@@ -334,13 +283,8 @@ fn dereference_did_url(
     } else {
         unsafe { CStr::from_ptr(input_metadata_json_ptr) }.to_str()?
     };
-    let input_metadata: DereferencingInputMetadata = serde_json::from_str(input_metadata_json)?;
-    let resolver = DID_METHODS.to_resolver();
-    let rt = runtime::get()?;
-    let deref_result = rt.block_on(dereference(resolver, did_url, &input_metadata));
-    use serde_json::json;
-    let result = json!(deref_result);
-    Ok(CString::new(serde_json::to_string(&result)?)?.into_raw())
+    let result_string = crate::dereference_did_url(did_url, input_metadata_json)?;
+    Ok(CString::new(result_string)?.into_raw())
 }
 
 #[no_mangle]
