@@ -12,7 +12,7 @@ elif platform == "darwin":
     didpath = os.path.join(didpath, 'libdidkit.dylib')
     didkit = libc = CDLL(didpath)
 else:
-    didpath = os.path.join(didpath, 'libdidkit.dll')
+    didpath = os.path.join(didpath, 'didkit.dll')
     didkit = libc = CDLL(didpath, winmode=1)
 
 # String getVersion()

@@ -75,6 +75,11 @@ $ docker build -f Dockerfile-http . -t didkit-http
 
 And to use them, replace `ghcr.io/spruceid/didkit-(cli|http):latest` with `didkit-(cli|http)`.
 
+## Cross compiling
+
+Information about how to cross compile DIDKit from linux to other platforms can
+be found [here](CROSS.md).
+
 ## Usage
 
 DIDKit can be used in any of the following ways:
