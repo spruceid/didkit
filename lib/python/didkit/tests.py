@@ -65,7 +65,7 @@ class TestCredentialMethods(unittest.TestCase):
             didkit.verify_credential(credential.__str__().replace("'", '"'),
                                      "{\"proofPurpose\":\"assertionMethod\"}"))
 
-        self.assertTrue(not result["errors"])
+        self.assertFalse(result["errors"])
 
 
 class TestPresentationMethods(unittest.TestCase):
@@ -110,7 +110,7 @@ class TestPresentationMethods(unittest.TestCase):
                                        tests.options.__str__().replace(
                                            "'", '"')))
 
-        self.assertTrue(not result["errors"])
+        self.assertFalse(result["errors"])
 
 
 class TestAuthMethods(unittest.TestCase):
@@ -139,7 +139,7 @@ class TestAuthMethods(unittest.TestCase):
                                        tests.options.__str__().replace(
                                            "'", '"')))
 
-        self.assertTrue(not result["errors"])
+        self.assertFalse(result["errors"])
 
 
 if __name__ == '__main__':
