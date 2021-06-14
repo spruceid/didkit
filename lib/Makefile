@@ -13,8 +13,6 @@ else
 	LIB_NAME=libdidkit.so
 endif
 
-VERSION=$(shell cat Cargo.toml | grep -m 1 version | cut -d' ' -f3 | sed 's/"//g')
-
 .PHONY: test
 test: $(TARGET)/test/c.stamp \
 	$(TARGET)/test/java.stamp \
@@ -58,7 +56,7 @@ $(TARGET)/test/python.stamp: $(TARGET)/release/$(LIB_NAME) | $(TARGET)/test
 
 .PHONY: install-python
 install-python: $(TARGET)/test/python.stamp
-	python3 -m pip install python/dist/didkit-$(VERSION)-*.whl
+	python3 -m pip install python/dist/didkit-*.whl
 	python3 -m unittest python/didkit/tests.py -v
 
 ## Java
