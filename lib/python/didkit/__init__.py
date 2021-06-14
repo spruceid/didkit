@@ -1,5 +1,6 @@
 from ctypes import *
 from sys import platform
+from deprecated import deprecated
 import os.path
 
 didkit = None
@@ -89,6 +90,12 @@ def get_version():
     return didkit.didkit_get_version().decode()
 
 
+@deprecated(
+    version='0.2.2', reason="This function has been renamed to `get_version`")
+def getVersion():
+    return get_version()
+
+
 def generate_ed25519_key():
     key = didkit.didkit_vc_generate_ed25519_key()
     if not key:
@@ -98,6 +105,13 @@ def generate_ed25519_key():
     return key_str
 
 
+@deprecated(
+    version='0.2.2',
+    reason="This function has been renamed to `generate_ed25519_key`")
+def generateEd25519Key():
+    return generate_ed25519_key()
+
+
 def key_to_did(method_pattern, key):
     did = didkit.didkit_key_to_did(method_pattern.encode(), key.encode())
     if not did:
@@ -105,6 +119,12 @@ def key_to_did(method_pattern, key):
     did_str = cast(did, c_char_p).value.decode()
     didkit.didkit_free_string(cast(did, c_void_p))
     return did_str
+
+
+@deprecated(
+    version='0.2.2', reason="This function has been renamed to `key_to_did`")
+def keyToDID(method_pattern, key):
+    return key_to_did(method_pattern, key)
 
 
 def key_to_verification_method(method_pattern, key):
@@ -117,6 +137,13 @@ def key_to_verification_method(method_pattern, key):
     return vm_str
 
 
+@deprecated(
+    version='0.2.2',
+    reason="This function has been renamed to `key_to_verification_method`")
+def keyToVerificationMethod(method_pattern, key):
+    return key_to_verification_method(method_pattern, key)
+
+
 def issue_credential(credential, options, key):
     vc = didkit.didkit_vc_issue_credential(credential.encode(),
                                            options.encode(), key.encode())
@@ -125,6 +152,13 @@ def issue_credential(credential, options, key):
     vc_str = cast(vc, c_char_p).value.decode()
     didkit.didkit_free_string(cast(vc, c_void_p))
     return vc_str
+
+
+@deprecated(
+    version='0.2.2',
+    reason="This function has been renamed to `issue_credential`")
+def issueCredential(credential, options, key):
+    return issue_credential(credential, options, key)
 
 
 def verify_credential(credential, options):
@@ -137,6 +171,13 @@ def verify_credential(credential, options):
     return result_str
 
 
+@deprecated(
+    version='0.2.2',
+    reason="This function has been renamed to `verify_credential`")
+def verifyCredential(credential, options):
+    return verify_credential(credential, options)
+
+
 def issue_presentation(presentation, options, key):
     vp = didkit.didkit_vc_issue_presentation(presentation.encode(),
                                              options.encode(), key.encode())
@@ -145,6 +186,13 @@ def issue_presentation(presentation, options, key):
     vp_str = cast(vp, c_char_p).value.decode()
     didkit.didkit_free_string(cast(vp, c_void_p))
     return vp_str
+
+
+@deprecated(
+    version='0.2.2',
+    reason="This function has been renamed to `issue_presentation`")
+def issuePresentation(presentation, options, key):
+    return issue_presentation(presentation, options, key)
 
 
 def verify_presentation(presentation, options):
@@ -157,6 +205,13 @@ def verify_presentation(presentation, options):
     return result_str
 
 
+@deprecated(
+    version='0.2.2',
+    reason="This function has been renamed to `verify_presentation`")
+def verifyPresentation(presentation, options):
+    return verify_presentation(presentation, options)
+
+
 def resolve_did(did, input_metadata):
     result = didkit.didkit_did_resolve(did.encode(), input_metadata.encode())
     if not result:
@@ -164,6 +219,12 @@ def resolve_did(did, input_metadata):
     result_str = cast(result, c_char_p).value.decode()
     didkit.didkit_free_string(cast(result, c_void_p))
     return result_str
+
+
+@deprecated(
+    version='0.2.2', reason="This function has been renamed to `resolve_did`")
+def resolveDID(did, input_metadata):
+    return resolve_did(did, input_metadata)
 
 
 def dereference_did_url(did_url, input_metadata):
@@ -176,6 +237,13 @@ def dereference_did_url(did_url, input_metadata):
     return result_str
 
 
+@deprecated(
+    version='0.2.2',
+    reason="This function has been renamed to `dereference_did_url`")
+def dereferenceDIDURL(did_url, input_metadata):
+    return dereference_did_url(did_url, input_metadata)
+
+
 def did_auth(did, options, key):
     vp = didkit.didkit_did_auth(did.encode(), options.encode(), key.encode())
     if not vp:
@@ -183,3 +251,9 @@ def did_auth(did, options, key):
     vp_str = cast(vp, c_char_p).value.decode()
     didkit.didkit_free_string(cast(vp, c_void_p))
     return vp_str
+
+
+@deprecated(
+    version='0.2.2', reason="This function has been renamed to `did_auth`")
+def DIDAuth(did, options, key):
+    return did_auth(did, options, key)
