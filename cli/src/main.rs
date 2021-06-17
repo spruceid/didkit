@@ -188,6 +188,7 @@ impl From<ProofOptions> for LinkedDataProofOptions {
             challenge: options.challenge,
             domain: options.domain,
             checks: None,
+            ..Default::default()
         }
     }
 }
