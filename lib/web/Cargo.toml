@@ -42,10 +42,13 @@ crate-type = ["cdylib"]
 wasm-opt = false
 
 [features]
-default = ["generate", "issue", "verify"]
+default = ["generate", "issue", "verify", "invoke", "delegate"]
 
 generate = []
 issue = []
 verify = []
 credential = []
 presentation = []
+delegate = []
+invoke = []
+zcap = []

@@ -456,13 +456,8 @@ async fn delegate_capability(
 #[wasm_bindgen]
 #[allow(non_snake_case)]
 #[cfg(any(
-    all(feature = "issue", feature = "credential"),
-    all(feature = "issue", not(feature = "presentation")),
-    all(
-        feature = "credential",
-        not(feature = "issue"),
-        not(feature = "verify")
-    )
+    all(feature = "delegate", feature = "zcap"),
+    all(feature = "zcap", not(feature = "delegate"), not(feature = "invoke"))
 ))]
 pub fn delegateCapability(
     capability: String,
@@ -482,7 +477,7 @@ async fn prepare_delegate_capability(
     public_key: String,
 ) -> Result<String, Error> {
     let public_key: JWK = serde_json::from_str(&public_key)?;
-    let capability: Delegation<String, ()> = serde_json::from_str(&capability)?;
+    let capability: Delegation<String, Value> = serde_json::from_str(&capability)?;
     let options: LinkedDataProofOptions = serde_json::from_str(&linked_data_proof_options)?;
     let preparation = capability.prepare_proof(&public_key, &options).await?;
     let preparation_json = serde_json::to_string(&preparation)?;
@@ -491,7 +486,7 @@ async fn prepare_delegate_capability(
 
 #[wasm_bindgen]
 #[allow(non_snake_case)]
-#[cfg(feature = "issue")]
+#[cfg(feature = "delegate")]
 pub fn prepareDelegateCapability(
     capability: String,
     linked_data_proof_options: String,
@@ -509,7 +504,7 @@ async fn complete_delegate_capability(
     preparation: String,
     signature: String,
 ) -> Result<String, Error> {
-    let capability: Delegation<String, ()> = serde_json::from_str(&capability)?;
+    let capability: Delegation<String, Value> = serde_json::from_str(&capability)?;
     let preparation: ProofPreparation = serde_json::from_str(&preparation)?;
     let proof = preparation.complete(&signature).await?;
     let json = serde_json::to_string(&capability.set_proof(proof))?;
@@ -518,7 +513,7 @@ async fn complete_delegate_capability(
 
 #[wasm_bindgen]
 #[allow(non_snake_case)]
-#[cfg(feature = "issue")]
+#[cfg(feature = "delegate")]
 pub fn completeDelegateCapability(
     capability: String,
     preparation: String,
@@ -532,19 +527,14 @@ pub fn completeDelegateCapability(
 }
 
 #[cfg(any(
-    all(feature = "verify", feature = "credential"),
-    all(feature = "verify", not(feature = "presentation")),
-    all(
-        feature = "credential",
-        not(feature = "issue"),
-        not(feature = "verify")
-    )
+    all(feature = "delegate", feature = "zcap"),
+    all(feature = "zcap", not(feature = "delegate"), not(feature = "invoke"))
 ))]
 async fn verify_delegation(
     delegation: String,
     linked_data_proof_options: String,
 ) -> Result<String, Error> {
-    let delegation: Delegation<String, ()> = serde_json::from_str(&delegation)?;
+    let delegation: Delegation<String, Value> = serde_json::from_str(&delegation)?;
     let options: LinkedDataProofOptions = serde_json::from_str(&linked_data_proof_options)?;
     let result = delegation
         .verify(Some(options), DID_METHODS.to_resolver())
@@ -556,13 +546,8 @@ async fn verify_delegation(
 #[wasm_bindgen]
 #[allow(non_snake_case)]
 #[cfg(any(
-    all(feature = "verify", feature = "credential"),
-    all(feature = "verify", not(feature = "presentation")),
-    all(
-        feature = "credential",
-        not(feature = "issue"),
-        not(feature = "verify")
-    )
+    all(feature = "delegate", feature = "zcap"),
+    all(feature = "zcap", not(feature = "delegate"), not(feature = "invoke"))
 ))]
 pub fn verifyDelegation(delegation: String, linked_data_proof_options: String) -> Promise {
     map_async_jsvalue(verify_delegation(delegation, linked_data_proof_options))
@@ -595,13 +580,8 @@ async fn invoke_capability(
 #[wasm_bindgen]
 #[allow(non_snake_case)]
 #[cfg(any(
-    all(feature = "issue", feature = "credential"),
-    all(feature = "issue", not(feature = "presentation")),
-    all(
-        feature = "credential",
-        not(feature = "issue"),
-        not(feature = "verify")
-    )
+    all(feature = "invoke", feature = "zcap"),
+    all(feature = "zcap", not(feature = "delegate"), not(feature = "invoke"))
 ))]
 pub fn invokeCapability(
     invocation: String,
@@ -635,7 +615,7 @@ async fn prepare_invoke_capability(
 
 #[wasm_bindgen]
 #[allow(non_snake_case)]
-#[cfg(feature = "issue")]
+#[cfg(feature = "invoke")]
 pub fn prepareInvokeCapability(
     invocation: String,
     target_id: String,
@@ -664,7 +644,7 @@ async fn complete_invoke_capability(
 
 #[wasm_bindgen]
 #[allow(non_snake_case)]
-#[cfg(feature = "issue")]
+#[cfg(feature = "invoke")]
 pub fn completeInvokeCapability(
     invocation: String,
     preparation: String,
