@@ -1,6 +1,7 @@
 use core::future::Future;
 
 use js_sys::Promise;
+use serde_json::Value;
 use wasm_bindgen::prelude::*;
 use wasm_bindgen_futures::future_to_promise;
 
@@ -8,7 +9,6 @@ use didkit::error::Error;
 #[cfg(doc)]
 use didkit::error::{didkit_error_code, didkit_error_message};
 use didkit::get_verification_method;
-use didkit::Delegation;
 use didkit::LinkedDataProofOptions;
 use didkit::ProofPreparation;
 use didkit::Source;
@@ -16,7 +16,8 @@ use didkit::VerifiableCredential;
 use didkit::VerifiablePresentation;
 use didkit::DID_METHODS;
 use didkit::JWK;
-use didkit::{JWTOrLDPOptions, ProofFormat};
+use didkit::{URI, JWTOrLDPOptions, ProofFormat};
+use didkit::{Delegation, Invocation};
 
 pub static VERSION: &str = env!("CARGO_PKG_VERSION");
 
@@ -444,11 +445,11 @@ async fn delegate_capability(
     linked_data_proof_options: String,
     key: String,
 ) -> Result<String, Error> {
-    let mut delegation = Delegation::from_json_unsigned(&capability)?;
+    let delegation: Delegation<String, Value> = serde_json::from_str(&capability)?;
     let key: JWK = serde_json::from_str(&key)?;
     let options: LinkedDataProofOptions = serde_json::from_str(&linked_data_proof_options)?;
     let proof = delegation.generate_proof(&key, &options).await?;
-    let json = serde_json::to_string(&delegation.add_proof(proof))?;
+    let json = serde_json::to_string(&delegation.set_proof(proof))?;
     Ok(json)
 }
 
@@ -581,10 +582,12 @@ async fn invoke_capability(
     linked_data_proof_options: String,
     key: String,
 ) -> Result<String, Error> {
-    let invocation = Delegation::from_json_unsigned(&invocation)?;
+    let invocation: Invocation<String> = serde_json::from_str(&invocation)?;
     let key: JWK = serde_json::from_str(&key)?;
     let options: LinkedDataProofOptions = serde_json::from_str(&linked_data_proof_options)?;
-    let proof = invocation.generate_proof(&key, &options, target_id).await?;
+    let proof = invocation
+        .generate_proof(&key, &options, &URI::String(target_id))
+        .await?;
     let json = serde_json::to_string(&invocation.set_proof(proof))?;
     Ok(json)
 }
@@ -624,7 +627,7 @@ async fn prepare_invoke_capability(
     let invocation: Invocation<String> = serde_json::from_str(&invocation)?;
     let options: LinkedDataProofOptions = serde_json::from_str(&linked_data_proof_options)?;
     let preparation = invocation
-        .prepare_proof(&public_key, &options, &target_id)
+        .prepare_proof(&public_key, &options, &URI::String(target_id))
         .await?;
     let preparation_json = serde_json::to_string(&preparation)?;
     Ok(preparation_json)
@@ -641,6 +644,7 @@ pub fn prepareInvokeCapability(
 ) -> Promise {
     map_async_jsvalue(prepare_invoke_capability(
         invocation,
+        target_id,
         linked_data_proof_options,
         public_key,
     ))

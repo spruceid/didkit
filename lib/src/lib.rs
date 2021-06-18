@@ -33,7 +33,7 @@ pub use ssi::vc::Presentation as VerifiablePresentation;
 pub use ssi::vc::ProofPurpose;
 pub use ssi::vc::VerificationResult;
 pub use ssi::vc::URI;
-pub use ssi::zcap::Delegation;
+pub use ssi::zcap::{Delegation, Invocation};
 
 use core::str::FromStr;
 use serde::{Deserialize, Serialize};
