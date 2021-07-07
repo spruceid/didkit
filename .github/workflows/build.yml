@@ -98,6 +98,9 @@ jobs:
         VP_PROOF_FORMAT: jwt
       run: cli/tests/example.sh
 
+    - name: Test binary-signing verify example
+      run: examples/binary-signing/index.sh verify examples/binary-signing/hello.txt examples/binary-signing/hello-vc.jsonld
+
     - name: Checkout vc-http-api v0.0.1
       uses: actions/checkout@v2
       with:
