@@ -58,14 +58,14 @@ jobs:
     - name: Test HTTP server
       run: http/tests/example.sh
 
-    - name: Test CLI (did:tz)
+    - name: Test CLI (did:pkh:tz)
       env:
-        DID_METHOD: tz
+        DID_METHOD: pkh:tz
       run: cli/tests/example.sh
 
-    - name: Test HTTP server (did:tz)
+    - name: Test HTTP server (did:pkh:tz)
       env:
-        DID_METHOD: tz
+        DID_METHOD: pkh:tz
       run: http/tests/example.sh
 
     - name: Test CLI (JWT)
