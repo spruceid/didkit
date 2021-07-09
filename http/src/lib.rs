@@ -13,8 +13,8 @@ use didkit::{
 };
 use didkit_cli::opts::ResolverOptions;
 use ssi::did_resolve::{
-    ERROR_INVALID_DID, ERROR_NOT_FOUND, ERROR_REPRESENTATION_NOT_SUPPORTED, TYPE_DID_LD_JSON,
-    TYPE_DID_RESOLUTION,
+    ERROR_INVALID_DID, ERROR_INVALID_DID_URL, ERROR_NOT_FOUND, ERROR_REPRESENTATION_NOT_SUPPORTED,
+    TYPE_DID_LD_JSON, TYPE_DID_RESOLUTION,
 };
 
 pub mod accept;
@@ -501,12 +501,14 @@ impl DIDKitHTTPSvc {
                 parts.status = match &error[..] {
                     ERROR_NOT_FOUND => StatusCode::NOT_FOUND,
                     ERROR_INVALID_DID => StatusCode::BAD_REQUEST,
+                    ERROR_INVALID_DID_URL => StatusCode::BAD_REQUEST,
                     ERROR_REPRESENTATION_NOT_SUPPORTED => StatusCode::NOT_ACCEPTABLE,
                     _ => StatusCode::INTERNAL_SERVER_ERROR,
                 };
                 body = Body::from(error.as_bytes().to_vec());
             }
             if let ContentMetadata::DIDDocument(ref did_doc_meta) = content_meta {
+                // 1.9
                 if did_doc_meta.deactivated == Some(true) {
                     parts.status = StatusCode::GONE;
                 }
