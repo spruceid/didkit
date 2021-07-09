@@ -125,6 +125,18 @@ pub enum DIDKit {
         #[structopt(flatten)]
         proof_options: ProofOptions,
     },
+    /// Convert JSON-LD to URDNA2015-canonicalized RDF N-Quads
+    ToRdfURDNA2015 {
+        /// Base IRI
+        #[structopt(short = "b", long)]
+        base: Option<String>,
+        /// IRI for expandContext option
+        #[structopt(short = "c", long)]
+        expand_context: Option<String>,
+        /// Additional values for JSON-LD @context property.
+        #[structopt(short = "C", long)]
+        more_context_json: Option<String>,
+    },
     /*
     /// Revoke Credential
     VCRevokeCredential {},
@@ -530,6 +542,36 @@ fn main() {
             if result.errors.len() > 0 {
                 std::process::exit(2);
             }
+        }
+
+        DIDKit::ToRdfURDNA2015 {
+            base,
+            expand_context,
+            more_context_json,
+        } => {
+            use ssi::jsonld::{json_to_dataset, JsonLdOptions, StaticLoader};
+            use std::io::Read;
+            let mut loader = StaticLoader;
+            let mut reader = BufReader::new(stdin());
+            let mut json = String::new();
+            reader.read_to_string(&mut json).unwrap();
+            let options = JsonLdOptions {
+                base,
+                expand_context,
+                ..Default::default()
+            };
+            let dataset = rt
+                .block_on(json_to_dataset(
+                    &json,
+                    more_context_json.as_ref(),
+                    false,
+                    Some(&options),
+                    &mut loader,
+                ))
+                .unwrap();
+            let dataset_normalized = ssi::urdna2015::normalize(&dataset).unwrap();
+            let normalized = dataset_normalized.to_nquads().unwrap();
+            stdout().write_all(normalized.as_bytes()).unwrap();
         }
 
         DIDKit::DIDResolve {
