@@ -5,6 +5,7 @@ To generate test vectors:
     cargo run --example did-test-suite method web > impl/did-web-spruce.json
     cargo run --example did-test-suite resolver key > impl/resolver-spruce-key.json
     cargo run --example did-test-suite resolver web > impl/resolver-spruce-web.json
+    cargo run --example did-test-suite dereferencer > impl/dereferencer-spruce.json
 */
 
 use serde::{Deserialize, Serialize};
@@ -14,9 +15,10 @@ use std::env::Args;
 
 use ssi::did::{Document, DIDURL};
 use ssi::did_resolve::{
-    DIDResolver, DocumentMetadata, ResolutionInputMetadata, ResolutionMetadata, ResolutionResult,
-    ERROR_INVALID_DID, ERROR_METHOD_NOT_SUPPORTED, ERROR_NOT_FOUND,
-    ERROR_REPRESENTATION_NOT_SUPPORTED, ERROR_UNAUTHORIZED, TYPE_DID_LD_JSON, TYPE_LD_JSON,
+    dereference, Content, ContentMetadata, DIDResolver, DereferencingInputMetadata,
+    DereferencingMetadata, DocumentMetadata, ResolutionInputMetadata, ResolutionMetadata,
+    ERROR_INVALID_DID, ERROR_INVALID_DID_URL, ERROR_NOT_FOUND, ERROR_REPRESENTATION_NOT_SUPPORTED,
+    TYPE_DID_LD_JSON,
 };
 
 type DID = String;
@@ -94,37 +96,56 @@ pub enum ResolverFunction {
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
-#[serde(rename_all = "camelCase")]
-pub struct ResolverInput {
-    pub did: DID,
-    pub resolution_options: ResolutionInputMetadata,
+#[serde(untagged)]
+pub enum ExecutionInput {
+    #[serde(rename_all = "camelCase")]
+    Resolve {
+        did: DID,
+        resolution_options: ResolutionInputMetadata,
+    },
+    #[serde(rename_all = "camelCase")]
+    Dereference {
+        did_url: DID,
+        dereference_options: DereferencingInputMetadata,
+    },
 }
 
-#[derive(Debug, Serialize, Deserialize, Clone, Default)]
-#[serde(rename_all = "camelCase")]
-pub struct ResolverOutput {
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub did_document: Option<Document>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub did_document_stream: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub did_resolution_metadata: Option<ResolutionMetadata>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub did_document_metadata: Option<DocumentMetadata>,
+#[derive(Debug, Serialize, Deserialize, Clone)]
+#[serde(untagged)]
+pub enum ExecutionOutput {
+    #[serde(rename_all = "camelCase")]
+    Resolve {
+        did_document: Option<Document>,
+        did_resolution_metadata: ResolutionMetadata,
+        did_document_metadata: DocumentMetadata,
+    },
+    #[serde(rename_all = "camelCase")]
+    ResolveRepresentation {
+        did_document_stream: String,
+        did_resolution_metadata: ResolutionMetadata,
+        did_document_metadata: DocumentMetadata,
+    },
+    #[serde(rename_all = "camelCase")]
+    Dereference {
+        dereferencing_metadata: DereferencingMetadata,
+        content_stream: String,
+        content_metadata: ContentMetadata,
+    },
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct ResolverExecution {
     pub function: ResolverFunction,
-    pub input: ResolverInput,
-    pub output: ResolverOutput,
+    pub input: ExecutionInput,
+    pub output: ExecutionOutput,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct DIDResolverImplementation {
-    pub did_method: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub did_method: Option<String>,
     pub implementation: String,
     pub implementer: String,
     pub expected_outcomes: HashMap<ResolverOutcome, Vec<usize>>,
@@ -177,7 +198,7 @@ async fn did_method_vector(resolver: &dyn DIDResolver, did: &str) -> DIDVector {
 }
 
 async fn report_method_key() {
-    let mut did_parameters = Map::new();
+    let did_parameters = Map::new();
     // No parameters supported for did:key
     // did_parameters.insert("".to_string(), DIDURL::from_str("").unrwap());
     let mut did_vectors = Map::new();
@@ -207,7 +228,7 @@ async fn report_method_key() {
 }
 
 async fn report_method_web() {
-    let mut did_parameters = Map::new();
+    let did_parameters = Map::new();
     // No parameters supported for did:web
     // did_parameters.insert("".to_string(), DIDURL::from_str("").unrwap());
     let mut did_vectors = Map::new();
@@ -236,6 +257,7 @@ impl ResolverOutcome {
         if let Some(error) = error {
             match &error[..] {
                 ERROR_INVALID_DID => return Self::InvalidDIDErrorOutcome,
+                ERROR_INVALID_DID_URL => return Self::InvalidDIDURLErrorOutcome,
                 ERROR_REPRESENTATION_NOT_SUPPORTED => {
                     return Self::RepresentationNotSupportedErrorOutcome
                 }
@@ -258,18 +280,17 @@ impl DIDResolverImplementation {
         options: &ResolutionInputMetadata,
     ) {
         let (res_meta, doc_opt, doc_meta_opt) = resolver.resolve(did, options).await;
-        let input = ResolverInput {
+        let input = ExecutionInput::Resolve {
             did: did.to_string(),
             resolution_options: options.to_owned(),
         };
         let error_opt = res_meta.error.clone();
         let doc_meta = doc_meta_opt.unwrap_or_default();
         let deactivated_opt = doc_meta.deactivated.clone();
-        let output = ResolverOutput {
+        let output = ExecutionOutput::Resolve {
             did_document: doc_opt,
-            did_resolution_metadata: Some(res_meta),
-            did_document_metadata: Some(doc_meta),
-            ..Default::default()
+            did_resolution_metadata: res_meta,
+            did_document_metadata: doc_meta,
         };
         let execution = ResolverExecution {
             function: ResolverFunction::Resolve,
@@ -288,21 +309,57 @@ impl DIDResolverImplementation {
         let (res_meta, doc_repr, doc_meta_opt) =
             resolver.resolve_representation(did, options).await;
         let representation = String::from_utf8(doc_repr).unwrap();
-        let input = ResolverInput {
+        let input = ExecutionInput::Resolve {
             did: did.to_string(),
             resolution_options: options.to_owned(),
         };
         let error_opt = res_meta.error.clone();
         let doc_meta = doc_meta_opt.unwrap_or_default();
         let deactivated_opt = doc_meta.deactivated.clone();
-        let output = ResolverOutput {
-            did_document_stream: Some(representation),
-            did_resolution_metadata: Some(res_meta),
-            did_document_metadata: Some(doc_meta),
-            ..Default::default()
+        let output = ExecutionOutput::ResolveRepresentation {
+            did_document_stream: representation,
+            did_resolution_metadata: res_meta,
+            did_document_metadata: doc_meta,
         };
         let execution = ResolverExecution {
             function: ResolverFunction::ResolveRepresentation,
+            input,
+            output,
+        };
+        self.add_execution(execution, error_opt, deactivated_opt);
+    }
+
+    async fn dereference(
+        &mut self,
+        resolver: &dyn DIDResolver,
+        did_url: &str,
+        options: &DereferencingInputMetadata,
+    ) {
+        let (deref_meta, content, content_meta) = dereference(resolver, did_url, options).await;
+        let input = ExecutionInput::Dereference {
+            did_url: did_url.to_string(),
+            dereference_options: options.to_owned(),
+        };
+        let error_opt = deref_meta.error.clone();
+        let deactivated_opt = if let ContentMetadata::DIDDocument(ref did_doc_meta) = content_meta {
+            did_doc_meta.deactivated
+        } else {
+            None
+        };
+        let content_stream = match content {
+            Content::DIDDocument(doc) => serde_json::to_string(&doc).unwrap(),
+            Content::URL(url) => String::from(url),
+            Content::Object(resource) => serde_json::to_string(&resource).unwrap(),
+            Content::Data(vec) => String::from_utf8(vec).unwrap(),
+            Content::Null => "".to_string(),
+        };
+        let output = ExecutionOutput::Dereference {
+            dereferencing_metadata: deref_meta,
+            content_stream,
+            content_metadata: content_meta,
+        };
+        let execution = ResolverExecution {
+            function: ResolverFunction::Dereference,
             input,
             output,
         };
@@ -324,7 +381,7 @@ impl DIDResolverImplementation {
 
 async fn report_resolver_key() {
     let mut report = DIDResolverImplementation {
-        did_method: "did:key".to_string(),
+        did_method: Some("did:key".to_string()),
         implementation: "ssi/didkit".to_string(),
         implementer: "Spruce Systems, Inc.".to_string(),
         expected_outcomes: HashMap::new(),
@@ -362,7 +419,7 @@ async fn report_resolver_key() {
 
 async fn report_resolver_web() {
     let mut report = DIDResolverImplementation {
-        did_method: "did:web".to_string(),
+        did_method: Some("did:web".to_string()),
         implementation: "ssi/didkit".to_string(),
         implementer: "Spruce Systems, Inc.".to_string(),
         expected_outcomes: HashMap::new(),
@@ -371,7 +428,7 @@ async fn report_resolver_web() {
 
     for did in vec![
         "did:web:identity.foundation",
-        "did:web:did.actor:nonexistent",
+        "did:web:did.actor:did-test-suite-404",
     ] {
         report
             .resolve(&did_web::DIDWeb, did, &ResolutionInputMetadata::default())
@@ -388,8 +445,9 @@ async fn report_resolver_web() {
     serde_json::to_writer_pretty(writer, &report).unwrap();
 }
 
-async fn report_method(mut args: std::env::Args) {
+async fn report_method(mut args: Args) {
     let method = args.next().expect("expected method argument");
+    args.next().ok_or(()).expect_err("unexpected argument");
     match &method[..] {
         "key" => report_method_key().await,
         "web" => report_method_web().await,
@@ -397,13 +455,52 @@ async fn report_method(mut args: std::env::Args) {
     }
 }
 
-async fn report_resolver(mut args: std::env::Args) {
+async fn report_resolver(mut args: Args) {
     let method = args.next().expect("expected method argument");
+    args.next().ok_or(()).expect_err("unexpected argument");
     match &method[..] {
         "key" => report_resolver_key().await,
         "web" => report_resolver_web().await,
         method => panic!("unknown method {}", method),
     }
+}
+
+async fn report_dereferencer(mut args: Args) {
+    args.next().ok_or(()).expect_err("unexpected argument");
+    let mut report = DIDResolverImplementation {
+        did_method: None,
+        implementation: "ssi/didkit".to_string(),
+        implementer: "Spruce Systems, Inc.".to_string(),
+        expected_outcomes: HashMap::new(),
+        executions: Vec::new(),
+    };
+
+    for did_url in vec![
+        "did:key:z6MkpTHR8VNsBxYAAWHut2Geadd9jSwuBV8xRoAnwWsdvktH",
+        "did:key:z6MkpTHR8VNsBxYAAWHut2Geadd9jSwuBV8xRoAnwWsdvktH#z6MkpTHR8VNsBxYAAWHut2Geadd9jSwuBV8xRoAnwWsdvktH",
+        "bad:invalid",
+    ] {
+        report
+            .dereference(
+                &did_method_key::DIDKey,
+                did_url,
+                &DereferencingInputMetadata::default(),
+            )
+            .await;
+    }
+
+    for did_url in vec!["did:web:did.actor:did-test-suite-404"] {
+        report
+            .dereference(
+                &did_web::DIDWeb,
+                did_url,
+                &DereferencingInputMetadata::default(),
+            )
+            .await;
+    }
+
+    let writer = std::io::BufWriter::new(std::io::stdout());
+    serde_json::to_writer_pretty(writer, &report).unwrap();
 }
 
 #[tokio::main]
@@ -414,6 +511,7 @@ async fn main() {
     match &section[..] {
         "method" => report_method(args).await,
         "resolver" => report_resolver(args).await,
+        "dereferencer" => report_dereferencer(args).await,
         section => panic!("unknown section {}", section),
     }
 }
