@@ -58,16 +58,6 @@ jobs:
     - name: Test HTTP server
       run: http/tests/example.sh
 
-    - name: Test CLI (did:tz)
-      env:
-        DID_METHOD: tz
-      run: cli/tests/example.sh
-
-    - name: Test HTTP server (did:tz)
-      env:
-        DID_METHOD: tz
-      run: http/tests/example.sh
-
     - name: Test CLI (JWT)
       env:
         PROOF_FORMAT: jwt
@@ -97,6 +87,9 @@ jobs:
       env:
         VP_PROOF_FORMAT: jwt
       run: cli/tests/example.sh
+
+    - name: Test binary-signing verify example
+      run: examples/binary-signing/index.sh verify examples/binary-signing/hello.txt examples/binary-signing/hello-vc.jsonld
 
     - name: Checkout vc-http-api v0.0.1
       uses: actions/checkout@v2
