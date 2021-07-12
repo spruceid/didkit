@@ -446,26 +446,6 @@ async fn report_resolver_web() {
     serde_json::to_writer_pretty(writer, &report).unwrap();
 }
 
-async fn report_method(mut args: Args) {
-    let method = args.next().expect("expected method argument");
-    args.next().ok_or(()).expect_err("unexpected argument");
-    match &method[..] {
-        "key" => report_method_key().await,
-        "web" => report_method_web().await,
-        method => panic!("unknown method {}", method),
-    }
-}
-
-async fn report_resolver(mut args: Args) {
-    let method = args.next().expect("expected method argument");
-    args.next().ok_or(()).expect_err("unexpected argument");
-    match &method[..] {
-        "key" => report_resolver_key().await,
-        "web" => report_resolver_web().await,
-        method => panic!("unknown method {}", method),
-    }
-}
-
 async fn report_dereferencer_key() {
     let mut report = DIDResolverImplementation {
         did_method: "did:key".to_string(),
@@ -514,6 +494,26 @@ async fn report_dereferencer_web() {
 
     let writer = std::io::BufWriter::new(std::io::stdout());
     serde_json::to_writer_pretty(writer, &report).unwrap();
+}
+
+async fn report_method(mut args: Args) {
+    let method = args.next().expect("expected method argument");
+    args.next().ok_or(()).expect_err("unexpected argument");
+    match &method[..] {
+        "key" => report_method_key().await,
+        "web" => report_method_web().await,
+        method => panic!("unknown method {}", method),
+    }
+}
+
+async fn report_resolver(mut args: Args) {
+    let method = args.next().expect("expected method argument");
+    args.next().ok_or(()).expect_err("unexpected argument");
+    match &method[..] {
+        "key" => report_resolver_key().await,
+        "web" => report_resolver_web().await,
+        method => panic!("unknown method {}", method),
+    }
 }
 
 async fn report_dereferencer(mut args: Args) {
