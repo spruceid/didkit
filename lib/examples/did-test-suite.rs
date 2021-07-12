@@ -158,18 +158,19 @@ async fn did_method_vector(resolver: &dyn DIDResolver, did: &str) -> DIDVector {
         .await;
     assert_eq!(res_meta.error, None);
     let doc_meta = doc_meta_opt.unwrap();
-    let content_type = res_meta.content_type.clone().unwrap();
-    assert_eq!(content_type, TYPE_DID_LD_JSON);
+    assert_eq!(res_meta.content_type, None);
     let mut did_data = Map::new();
 
     let input_meta = ResolutionInputMetadata {
-        accept: Some(content_type.clone()),
+        accept: Some(TYPE_DID_LD_JSON.to_string()),
         ..Default::default()
     };
     let (res_repr_meta, doc_repr, _doc_repr_meta_opt) =
         resolver.resolve_representation(did, &input_meta).await;
     assert_eq!(res_repr_meta.error, None);
     let representation = String::from_utf8(doc_repr).unwrap();
+    let content_type = res_repr_meta.content_type.clone().unwrap();
+    assert_eq!(content_type, TYPE_DID_LD_JSON);
 
     let mut doc_value = serde_json::to_value(doc).unwrap();
     let mut representation_specific_entries = RepresentationSpecificEntries::default();
@@ -187,7 +188,7 @@ async fn did_method_vector(resolver: &dyn DIDResolver, did: &str) -> DIDVector {
         },
         representation,
         did_document_metadata: doc_meta,
-        did_resolution_metadata: res_meta,
+        did_resolution_metadata: res_repr_meta,
     };
     did_data.insert(content_type, resolution_result);
     let did_vector = DIDVector {
