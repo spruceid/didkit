@@ -3,10 +3,13 @@ To generate test vectors:
     ln -s ../did-test-suite/packages/did-core-test-server/suites/implementations impl
     cargo run --example did-test-suite method key > impl/did-key-spruce.json
     cargo run --example did-test-suite method web > impl/did-web-spruce.json
+    cargo run --example did-test-suite method tz > impl/did-tz.json
     cargo run --example did-test-suite resolver key > impl/resolver-spruce-key.json
     cargo run --example did-test-suite resolver web > impl/resolver-spruce-web.json
+    cargo run --example did-test-suite resolver tz > impl/resolver-spruce-tz.json
     cargo run --example did-test-suite dereferencer key > impl/dereferencer-spruce-key.json
     cargo run --example did-test-suite dereferencer web > impl/dereferencer-spruce-web.json
+    cargo run --example did-test-suite dereferencer tz > impl/dereferencer-spruce-tz.json
 */
 
 use serde::{Deserialize, Serialize};
@@ -253,6 +256,36 @@ async fn report_method_web() {
     serde_json::to_writer_pretty(writer, &report).unwrap();
 }
 
+async fn report_method_tz() {
+    let did_tz = did_tz::DIDTz::default();
+    let did_parameters = Map::new();
+    let mut did_vectors = Map::new();
+    let supported_content_types = vec![TYPE_DID_LD_JSON.to_string()];
+
+    for did in vec![
+        "did:tz:tz1YwA1FwpgLtc1G8DKbbZ6e6PTb1dQMRn5x",
+        "did:tz:delphinet:tz1WvvbEGpBXGeTVbLiR6DYBe1izmgiYuZbq",
+        "did:tz:tz2BFTyPeYRzxd5aiBchbXN3WCZhx7BqbMBq",
+        "did:tz:tz3agP9LGe2cXmKQyYn6T68BHKjjktDbbSWX",
+    ] {
+        let did_vector = did_method_vector(&did_tz, did).await;
+        did_vectors.insert(did.to_string(), did_vector);
+    }
+
+    let dids = did_vectors.keys().cloned().collect();
+    let report = DIDImplementation {
+        did_method: "did:tz".to_string(),
+        implementation: "ssi/didkit".to_string(),
+        implementer: "Spruce Systems, Inc.".to_string(),
+        supported_content_types,
+        dids,
+        did_parameters,
+        did_vectors,
+    };
+    let writer = std::io::BufWriter::new(std::io::stdout());
+    serde_json::to_writer_pretty(writer, &report).unwrap();
+}
+
 impl ResolverOutcome {
     fn from_error_or_deactivated(error: Option<String>, deactivated: Option<bool>) -> Self {
         if let Some(error) = error {
@@ -446,6 +479,31 @@ async fn report_resolver_web() {
     serde_json::to_writer_pretty(writer, &report).unwrap();
 }
 
+async fn report_resolver_tz() {
+    let did_tz = did_tz::DIDTz::default();
+    let mut report = DIDResolverImplementation {
+        did_method: "did:tz".to_string(),
+        implementation: "ssi/didkit".to_string(),
+        implementer: "Spruce Systems, Inc.".to_string(),
+        expected_outcomes: HashMap::new(),
+        executions: Vec::new(),
+    };
+
+    for did in vec![
+        "did:tz:tz1YwA1FwpgLtc1G8DKbbZ6e6PTb1dQMRn5x",
+        "did:tz:delphinet:tz1WvvbEGpBXGeTVbLiR6DYBe1izmgiYuZbq",
+        "did:tz:tz2BFTyPeYRzxd5aiBchbXN3WCZhx7BqbMBq",
+        "did:tz:tz3agP9LGe2cXmKQyYn6T68BHKjjktDbbSWX",
+    ] {
+        report
+            .resolve(&did_tz, did, &ResolutionInputMetadata::default())
+            .await;
+    }
+
+    let writer = std::io::BufWriter::new(std::io::stdout());
+    serde_json::to_writer_pretty(writer, &report).unwrap();
+}
+
 async fn report_dereferencer_key() {
     let mut report = DIDResolverImplementation {
         did_method: "did:key".to_string(),
@@ -496,12 +554,35 @@ async fn report_dereferencer_web() {
     serde_json::to_writer_pretty(writer, &report).unwrap();
 }
 
+async fn report_dereferencer_tz() {
+    let did_tz = did_tz::DIDTz::default();
+    let mut report = DIDResolverImplementation {
+        did_method: "did:tz".to_string(),
+        implementation: "ssi/didkit".to_string(),
+        implementer: "Spruce Systems, Inc.".to_string(),
+        expected_outcomes: HashMap::new(),
+        executions: Vec::new(),
+    };
+    for did_url in vec![
+        "did:tz:tz1YwA1FwpgLtc1G8DKbbZ6e6PTb1dQMRn5x",
+        "did:tz:tz1YwA1FwpgLtc1G8DKbbZ6e6PTb1dQMRn5x#blockchainAccountId",
+    ] {
+        report
+            .dereference(&did_tz, did_url, &DereferencingInputMetadata::default())
+            .await;
+    }
+
+    let writer = std::io::BufWriter::new(std::io::stdout());
+    serde_json::to_writer_pretty(writer, &report).unwrap();
+}
+
 async fn report_method(mut args: Args) {
     let method = args.next().expect("expected method argument");
     args.next().ok_or(()).expect_err("unexpected argument");
     match &method[..] {
         "key" => report_method_key().await,
         "web" => report_method_web().await,
+        "tz" => report_method_tz().await,
         method => panic!("unknown method {}", method),
     }
 }
@@ -512,6 +593,7 @@ async fn report_resolver(mut args: Args) {
     match &method[..] {
         "key" => report_resolver_key().await,
         "web" => report_resolver_web().await,
+        "tz" => report_resolver_tz().await,
         method => panic!("unknown method {}", method),
     }
 }
@@ -522,6 +604,7 @@ async fn report_dereferencer(mut args: Args) {
     match &method[..] {
         "key" => report_dereferencer_key().await,
         "web" => report_dereferencer_web().await,
+        "tz" => report_dereferencer_tz().await,
         method => panic!("unknown method {}", method),
     }
 }
