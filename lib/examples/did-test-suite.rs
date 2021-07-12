@@ -5,7 +5,8 @@ To generate test vectors:
     cargo run --example did-test-suite method web > impl/did-web-spruce.json
     cargo run --example did-test-suite resolver key > impl/resolver-spruce-key.json
     cargo run --example did-test-suite resolver web > impl/resolver-spruce-web.json
-    cargo run --example did-test-suite dereferencer > impl/dereferencer-spruce.json
+    cargo run --example did-test-suite dereferencer key > impl/dereferencer-spruce-key.json
+    cargo run --example did-test-suite dereferencer web > impl/dereferencer-spruce-web.json
 */
 
 use serde::{Deserialize, Serialize};
@@ -144,8 +145,7 @@ pub struct ResolverExecution {
 #[derive(Debug, Serialize, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct DIDResolverImplementation {
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub did_method: Option<String>,
+    pub did_method: String,
     pub implementation: String,
     pub implementer: String,
     pub expected_outcomes: HashMap<ResolverOutcome, Vec<usize>>,
@@ -381,7 +381,7 @@ impl DIDResolverImplementation {
 
 async fn report_resolver_key() {
     let mut report = DIDResolverImplementation {
-        did_method: Some("did:key".to_string()),
+        did_method: "did:key".to_string(),
         implementation: "ssi/didkit".to_string(),
         implementer: "Spruce Systems, Inc.".to_string(),
         expected_outcomes: HashMap::new(),
@@ -419,7 +419,7 @@ async fn report_resolver_key() {
 
 async fn report_resolver_web() {
     let mut report = DIDResolverImplementation {
-        did_method: Some("did:web".to_string()),
+        did_method: "did:web".to_string(),
         implementation: "ssi/didkit".to_string(),
         implementer: "Spruce Systems, Inc.".to_string(),
         expected_outcomes: HashMap::new(),
@@ -428,7 +428,7 @@ async fn report_resolver_web() {
 
     for did in vec![
         "did:web:identity.foundation",
-        "did:web:did.actor:did-test-suite-404",
+        "did:web:did.actor:nonexistent",
     ] {
         report
             .resolve(&did_web::DIDWeb, did, &ResolutionInputMetadata::default())
@@ -465,10 +465,9 @@ async fn report_resolver(mut args: Args) {
     }
 }
 
-async fn report_dereferencer(mut args: Args) {
-    args.next().ok_or(()).expect_err("unexpected argument");
+async fn report_dereferencer_key() {
     let mut report = DIDResolverImplementation {
-        did_method: None,
+        did_method: "did:key".to_string(),
         implementation: "ssi/didkit".to_string(),
         implementer: "Spruce Systems, Inc.".to_string(),
         expected_outcomes: HashMap::new(),
@@ -489,7 +488,20 @@ async fn report_dereferencer(mut args: Args) {
             .await;
     }
 
-    for did_url in vec!["did:web:did.actor:did-test-suite-404"] {
+    let writer = std::io::BufWriter::new(std::io::stdout());
+    serde_json::to_writer_pretty(writer, &report).unwrap();
+}
+
+async fn report_dereferencer_web() {
+    let mut report = DIDResolverImplementation {
+        did_method: "did:web".to_string(),
+        implementation: "ssi/didkit".to_string(),
+        implementer: "Spruce Systems, Inc.".to_string(),
+        expected_outcomes: HashMap::new(),
+        executions: Vec::new(),
+    };
+
+    for did_url in vec!["did:web:did.actor:nonexistent"] {
         report
             .dereference(
                 &did_web::DIDWeb,
@@ -501,6 +513,16 @@ async fn report_dereferencer(mut args: Args) {
 
     let writer = std::io::BufWriter::new(std::io::stdout());
     serde_json::to_writer_pretty(writer, &report).unwrap();
+}
+
+async fn report_dereferencer(mut args: Args) {
+    let method = args.next().expect("expected method argument");
+    args.next().ok_or(()).expect_err("unexpected argument");
+    match &method[..] {
+        "key" => report_dereferencer_key().await,
+        "web" => report_dereferencer_web().await,
+        method => panic!("unknown method {}", method),
+    }
 }
 
 #[tokio::main]
