@@ -500,6 +500,12 @@ async fn report_resolver_tz() {
             .await;
     }
 
+    for did in vec!["did:tz:tz1YwA1FwpgLtc1G8DKbbZ6e6PTb1dQMRn5x"] {
+        report
+            .resolve_representation(&did_tz, did, &ResolutionInputMetadata::default())
+            .await;
+    }
+
     let writer = std::io::BufWriter::new(std::io::stdout());
     serde_json::to_writer_pretty(writer, &report).unwrap();
 }
