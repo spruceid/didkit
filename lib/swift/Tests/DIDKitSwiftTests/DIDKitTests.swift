@@ -124,3 +124,17 @@ class DIDKitTests: XCTestCase {
     XCTAssertTrue(errors.isEmpty)
   }
 }
+
+// MARK: - Test Helpers
+
+enum JSON {
+  static func encode(_ object: Any) throws -> String {
+    let data = try JSONSerialization.data(withJSONObject: object, options: [])
+    return String(data: data, encoding: .utf8) ?? ""
+  }
+
+  static func decode(_ string: String) throws -> Any {
+    let data = string.data(using: .utf8) ?? Data()
+    return try JSONSerialization.jsonObject(with: data, options: [])
+  }
+}

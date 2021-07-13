@@ -104,15 +104,3 @@ public enum DIDKit {
     return String(cString: vpPtr)
   }
 }
-
-public enum JSON {
-  public static func encode(_ object: Any) throws -> String {
-    let data = try JSONSerialization.data(withJSONObject: object, options: [])
-    return String(data: data, encoding: .utf8) ?? ""
-  }
-
-  public static func decode(_ string: String) throws -> Any {
-    let data = string.data(using: .utf8) ?? Data()
-    return try JSONSerialization.jsonObject(with: data, options: [])
-  }
-}
