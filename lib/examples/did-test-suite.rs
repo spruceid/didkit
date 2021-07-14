@@ -3,13 +3,22 @@ To generate test vectors:
     ln -s ../did-test-suite/packages/did-core-test-server/suites/implementations impl
     cargo run --example did-test-suite method key > impl/did-key-spruce.json
     cargo run --example did-test-suite method web > impl/did-web-spruce.json
-    cargo run --example did-test-suite method tz > impl/did-tz.json
+    cargo run --example did-test-suite method tz > impl/did-tz-spruce.json
+    cargo run --example did-test-suite method onion > impl/did-onion-spruce.json
+    cargo run --example did-test-suite method pkh > impl/did-pkh-spruce.json
+    cargo run --example did-test-suite method webkey > impl/did-webkey-spruce.json
     cargo run --example did-test-suite resolver key > impl/resolver-spruce-key.json
     cargo run --example did-test-suite resolver web > impl/resolver-spruce-web.json
     cargo run --example did-test-suite resolver tz > impl/resolver-spruce-tz.json
+    cargo run --example did-test-suite resolver onion > impl/resolver-spruce-onion.json
+    cargo run --example did-test-suite resolver pkh > impl/resolver-spruce-pkh.json
+    cargo run --example did-test-suite resolver webkey > impl/resolver-spruce-webkey.json
     cargo run --example did-test-suite dereferencer key > impl/dereferencer-spruce-key.json
     cargo run --example did-test-suite dereferencer web > impl/dereferencer-spruce-web.json
     cargo run --example did-test-suite dereferencer tz > impl/dereferencer-spruce-tz.json
+    cargo run --example did-test-suite dereferencer onion > impl/dereferencer-spruce-onion.json
+    cargo run --example did-test-suite dereferencer pkh > impl/dereferencer-spruce-pkh.json
+    cargo run --example did-test-suite dereferencer webkey > impl/dereferencer-spruce-webkey.json
 */
 
 use serde::{Deserialize, Serialize};
@@ -286,6 +295,88 @@ async fn report_method_tz() {
     serde_json::to_writer_pretty(writer, &report).unwrap();
 }
 
+async fn report_method_onion() {
+    let resolver = did_onion::DIDOnion::default();
+    let did_parameters = Map::new();
+    let mut did_vectors = Map::new();
+    let supported_content_types = vec![TYPE_DID_LD_JSON.to_string()];
+
+    for did in vec!["did:onion:fscst5exmlmr262byztwz4kzhggjlzumvc2ndvgytzoucr2tkgxf7mid"] {
+        let did_vector = did_method_vector(&resolver, did).await;
+        did_vectors.insert(did.to_string(), did_vector);
+    }
+
+    let dids = did_vectors.keys().cloned().collect();
+    let report = DIDImplementation {
+        did_method: "did:onion".to_string(),
+        implementation: "https://github.com/spruceid/ssi/tree/main/did-onion".to_string(),
+        implementer: "Spruce Systems, Inc.".to_string(),
+        supported_content_types,
+        dids,
+        did_parameters,
+        did_vectors,
+    };
+    let writer = std::io::BufWriter::new(std::io::stdout());
+    serde_json::to_writer_pretty(writer, &report).unwrap();
+}
+
+async fn report_method_pkh() {
+    let resolver = did_pkh::DIDPKH;
+    let did_parameters = Map::new();
+    let mut did_vectors = Map::new();
+    let supported_content_types = vec![TYPE_DID_LD_JSON.to_string()];
+
+    for did in vec![
+        "did:pkh:doge:DH5yaieqoZN36fDVciNyRueRGvGLR3mr7L",
+        "did:pkh:tz:tz1YwA1FwpgLtc1G8DKbbZ6e6PTb1dQMRn5x",
+        "did:pkh:eth:0xb9c5714089478a327f09197987f16f9e5d936e8a",
+        "did:pkh:btc:128Lkh3S7CkDTBZ8W7BbpsN3YYizJMp8p6",
+        "did:pkh:celo:0xa0ae58da58dfa46fa55c3b86545e7065f90ff011",
+        "did:pkh:sol:CKg5d12Jhpej1JqtmxLJgaFqqeYjxgPqToJ4LBdvG9Ev",
+    ] {
+        let did_vector = did_method_vector(&resolver, did).await;
+        did_vectors.insert(did.to_string(), did_vector);
+    }
+
+    let dids = did_vectors.keys().cloned().collect();
+    let report = DIDImplementation {
+        did_method: "did:pkh".to_string(),
+        implementation: "https://github.com/spruceid/ssi/tree/main/did-pkh".to_string(),
+        implementer: "Spruce Systems, Inc.".to_string(),
+        supported_content_types,
+        dids,
+        did_parameters,
+        did_vectors,
+    };
+    let writer = std::io::BufWriter::new(std::io::stdout());
+    serde_json::to_writer_pretty(writer, &report).unwrap();
+}
+
+async fn report_method_webkey() {
+    let resolver = did_webkey::DIDWebKey;
+    let did_parameters = Map::new();
+    let mut did_vectors = Map::new();
+    let supported_content_types = vec![TYPE_DID_LD_JSON.to_string()];
+
+    for did in vec!["did:webkey:ssh:demo.spruceid.com:2021:07:14:keys"] {
+        let did_vector = did_method_vector(&resolver, did).await;
+        did_vectors.insert(did.to_string(), did_vector);
+    }
+
+    let dids = did_vectors.keys().cloned().collect();
+    let report = DIDImplementation {
+        did_method: "did:webkey".to_string(),
+        implementation: "https://github.com/spruceid/ssi/tree/main/did-webkey".to_string(),
+        implementer: "Spruce Systems, Inc.".to_string(),
+        supported_content_types,
+        dids,
+        did_parameters,
+        did_vectors,
+    };
+    let writer = std::io::BufWriter::new(std::io::stdout());
+    serde_json::to_writer_pretty(writer, &report).unwrap();
+}
+
 impl ResolverOutcome {
     fn from_error_or_deactivated(error: Option<String>, deactivated: Option<bool>) -> Self {
         if let Some(error) = error {
@@ -510,6 +601,84 @@ async fn report_resolver_tz() {
     serde_json::to_writer_pretty(writer, &report).unwrap();
 }
 
+async fn report_resolver_onion() {
+    let resolver = did_onion::DIDOnion::default();
+    let mut report = DIDResolverImplementation {
+        did_method: "did:onion".to_string(),
+        implementation: "https://github.com/spruceid/ssi/tree/main/did-onion".to_string(),
+        implementer: "Spruce Systems, Inc.".to_string(),
+        expected_outcomes: HashMap::new(),
+        executions: Vec::new(),
+    };
+
+    for did in vec!["did:onion:fscst5exmlmr262byztwz4kzhggjlzumvc2ndvgytzoucr2tkgxf7mid"] {
+        report
+            .resolve(&resolver, did, &ResolutionInputMetadata::default())
+            .await;
+    }
+
+    for did in vec!["did:onion:fscst5exmlmr262byztwz4kzhggjlzumvc2ndvgytzoucr2tkgxf7mid"] {
+        report
+            .resolve_representation(&resolver, did, &ResolutionInputMetadata::default())
+            .await;
+    }
+
+    let writer = std::io::BufWriter::new(std::io::stdout());
+    serde_json::to_writer_pretty(writer, &report).unwrap();
+}
+
+async fn report_resolver_pkh() {
+    let resolver = did_pkh::DIDPKH;
+    let mut report = DIDResolverImplementation {
+        did_method: "did:pkh".to_string(),
+        implementation: "https://github.com/spruceid/ssi/tree/main/did-pkh".to_string(),
+        implementer: "Spruce Systems, Inc.".to_string(),
+        expected_outcomes: HashMap::new(),
+        executions: Vec::new(),
+    };
+
+    for did in vec!["did:pkh:doge:DH5yaieqoZN36fDVciNyRueRGvGLR3mr7L"] {
+        report
+            .resolve(&resolver, did, &ResolutionInputMetadata::default())
+            .await;
+    }
+
+    for did in vec!["did:pkh:doge:DH5yaieqoZN36fDVciNyRueRGvGLR3mr7L"] {
+        report
+            .resolve_representation(&resolver, did, &ResolutionInputMetadata::default())
+            .await;
+    }
+
+    let writer = std::io::BufWriter::new(std::io::stdout());
+    serde_json::to_writer_pretty(writer, &report).unwrap();
+}
+
+async fn report_resolver_webkey() {
+    let resolver = did_webkey::DIDWebKey;
+    let mut report = DIDResolverImplementation {
+        did_method: "did:webkey".to_string(),
+        implementation: "https://github.com/spruceid/ssi/tree/main/did-webkey".to_string(),
+        implementer: "Spruce Systems, Inc.".to_string(),
+        expected_outcomes: HashMap::new(),
+        executions: Vec::new(),
+    };
+
+    for did in vec!["did:webkey:ssh:demo.spruceid.com:2021:07:14:keys"] {
+        report
+            .resolve(&resolver, did, &ResolutionInputMetadata::default())
+            .await;
+    }
+
+    for did in vec!["did:webkey:ssh:demo.spruceid.com:2021:07:14:keys"] {
+        report
+            .resolve_representation(&resolver, did, &ResolutionInputMetadata::default())
+            .await;
+    }
+
+    let writer = std::io::BufWriter::new(std::io::stdout());
+    serde_json::to_writer_pretty(writer, &report).unwrap();
+}
+
 async fn report_dereferencer_key() {
     let mut report = DIDResolverImplementation {
         did_method: "did:key".to_string(),
@@ -582,6 +751,75 @@ async fn report_dereferencer_tz() {
     serde_json::to_writer_pretty(writer, &report).unwrap();
 }
 
+async fn report_dereferencer_onion() {
+    let resolver = did_onion::DIDOnion::default();
+    let mut report = DIDResolverImplementation {
+        did_method: "did:onion".to_string(),
+        implementation: "https://github.com/spruceid/ssi/tree/main/did-onion".to_string(),
+        implementer: "Spruce Systems, Inc.".to_string(),
+        expected_outcomes: HashMap::new(),
+        executions: Vec::new(),
+    };
+
+    for did_url in vec![
+        "did:onion:fscst5exmlmr262byztwz4kzhggjlzumvc2ndvgytzoucr2tkgxf7mid",
+        "did:onion:fscst5exmlmr262byztwz4kzhggjlzumvc2ndvgytzoucr2tkgxf7mid#g7r2t9G8dBBnG7yZkD8sly3ImDlrntB25s2pGuaD97E"
+    ] {
+        report
+            .dereference(&resolver, did_url, &DereferencingInputMetadata::default())
+            .await;
+    }
+
+    let writer = std::io::BufWriter::new(std::io::stdout());
+    serde_json::to_writer_pretty(writer, &report).unwrap();
+}
+
+async fn report_dereferencer_pkh() {
+    let resolver = did_pkh::DIDPKH;
+    let mut report = DIDResolverImplementation {
+        did_method: "did:pkh".to_string(),
+        implementation: "https://github.com/spruceid/ssi/tree/main/did-pkh".to_string(),
+        implementer: "Spruce Systems, Inc.".to_string(),
+        expected_outcomes: HashMap::new(),
+        executions: Vec::new(),
+    };
+
+    for did_url in vec![
+        "did:pkh:doge:DH5yaieqoZN36fDVciNyRueRGvGLR3mr7L",
+        "did:pkh:doge:DH5yaieqoZN36fDVciNyRueRGvGLR3mr7L#blockchainAccountId",
+    ] {
+        report
+            .dereference(&resolver, did_url, &DereferencingInputMetadata::default())
+            .await;
+    }
+
+    let writer = std::io::BufWriter::new(std::io::stdout());
+    serde_json::to_writer_pretty(writer, &report).unwrap();
+}
+
+async fn report_dereferencer_webkey() {
+    let resolver = did_webkey::DIDWebKey;
+    let mut report = DIDResolverImplementation {
+        did_method: "did:webkey".to_string(),
+        implementation: "https://github.com/spruceid/ssi/tree/main/did-webkey".to_string(),
+        implementer: "Spruce Systems, Inc.".to_string(),
+        expected_outcomes: HashMap::new(),
+        executions: Vec::new(),
+    };
+
+    for did_url in vec![
+        "did:webkey:ssh:demo.spruceid.com:2021:07:14:keys",
+        "did:webkey:ssh:demo.spruceid.com:2021:07:14:keys#b2sb-RCkrCm9c569tNc76JBbirQiR9WCL6kf8GlqbvQ"
+    ] {
+        report
+            .dereference(&resolver, did_url, &DereferencingInputMetadata::default())
+            .await;
+    }
+
+    let writer = std::io::BufWriter::new(std::io::stdout());
+    serde_json::to_writer_pretty(writer, &report).unwrap();
+}
+
 async fn report_method(mut args: Args) {
     let method = args.next().expect("expected method argument");
     args.next().ok_or(()).expect_err("unexpected argument");
@@ -589,6 +827,9 @@ async fn report_method(mut args: Args) {
         "key" => report_method_key().await,
         "web" => report_method_web().await,
         "tz" => report_method_tz().await,
+        "onion" => report_method_onion().await,
+        "pkh" => report_method_pkh().await,
+        "webkey" => report_method_webkey().await,
         method => panic!("unknown method {}", method),
     }
 }
@@ -600,6 +841,9 @@ async fn report_resolver(mut args: Args) {
         "key" => report_resolver_key().await,
         "web" => report_resolver_web().await,
         "tz" => report_resolver_tz().await,
+        "onion" => report_resolver_onion().await,
+        "pkh" => report_resolver_pkh().await,
+        "webkey" => report_resolver_webkey().await,
         method => panic!("unknown method {}", method),
     }
 }
@@ -611,6 +855,9 @@ async fn report_dereferencer(mut args: Args) {
         "key" => report_dereferencer_key().await,
         "web" => report_dereferencer_web().await,
         "tz" => report_dereferencer_tz().await,
+        "onion" => report_dereferencer_onion().await,
+        "pkh" => report_dereferencer_pkh().await,
+        "webkey" => report_dereferencer_webkey().await,
         method => panic!("unknown method {}", method),
     }
 }
