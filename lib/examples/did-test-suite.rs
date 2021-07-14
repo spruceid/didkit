@@ -718,7 +718,11 @@ async fn report_dereferencer_web() {
         executions: Vec::new(),
     };
 
-    for did_url in vec!["did:web:did.actor:nonexistent"] {
+    for did_url in vec![
+        "did:web:did.actor:nonexistent",
+        "did:web:demo.spruceid.com:2021:07:14:service-example",
+        "did:web:demo.spruceid.com:2021:07:14:service-example?service=hello",
+    ] {
         report
             .dereference(
                 &did_web::DIDWeb,
