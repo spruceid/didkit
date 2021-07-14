@@ -307,7 +307,7 @@ pub async fn generate_proof(
 ) -> Result<ssi::vc::Proof, SignError> {
     let keys = list_keys(ssh_agent_sock).await?;
     let (jwk, pk) = select_key(keys, jwk_opt)?;
-    let prep = LinkedDataProofs::prepare(document, &options, &jwk).await?;
+    let prep = LinkedDataProofs::prepare(document, &options, &jwk, None).await?;
     let signing_input_bytes = match prep.signing_input {
         ssi::ldp::SigningInput::Bytes(ref bytes) => bytes.0.to_vec(),
         _ => Err(SignError::UnsupportedSigningInputFormat)?,
