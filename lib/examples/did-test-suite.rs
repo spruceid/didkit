@@ -517,7 +517,7 @@ async fn report_resolver_key() {
         "did:key:z6MkpTHR8VNsBxYAAWHut2Geadd9jSwuBV8xRoAnwWsdvktH", // Ed25519
         "did:key:zQ3shokFTS3brHcDQrn82RUDfCZESWL1ZdCEJwekUDPQiYBme", // Secp256k1
         "did:key:zDnaerDaTF5BXEavCrfRZEk316dpbLsfPDZ3WJ5hRTPFU2169", // Secp256r1
-        "did:key;invalid",
+        "did:key;invalid", // should return invalidDid error
     ] {
         report
             .resolve(
