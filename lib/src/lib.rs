@@ -133,7 +133,7 @@ pub async fn generate_proof(
         }
         None => {
             let jwk = key.expect("JWK, Key Path, or SSH Agent option is required.");
-            LinkedDataProofs::sign(document, &options, &jwk).await?
+            LinkedDataProofs::sign(document, &options, &jwk, None).await?
         }
     };
 
