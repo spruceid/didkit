@@ -220,7 +220,7 @@ async fn report_method_key() {
     let dids = did_vectors.keys().cloned().collect();
     let report = DIDImplementation {
         did_method: "did:key".to_string(),
-        implementation: "ssi/didkit".to_string(),
+        implementation: "https://github.com/spruceid/ssi/tree/main/did-key".to_string(),
         implementer: "Spruce Systems, Inc.".to_string(),
         supported_content_types,
         dids,
@@ -245,7 +245,7 @@ async fn report_method_web() {
     let dids = did_vectors.keys().cloned().collect();
     let report = DIDImplementation {
         did_method: "did:web".to_string(),
-        implementation: "ssi/didkit".to_string(),
+        implementation: "https://github.com/spruceid/ssi/tree/main/did-web".to_string(),
         implementer: "Spruce Systems, Inc.".to_string(),
         supported_content_types,
         dids,
@@ -275,7 +275,7 @@ async fn report_method_tz() {
     let dids = did_vectors.keys().cloned().collect();
     let report = DIDImplementation {
         did_method: "did:tz".to_string(),
-        implementation: "ssi/didkit".to_string(),
+        implementation: "https://github.com/spruceid/ssi/tree/main/did-tezos".to_string(),
         implementer: "Spruce Systems, Inc.".to_string(),
         supported_content_types,
         dids,
@@ -416,7 +416,7 @@ impl DIDResolverImplementation {
 async fn report_resolver_key() {
     let mut report = DIDResolverImplementation {
         did_method: "did:key".to_string(),
-        implementation: "ssi/didkit".to_string(),
+        implementation: "https://github.com/spruceid/ssi/tree/main/did-key".to_string(),
         implementer: "Spruce Systems, Inc.".to_string(),
         expected_outcomes: HashMap::new(),
         executions: Vec::new(),
@@ -454,7 +454,7 @@ async fn report_resolver_key() {
 async fn report_resolver_web() {
     let mut report = DIDResolverImplementation {
         did_method: "did:web".to_string(),
-        implementation: "ssi/didkit".to_string(),
+        implementation: "https://github.com/spruceid/ssi/tree/main/did-web".to_string(),
         implementer: "Spruce Systems, Inc.".to_string(),
         expected_outcomes: HashMap::new(),
         executions: Vec::new(),
@@ -483,7 +483,7 @@ async fn report_resolver_tz() {
     let did_tz = did_tz::DIDTz::default();
     let mut report = DIDResolverImplementation {
         did_method: "did:tz".to_string(),
-        implementation: "ssi/didkit".to_string(),
+        implementation: "https://github.com/spruceid/ssi/tree/main/did-tezos".to_string(),
         implementer: "Spruce Systems, Inc.".to_string(),
         expected_outcomes: HashMap::new(),
         executions: Vec::new(),
@@ -513,7 +513,7 @@ async fn report_resolver_tz() {
 async fn report_dereferencer_key() {
     let mut report = DIDResolverImplementation {
         did_method: "did:key".to_string(),
-        implementation: "ssi/didkit".to_string(),
+        implementation: "https://github.com/spruceid/ssi/tree/main/did-key".to_string(),
         implementer: "Spruce Systems, Inc.".to_string(),
         expected_outcomes: HashMap::new(),
         executions: Vec::new(),
@@ -540,7 +540,7 @@ async fn report_dereferencer_key() {
 async fn report_dereferencer_web() {
     let mut report = DIDResolverImplementation {
         did_method: "did:web".to_string(),
-        implementation: "ssi/didkit".to_string(),
+        implementation: "https://github.com/spruceid/ssi/tree/main/did-web".to_string(),
         implementer: "Spruce Systems, Inc.".to_string(),
         expected_outcomes: HashMap::new(),
         executions: Vec::new(),
@@ -564,7 +564,7 @@ async fn report_dereferencer_tz() {
     let did_tz = did_tz::DIDTz::default();
     let mut report = DIDResolverImplementation {
         did_method: "did:tz".to_string(),
-        implementation: "ssi/didkit".to_string(),
+        implementation: "https://github.com/spruceid/ssi/tree/main/did-tezos".to_string(),
         implementer: "Spruce Systems, Inc.".to_string(),
         expected_outcomes: HashMap::new(),
         executions: Vec::new(),
