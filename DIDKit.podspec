@@ -4,7 +4,7 @@
 #
 Pod::Spec.new do |s|
     s.name             = 'DIDKit'
-    s.version          = '0.2.1'
+    s.version          = 'v0.2.1'
     s.summary          = 'DIDKit Swift Wrapper'
     s.description      = <<-DESC
     DIDKit provides Verifiable Credential and Decentralized Identifier
