@@ -25,6 +25,7 @@ use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use std::collections::{BTreeMap as Map, HashMap};
 use std::env::Args;
+use std::str::FromStr;
 
 use ssi::did::{Document, DIDURL};
 use ssi::did_resolve::{
@@ -212,8 +213,6 @@ async fn did_method_vector(resolver: &dyn DIDResolver, did: &str) -> DIDVector {
 
 async fn report_method_key() {
     let did_parameters = Map::new();
-    // No parameters supported for did:key
-    // did_parameters.insert("".to_string(), DIDURL::from_str("").unrwap());
     let mut did_vectors = Map::new();
     let supported_content_types = vec![TYPE_DID_LD_JSON.to_string()];
 
@@ -241,9 +240,13 @@ async fn report_method_key() {
 }
 
 async fn report_method_web() {
-    let did_parameters = Map::new();
-    // No parameters supported for did:web
-    // did_parameters.insert("".to_string(), DIDURL::from_str("").unrwap());
+    let mut did_parameters = Map::new();
+    did_parameters.insert(
+        "service".to_string(),
+        DIDURL::from_str("did:web:demo.spruceid.com:2021:07:14:service-example?service=hello")
+            .unwrap(),
+    );
+
     let mut did_vectors = Map::new();
     let supported_content_types = vec![TYPE_DID_LD_JSON.to_string()];
 
