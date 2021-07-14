@@ -4,7 +4,7 @@
 #
 Pod::Spec.new do |s|
     s.name             = 'DIDKit'
-    s.version          = 'v0.2.1'
+    s.version          = '0.2.1'
     s.summary          = 'DIDKit Swift Wrapper'
     s.description      = <<-DESC
     DIDKit provides Verifiable Credential and Decentralized Identifier
@@ -13,7 +13,7 @@ Pod::Spec.new do |s|
     s.homepage         = 'https://github.com/spruceid/didkit'
     s.license          = { :type => 'Apache 2.0', :file => './LICENSE' }
     s.author           = { 'Spruce Systems, Inc.' => 'hello@spruceid.com' }
-    s.source           = { :git => 'https://github.com/spruceid/didkit.git', :tag => "#{s.version}" }
+    s.source           = { :git => 'https://github.com/spruceid/didkit.git', :tag => "v#{s.version}" }
     s.source_files = 'lib/swift/Sources/**/*'
     s.public_header_files = 'lib/swift/Sources/**/*.h'
     s.static_framework = true
