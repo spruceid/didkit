@@ -14,10 +14,10 @@ Pod::Spec.new do |s|
     s.license          = { :type => 'Apache 2.0', :file => './LICENSE' }
     s.author           = { 'Spruce Systems, Inc.' => 'hello@spruceid.com' }
     s.source           = { :git => 'https://github.com/spruceid/didkit.git', :tag => "v#{s.version}" }
-    s.source_files = 'lib/swift/Sources/**/*'
-    s.public_header_files = 'lib/swift/Sources/**/*.h'
+    s.source_files = 'lib/ios/Sources/**/*'
+    s.public_header_files = 'lib/ios/Sources/**/*.h'
     s.static_framework = true
-    s.vendored_libraries = "lib/swift/**/*.a"
+    s.vendored_libraries = "lib/ios/**/*.a"
     s.platform = :ios, '11.0'
     s.swift_versions = '5'
 

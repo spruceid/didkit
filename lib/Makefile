@@ -134,7 +134,7 @@ IOS_LIBS=\
 	$(TARGET)/x86_64-apple-ios/release/libdidkit.a
 
 $(TARGET)/test/ios.stamp: $(TARGET)/universal/release/libdidkit.a $(TARGET)/didkit.h | $(TARGET)/test
-	cd swift && \
+	cd ios && \
 		xcodebuild test \
 			-destination platform="iOS Simulator,name=iPhone 12 Pro,OS=14.5" \
 			-scheme DIDKitSwift
