@@ -13,6 +13,8 @@ $ make -C ../ install-rustup-ios
 $ make -C ../ ../target/test/ios.stamp
 ```
 
+### Cocoapods
+
 On your `Podfile` add: 
 
 ```ruby
@@ -20,3 +22,7 @@ pod 'DIDKit', :path => 'path/to/local/didkit'
 ```
 
 See [Example](Example) on how to integrate DIDKit on your Xcode project.
+
+### Manually
+
+DIDKit Swift Library can also be manually integrated, just drag [DIDKitSwift.xcodeproj](DIDKitSwift.xcodeproj) to your Xcode workspace and link it to `DIDKitSwift.framework`.

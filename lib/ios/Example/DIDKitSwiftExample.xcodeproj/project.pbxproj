@@ -72,12 +72,12 @@
 			isa = PBXGroup;
 			children = (
 				7910A41B269EDCF900FEA4A9 /* AppDelegate.swift */,
+				7910A424269EDCFA00FEA4A9 /* Assets.xcassets */,
+				7910A429269EDCFA00FEA4A9 /* Info.plist */,
+				7910A426269EDCFA00FEA4A9 /* LaunchScreen.storyboard */,
+				7910A421269EDCF900FEA4A9 /* Main.storyboard */,
 				7910A41D269EDCF900FEA4A9 /* SceneDelegate.swift */,
 				7910A41F269EDCF900FEA4A9 /* ViewController.swift */,
-				7910A421269EDCF900FEA4A9 /* Main.storyboard */,
-				7910A424269EDCFA00FEA4A9 /* Assets.xcassets */,
-				7910A426269EDCFA00FEA4A9 /* LaunchScreen.storyboard */,
-				7910A429269EDCFA00FEA4A9 /* Info.plist */,
 			);
 			path = DIDKitSwiftExample;
 			sourceTree = "<group>";
@@ -88,7 +88,6 @@
 				7D56ADA901C69639B34F64C2 /* Pods-DIDKitSwiftExample.debug.xcconfig */,
 				58740BA55F8AE88F62988AC0 /* Pods-DIDKitSwiftExample.release.xcconfig */,
 			);
-			name = Pods;
 			path = Pods;
 			sourceTree = "<group>";
 		};
