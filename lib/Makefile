@@ -136,7 +136,7 @@ IOS_LIBS=\
 $(TARGET)/test/ios.stamp: $(TARGET)/universal/release/libdidkit.a $(TARGET)/didkit.h | $(TARGET)/test
 	cd ios && \
 		xcodebuild test \
-			-destination platform="iOS Simulator,name=iPhone 12 Pro,OS=14.5" \
+			-destination platform="iOS Simulator,name=iPhone 12 Pro,OS=14.4" \
 			-scheme DIDKitSwift
 	touch $@
 
