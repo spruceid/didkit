@@ -550,7 +550,6 @@ fn main() {
             more_context_json,
         } => {
             use ssi::jsonld::{json_to_dataset, JsonLdOptions, StaticLoader};
-            use std::io::Read;
             let mut loader = StaticLoader;
             let mut reader = BufReader::new(stdin());
             let mut json = String::new();
