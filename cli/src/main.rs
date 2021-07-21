@@ -309,30 +309,27 @@ mod tests {
     }
 }
 
-fn ssh_auth_sock_err() {
-    eprintln!(
-        r#"didkit: missing SSH_AUTH_SOCK environmental variable for SSH Agent usage.
+fn get_ssh_agent_sock() -> String {
+    use std::env::VarError;
+    match std::env::var("SSH_AUTH_SOCK") {
+        Ok(string) => string,
+        Err(VarError::NotPresent) => {
+            eprintln!(
+                r#"didkit: missing SSH_AUTH_SOCK environmental variable for SSH Agent usage.
 To use DIDKit with SSH Agent, ssh-agent must be running and $SSH_AUTH_SOCK
 set. For more info, see the manual for ssh-agent(1) and ssh-add(1).
 "#
-    );
-    std::process::exit(1);
+            );
+            std::process::exit(1);
+        }
+        Err(VarError::NotUnicode(_)) => panic!("Unable to parse SSH_AUTH_SOCK"),
+    }
 }
 
 fn main() {
     let rt = runtime::get().unwrap();
     let opt = DIDKit::from_args();
-
-    use std::env::VarError;
-    let ssh_agent_sock = match std::env::var("SSH_AUTH_SOCK") {
-        Ok(string) => Some(string),
-        Err(VarError::NotPresent) => None,
-        Err(VarError::NotUnicode(_)) => panic!("Unable to parse SSH_AUTH_SOCK"),
-    };
-    let ssh_agent_sock_opt = match ssh_agent_sock {
-        Some(ref path) => Some(&path[..]),
-        None => None,
-    };
+    let ssh_agent_sock;
 
     match opt {
         DIDKit::GenerateEd25519Key => {
@@ -402,9 +399,12 @@ fn main() {
                 serde_json::from_reader(credential_reader).unwrap();
             let proof_format = proof_options.proof_format.clone();
             let jwk_opt: Option<JWK> = key.get_jwk_opt();
-            if key.ssh_agent && ssh_agent_sock.is_none() {
-                ssh_auth_sock_err();
-            }
+            let ssh_agent_sock_opt = if key.ssh_agent {
+                ssh_agent_sock = get_ssh_agent_sock();
+                Some(&ssh_agent_sock[..])
+            } else {
+                None
+            };
             let options = LinkedDataProofOptions::from(proof_options);
             match proof_format {
                 ProofFormat::JWT => {
@@ -476,9 +476,12 @@ fn main() {
             let mut presentation: VerifiablePresentation =
                 serde_json::from_reader(presentation_reader).unwrap();
             let jwk_opt: Option<JWK> = key.get_jwk_opt();
-            if key.ssh_agent && ssh_agent_sock.is_none() {
-                ssh_auth_sock_err();
-            }
+            let ssh_agent_sock_opt = if key.ssh_agent {
+                ssh_agent_sock = get_ssh_agent_sock();
+                Some(&ssh_agent_sock[..])
+            } else {
+                None
+            };
             let proof_format = proof_options.proof_format.clone();
             let options = LinkedDataProofOptions::from(proof_options);
             match proof_format {
@@ -649,9 +652,12 @@ fn main() {
             presentation.holder = Some(ssi::vc::URI::String(holder));
             let proof_format = proof_options.proof_format.clone();
             let jwk_opt: Option<JWK> = key.get_jwk_opt();
-            if key.ssh_agent && ssh_agent_sock.is_none() {
-                ssh_auth_sock_err();
-            }
+            let ssh_agent_sock_opt = if key.ssh_agent {
+                ssh_agent_sock = get_ssh_agent_sock();
+                Some(&ssh_agent_sock[..])
+            } else {
+                None
+            };
             let options = LinkedDataProofOptions::from(proof_options);
             match proof_format {
                 ProofFormat::JWT => {
