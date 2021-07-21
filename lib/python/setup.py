@@ -1,17 +1,20 @@
 #! /usr/bin/env python3
 import os
-from sys import platform
+import platform
 from setuptools import setup, Extension
 
 ##Determine what system we are building on to determine what type of shared object has been built and needs copyingthis differs between OS's (e.g. libdidkit.so vs libdidkit.dylib vs libdidkit.dll)
 didpath = "didkit"
-so_filename = "libdidkit"
-if platform == "linux" or platform == "linux2":
-    LIBDIDKIT_SHARE_OBJ = os.path.join(didpath, '%s.so'%(so_filename))
-elif platform == "darwin":
-    LIBDIDKIT_SHARE_OBJ = os.path.join(didpath, '%s.dylib'%(so_filename))
+host_os = platform.system()
+
+if host_os == "Linux":
+    LIBDIDKIT_SHARE_OBJ = os.path.join(didpath, 'libdidkit.so')
+elif host_os == "Darwin":
+    LIBDIDKIT_SHARE_OBJ = os.path.join(didpath, 'libdidkit.dylib')
+elif host_os == "Windows":
+    LIBDIDKIT_SHARE_OBJ = os.path.join(didpath, 'didkit.dll')
 else:
-    LIBDIDKIT_SHARE_OBJ = os.path.join(didpath, '%s.dll'%(so_filename))
+    raise RuntimeError("System type %s unsupported. Exiting setup."%(host_os))
 
 ## All other static build variables comes from setup.cfg
 setup_args = dict(

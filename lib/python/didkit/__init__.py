@@ -1,20 +1,23 @@
 from ctypes import *
-from sys import platform
+import platform
 from deprecated import deprecated
 import os.path
 
 didkit = None
 didpath = os.path.dirname(os.path.abspath(__file__))
+host_os = platform.system()
 
-if platform == "linux" or platform == "linux2":
+if host_os == "Linux":
     didpath = os.path.join(didpath, 'libdidkit.so')
     didkit = libc = CDLL(didpath)
-elif platform == "darwin":
+elif host_os == "Darwin":
     didpath = os.path.join(didpath, 'libdidkit.dylib')
     didkit = libc = CDLL(didpath)
-else:
-    didpath = os.path.join(didpath, 'libdidkit.dll')
+elif host_os == "Windows":
+    didpath = os.path.join(didpath, 'didkit.dll')
     didkit = libc = CDLL(didpath, winmode=1)
+else:
+    raise RuntimeError("System type %s unsupported."%(host_os))
 
 # String get_version()
 didkit.didkit_get_version.restype = c_char_p
