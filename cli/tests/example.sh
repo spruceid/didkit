@@ -230,5 +230,18 @@ then
 fi
 echo 'Verified DIDAuth verifiable presentation:'
 print_json auth-verify-result.json
+echo
+
+# Convert VP to Canonicalized RDF
+if [ "$vp_proof_format" = ldp ]; then
+	if ! didkit to-rdf-urdna2015 < auth > auth.nq
+	then
+		echo 'Unable to convert/canonicalize document:' >&2
+		exit 1
+	fi
+	echo 'Converted verifiable presentation to canonicalized N-Quads:'
+	cat auth.nq
+fi
+echo
 
 echo Done
