@@ -114,14 +114,14 @@ jobs:
         npm i
         ./vendors/spruce/test.sh
 
-    - name: Checkout vc-http-api v0.0.2
+    - name: Checkout vc-http-api v0.0.3-unstable
       uses: actions/checkout@v2
       with:
         repository: spruceid/vc-http-api
         path: didkit/http/tests/vc-http-api/vc-http-api
-        ref: df9d1bf9540771d114f5b4c4348777378a3f0447
+        ref: 34b8afdc85d5b83c83f05b257e5cef5e5dac5b5c
 
-    - name: Run vc-http-api v0.0.2 test suite
+    - name: Run vc-http-api v0.0.3-unstable test suite
       working-directory: didkit/http/tests/vc-http-api
       run: |
         npm install
