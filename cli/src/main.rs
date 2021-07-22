@@ -1,3 +1,4 @@
+use std::convert::TryInto;
 use std::fs::File;
 use std::io::{stdin, stdout, BufReader, BufWriter, Read, Write};
 use std::path::PathBuf;
@@ -15,7 +16,7 @@ use didkit::{
     dereference, get_verification_method, runtime, DIDMethod, DIDResolver,
     DereferencingInputMetadata, Error, LinkedDataProofOptions, Metadata, ProofFormat, ProofPurpose,
     ResolutionInputMetadata, ResolutionResult, Source, VerifiableCredential,
-    VerifiablePresentation, DID_METHODS, JWK,
+    VerifiablePresentation, DID_METHODS, JWK, URI,
 };
 use didkit_cli::opts::ResolverOptions;
 
@@ -158,7 +159,7 @@ pub enum DIDKit {
 pub struct ProofOptions {
     // Options as in vc-http-api
     #[structopt(env, short, long)]
-    pub verification_method: Option<String>,
+    pub verification_method: Option<URI>,
     #[structopt(env, short, long)]
     pub proof_purpose: Option<ProofPurpose>,
     #[structopt(env, short, long)]

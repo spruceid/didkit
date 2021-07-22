@@ -91,10 +91,10 @@ pub async fn pick_key<'a>(
         return keys.values().next();
     }
     let vm = match options.verification_method {
-        Some(ref verification_method) => verification_method,
+        Some(ref verification_method) => verification_method.to_string(),
         None => return keys.values().next(),
     };
-    let public_key = match resolve_key(vm, did_resolver).await {
+    let public_key = match resolve_key(&vm, did_resolver).await {
         Err(_err) => {
             // TODO: return error
             return None;
