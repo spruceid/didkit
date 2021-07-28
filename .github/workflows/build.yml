@@ -108,20 +108,20 @@ jobs:
         path: vc-http-api
         ref: eef5ef2bb2321e4eac3f7e82a2adb7ccd4db1982
 
-    - name: Run vc-http-api test suite
+    - name: Run vc-http-api plugfest-2020 test suite
       working-directory: vc-http-api/packages/plugfest-2020
       run: |
         npm i
         ./vendors/spruce/test.sh
 
-    - name: Checkout vc-http-api v0.0.3-unstable
+    - name: Checkout VC HTTP API Test Suite
       uses: actions/checkout@v2
       with:
-        repository: spruceid/vc-http-api
-        path: didkit/http/tests/vc-http-api/vc-http-api
-        ref: 34b8afdc85d5b83c83f05b257e5cef5e5dac5b5c
+        repository: w3c-ccg/vc-http-api-test-suite
+        path: didkit/http/tests/vc-http-api/vc-http-api-test-suite
+        ref: 61d498cd04c45a22b9578774e6a066b59a8f4e94
 
-    - name: Run vc-http-api v0.0.3-unstable test suite
+    - name: Run VC HTTP API Test Suite
       working-directory: didkit/http/tests/vc-http-api
       run: |
         npm install
