@@ -5,7 +5,7 @@ dependencyResolutionManagement {
         mavenCentral()
         jcenter() // Warning: this repository is going to shut down soon
 
-        mavenLocal()
+//        mavenLocal()
     }
 }
 rootProject.name = "DIDKit Example"
