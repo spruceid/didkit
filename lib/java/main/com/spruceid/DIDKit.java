@@ -1,7 +1,5 @@
 package com.spruceid;
 
-import com.spruceid.DIDKitException;
-
 public class DIDKit {
     public static native String getVersion();
     public static native String generateEd25519Key() throws DIDKitException;
