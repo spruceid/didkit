@@ -438,7 +438,7 @@ async fn delegate_capability(
     parent_caps: String,
     key: String,
 ) -> Result<String, Error> {
-    let delegation: Delegation<String, Value> = serde_json::from_str(&capability)?;
+    let delegation: Delegation<Value, Value> = serde_json::from_str(&capability)?;
     let key: JWK = serde_json::from_str(&key)?;
     let options: LinkedDataProofOptions = serde_json::from_str(&linked_data_proof_options)?;
     let parents: Vec<String> = serde_json::from_str(&parent_caps)?;
@@ -477,7 +477,7 @@ async fn prepare_delegate_capability(
     public_key: String,
 ) -> Result<String, Error> {
     let public_key: JWK = serde_json::from_str(&public_key)?;
-    let capability: Delegation<String, Value> = serde_json::from_str(&capability)?;
+    let capability: Delegation<Value, Value> = serde_json::from_str(&capability)?;
     let options: LinkedDataProofOptions = serde_json::from_str(&linked_data_proof_options)?;
     let parents: Vec<String> = serde_json::from_str(&parent_caps)?;
     let preparation = capability
@@ -513,7 +513,7 @@ async fn complete_delegate_capability(
     preparation: String,
     signature: String,
 ) -> Result<String, Error> {
-    let capability: Delegation<String, Value> = serde_json::from_str(&capability)?;
+    let capability: Delegation<Value, Value> = serde_json::from_str(&capability)?;
     let preparation: ProofPreparation = serde_json::from_str(&preparation)?;
     let proof = preparation.complete(&signature).await?;
     let json = serde_json::to_string(&capability.set_proof(proof))?;
@@ -535,12 +535,12 @@ pub fn completeDelegateCapability(
     ))
 }
 
-#[cfg(any(all(feature = "delegate", feature = "zcap", feature = "invoke")))]
+#[cfg(any(feature = "delegate", feature = "zcap", feature = "invoke"))]
 async fn verify_delegation(
     delegation: String,
     linked_data_proof_options: String,
 ) -> Result<String, Error> {
-    let delegation: Delegation<String, Value> = serde_json::from_str(&delegation)?;
+    let delegation: Delegation<Value, Value> = serde_json::from_str(&delegation)?;
     let options: LinkedDataProofOptions = serde_json::from_str(&linked_data_proof_options)?;
     let result = delegation
         .verify(Some(options), DID_METHODS.to_resolver())
@@ -551,19 +551,19 @@ async fn verify_delegation(
 
 #[wasm_bindgen]
 #[allow(non_snake_case)]
-#[cfg(any(all(feature = "delegate", feature = "zcap", feature = "invoke")))]
+#[cfg(any(feature = "delegate", feature = "zcap", feature = "invoke"))]
 pub fn verifyDelegation(delegation: String, linked_data_proof_options: String) -> Promise {
     map_async_jsvalue(verify_delegation(delegation, linked_data_proof_options))
 }
 
-#[cfg(any(all(feature = "invoke", feature = "zcap")))]
+#[cfg(any(feature = "invoke", feature = "zcap"))]
 async fn invoke_capability(
     invocation: String,
     target_id: String,
     linked_data_proof_options: String,
     key: String,
 ) -> Result<String, Error> {
-    let invocation: Invocation<String> = serde_json::from_str(&invocation)?;
+    let invocation: Invocation<Value> = serde_json::from_str(&invocation)?;
     let key: JWK = serde_json::from_str(&key)?;
     let options: LinkedDataProofOptions = serde_json::from_str(&linked_data_proof_options)?;
     let proof = invocation
@@ -575,7 +575,7 @@ async fn invoke_capability(
 
 #[wasm_bindgen]
 #[allow(non_snake_case)]
-#[cfg(any(all(feature = "invoke", feature = "zcap")))]
+#[cfg(any(feature = "invoke", feature = "zcap"))]
 pub fn invokeCapability(
     invocation: String,
     target_id: String,
@@ -597,7 +597,7 @@ async fn prepare_invoke_capability(
     public_key: String,
 ) -> Result<String, Error> {
     let public_key: JWK = serde_json::from_str(&public_key)?;
-    let invocation: Invocation<String> = serde_json::from_str(&invocation)?;
+    let invocation: Invocation<Value> = serde_json::from_str(&invocation)?;
     let options: LinkedDataProofOptions = serde_json::from_str(&linked_data_proof_options)?;
     let preparation = invocation
         .prepare_proof(&public_key, &options, &URI::String(target_id))
@@ -608,7 +608,7 @@ async fn prepare_invoke_capability(
 
 #[wasm_bindgen]
 #[allow(non_snake_case)]
-#[cfg(any(all(feature = "invoke", feature = "zcap")))]
+#[cfg(any(feature = "invoke", feature = "zcap"))]
 pub fn prepareInvokeCapability(
     invocation: String,
     target_id: String,
@@ -628,7 +628,7 @@ async fn complete_invoke_capability(
     preparation: String,
     signature: String,
 ) -> Result<String, Error> {
-    let invocation: Invocation<String> = serde_json::from_str(&invocation)?;
+    let invocation: Invocation<Value> = serde_json::from_str(&invocation)?;
     let preparation: ProofPreparation = serde_json::from_str(&preparation)?;
     let proof = preparation.complete(&signature).await?;
     let json = serde_json::to_string(&invocation.set_proof(proof))?;
@@ -637,7 +637,7 @@ async fn complete_invoke_capability(
 
 #[wasm_bindgen]
 #[allow(non_snake_case)]
-#[cfg(any(all(feature = "invoke", feature = "zcap")))]
+#[cfg(any(feature = "invoke", feature = "zcap"))]
 pub fn completeInvokeCapability(
     invocation: String,
     preparation: String,
@@ -650,7 +650,7 @@ pub fn completeInvokeCapability(
     ))
 }
 
-#[cfg(any(all(feature = "invoke", feature = "zcap")))]
+#[cfg(any(feature = "invoke", feature = "zcap"))]
 async fn verify_invocation_signature(
     invocation: String,
     linked_data_proof_options: String,
@@ -666,28 +666,25 @@ async fn verify_invocation_signature(
 
 #[wasm_bindgen]
 #[allow(non_snake_case)]
-#[cfg(any(all(feature = "invoke", feature = "zcap")))]
-pub fn verifyInvocation_signature(
-    invocation: String,
-    linked_data_proof_options: String,
-) -> Promise {
+#[cfg(any(feature = "invoke", feature = "zcap"))]
+pub fn verifyInvocationSignature(invocation: String, linked_data_proof_options: String) -> Promise {
     map_async_jsvalue(verify_invocation_signature(
         invocation,
         linked_data_proof_options,
     ))
 }
 
-#[cfg(any(all(feature = "invoke", feature = "zcap")))]
+#[cfg(any(feature = "invoke", feature = "zcap"))]
 async fn verify_invocation(
     invocation: String,
     delegation: String,
     linked_data_proof_options: String,
 ) -> Result<String, Error> {
     let invocation: Invocation<Value> = serde_json::from_str(&invocation)?;
-    let delegation: Delegation<String, Value> = serde_json::from_str(&delegation)?;
+    let delegation: Delegation<Value, Value> = serde_json::from_str(&delegation)?;
     let options: LinkedDataProofOptions = serde_json::from_str(&linked_data_proof_options)?;
     let result = invocation
-        .verify(Some(options), DID_METHODS.to_resolver(), delegation)
+        .verify(Some(options), DID_METHODS.to_resolver(), &delegation)
         .await;
     let result_json = serde_json::to_string(&result)?;
     Ok(result_json)
@@ -695,7 +692,7 @@ async fn verify_invocation(
 
 #[wasm_bindgen]
 #[allow(non_snake_case)]
-#[cfg(any(all(feature = "invoke", feature = "zcap")))]
+#[cfg(any(feature = "invoke", feature = "zcap"))]
 pub fn verifyInvocation(
     invocation: String,
     delegation: String,
