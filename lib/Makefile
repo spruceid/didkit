@@ -16,7 +16,7 @@ endif
 .PHONY: test
 test: $(TARGET)/test/c.stamp \
 	$(TARGET)/test/java.stamp \
-	$(TARGET)/test/aar.stamp \
+	$(TARGET)/test/android.stamp \
 	$(TARGET)/test/flutter.stamp \
 	$(TARGET)/test/node.stamp \
 	$(TARGET)/test/wasm.stamp
@@ -105,16 +105,8 @@ ANDROID_LIBS=\
 	$(TARGET)/aarch64-linux-android/release/libdidkit.so\
 	$(TARGET)/x86_64-linux-android/release/libdidkit.so
 
-$(TARGET)/test/aar.stamp: $(TARGET)/didkit.aar | $(TARGET)/test
-	rm -rf tmp/test-aar
-	mkdir -p tmp/test-aar
-	cd tmp/test-aar && unzip -q ../../$< || unzip -l ../../$< 
-	cd tmp/test-aar && unzip -qo classes.jar com/spruceid/DIDKit.class || unzip -l classes.jar
-	javap tmp/test-aar/com/spruceid/DIDKit.class | grep -q 'public class com.spruceid.DIDKit'
+$(TARGET)/test/android.stamp: $(ANDROID_LIBS) | $(TARGET)/test
 	touch $@
-
-$(TARGET)/didkit.aar: $(TARGET)/didkit.jar android/AndroidManifest.xml android/R.txt $(ANDROID_LIBS) | android/res
-	$(ANDROID_TOOLS)/aapt package -f -S android/res -F $@ --ignore-assets '.*:*~:README.md' android
 
 $(TARGET)/%/release/libdidkit.so: $(RUST_SRC)
 	PATH=$(TOOLCHAIN)/bin:"$(PATH)" \

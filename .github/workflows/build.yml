@@ -162,7 +162,7 @@ jobs:
       run: make -C lib ../target/test/flutter.stamp
 
     - name: Build Android Archive
-      run: make -C lib ../target/test/aar.stamp
+      run: make -C lib ../target/test/android.stamp
 
     - name: Test Python Package
       run: make -C lib install-python
