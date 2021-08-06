@@ -19,7 +19,7 @@ The following are also required for the compilation of the vendored openssl:
 
 ## Build and integrate
 
-Build the `.so` libraries for each support ABI.
+Build the `.so` libraries for each supported ABI.
 
 ```sh
 $ make -C ../ ../target/test/android.stamp
@@ -37,11 +37,24 @@ repositories {
     mavenLocal()
 }
 
-// Add didkit library as a dependecy inside your app's build.gradle
+// Add didkit library as a dependency inside your app's build.gradle
 dependencies {
     implementation 'com.spruceid:didkit:0.2.1'
 }
 ```
+
+### Example app
+
+Build the example app:
+
+​```sh
+$ ./gradlew :app:build
+​```
+
+The APK will be placed in the following location:
+​```
+./app/build/outputs/apk/debug/app-debug.apk
+​```
 
 ### Make variables
 
