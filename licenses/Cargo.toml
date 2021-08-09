@@ -1,0 +1,12 @@
+[package]
+name = "didkit-licenses"
+version = "0.1.0"
+authors = ["Spruce Systems, Inc."]
+edition = "2018"
+license = "Apache-2.0"
+description = "Gather license info for didkit"
+publish = false
+
+[dependencies]
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"

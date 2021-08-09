@@ -1,0 +1,17 @@
+alloc v0.0.0 https://github.com/rust-lang/rust.git MIT OR Apache-2.0
+cfg-if v0.1.10 https://github.com/alexcrichton/cfg-if MIT/Apache-2.0
+compiler_builtins v0.1.49 https://github.com/rust-lang/compiler-builtins MIT/Apache-2.0
+core v0.0.0 https://github.com/rust-lang/rust.git MIT OR Apache-2.0
+dlmalloc v0.2.1 https://github.com/alexcrichton/dlmalloc-rs MIT/Apache-2.0
+fortanix-sgx-abi v0.3.3 https://github.com/fortanix/rust-sgx MPL-2.0
+hashbrown v0.11.0 https://github.com/rust-lang/hashbrown Apache-2.0/MIT
+hermit-abi v0.1.17 https://github.com/hermitcore/libhermit-rs MIT/Apache-2.0
+libc v0.2.98 https://github.com/rust-lang/libc MIT OR Apache-2.0
+panic_abort v0.0.0 https://github.com/rust-lang/rust.git MIT OR Apache-2.0
+rustc-demangle v0.1.18 https://github.com/alexcrichton/rustc-demangle MIT/Apache-2.0
+rustc-std-workspace-alloc v1.99.0  MIT OR Apache-2.0
+rustc-std-workspace-core v1.99.0  MIT OR Apache-2.0
+std v0.0.0 https://github.com/rust-lang/rust.git MIT OR Apache-2.0
+std_detect v0.1.5 https://github.com/rust-lang/stdarch MIT/Apache-2.0
+unwind v0.0.0 https://github.com/rust-lang/rust.git MIT OR Apache-2.0
+wasi v0.9.0+wasi-snapshot-preview1 https://github.com/bytecodealliance/wasi Apache-2.0 WITH LLVM-exception OR Apache-2.0 OR MIT
