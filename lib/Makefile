@@ -105,7 +105,7 @@ ANDROID_LIBS=\
 	$(TARGET)/aarch64-linux-android/release/libdidkit.so\
 	$(TARGET)/x86_64-linux-android/release/libdidkit.so
 
-$(TARGET)/test/android.stamp: $(ANDROID_LIBS) | $(TARGET)/test
+$(TARGET)/test/android.stamp: $(TARGET)/didkit.jar $(ANDROID_LIBS) | $(TARGET)/test
 	touch $@
 
 $(TARGET)/%/release/libdidkit.so: $(RUST_SRC)
