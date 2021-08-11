@@ -9,5 +9,5 @@ dependencyResolutionManagement {
     }
 }
 rootProject.name = "DIDKit Example"
-include ':app'
+include ':example'
 include ':didkit'

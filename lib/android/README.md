@@ -62,7 +62,7 @@ dependencies {
 Build the example app:
 
 ​```sh
-$ ./gradlew :app:build
+$ ./gradlew :example:build
 ​```
 
 The APK will be placed in the following location:
