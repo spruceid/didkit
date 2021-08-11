@@ -37,13 +37,21 @@ Publish the android library to local maven.
 $ ./gradlew :didkit:publishToMavenLocal
 ```
 
+The AAR file will be built and placed at the following path:
+```
+./didkit/build/outputs/aar/didkit-release.aar
+```
+
+Add mavenLocal() as a repository inside your project's build.gradle
+
 ```groovy
-// Add mavenLocal() as a repository inside your project's build.gradle
 repositories {
     mavenLocal()
 }
+```
 
-// Add didkit library as a dependency inside your app's build.gradle
+Add didkit library as a dependency inside your app's build.gradle
+```groovy
 dependencies {
     implementation 'com.spruceid:didkit:0.2.1'
 }
