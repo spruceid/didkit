@@ -21,6 +21,12 @@ The following are also required for the compilation of the vendored openssl:
 
 Build the `.so` libraries for each supported ABI.
 
+Set environmental variables as needed for Gradle:
+
+```sh
+$ export ANDROID_SDK_ROOT=~/Android/sdk
+```
+
 ```sh
 $ make -C ../ ../target/test/android.stamp
 ```
@@ -31,13 +37,21 @@ Publish the android library to local maven.
 $ ./gradlew :didkit:publishToMavenLocal
 ```
 
+The AAR file will be built and placed at the following path:
+```
+./didkit/build/outputs/aar/didkit-release.aar
+```
+
+Add mavenLocal() as a repository inside your project's build.gradle
+
 ```groovy
-// Add mavenLocal() as a repository inside your project's build.gradle
 repositories {
     mavenLocal()
 }
+```
 
-// Add didkit library as a dependency inside your app's build.gradle
+Add didkit library as a dependency inside your app's build.gradle
+```groovy
 dependencies {
     implementation 'com.spruceid:didkit:0.2.1'
 }
@@ -55,12 +69,6 @@ The APK will be placed in the following location:
 ​```
 ./app/build/outputs/apk/debug/app-debug.apk
 ​```
-
-### Make variables
-
-- `ANDROID_SDK_ROOT` - path to Android SDK. Default: `~/Android/Sdk`
-- `ANDROID_TOOLS` - Android tools directory. Default is to pick one matching `$(ANDROID_SDK_ROOT)/build-tools/*`.
-- `ANDROID_NDK_HOME` - Android NDK directory. Default is `$(ANDROID_SDK_ROOT)/ndk-bundle)` if exists, or one matching `$(ANDROID_SDK_ROOT)/ndk/*`.
 
 [AAR]: https://developer.android.com/studio/projects/android-library.html#aar-contents
 [JNI]: https://en.wikipedia.org/wiki/Java_Native_Interface
