@@ -1,3 +1,50 @@
+//! # DIDKit
+//!
+//! ## DID derefrencing
+//!
+//! Specific DID resolver:
+//! ```
+//! # use did_tz::DIDTz;
+//! # use didkit::{DereferencingInputMetadata, DIDResolver};
+//! # use std::convert::TryInto;
+//! # async fn main_() {
+//! let deref_result = DIDTz::default().dereference(
+//!     &"did:pkh:tz:tz1YwA1FwpgLtc1G8DKbbZ6e6PTb1dQMRn5x".to_string().try_into().unwrap(),
+//!     &DereferencingInputMetadata::default()
+//! ).await;
+//! # }
+//! ```
+//! > Is it really DIDTz? Can it be configured?
+//!
+//! Resolver for all implemented DID methods:
+//! ```
+//! # use didkit::{DereferencingInputMetadata, DIDResolver, DID_METHODS};
+//! # use std::convert::TryInto;
+//! # async fn main_() {
+//! let deref_result = DID_METHODS.dereference(
+//!     &"did:pkh:tz:tz1YwA1FwpgLtc1G8DKbbZ6e6PTb1dQMRn5x".to_string().try_into().unwrap(),
+//!     &DereferencingInputMetadata::default()
+//! ).await;
+//! # }
+//! ```
+//!
+//! Resolver for all implemented DID methods with a fallback to the Universal Resolver for unimplemented methods:
+//! > Needs `http-did` crate feature.
+//! ```
+//! # use didkit::{DereferencingInputMetadata, DIDResolver, DID_METHODS, HTTPDIDResolver, SeriesResolver};
+//! # use std::convert::TryInto;
+//! # async fn main_() {
+//! let mut resolvers = vec![DID_METHODS.to_resolver()];
+//! let http_resolver = HTTPDIDResolver { endpoint: "https://dev.uniresolver.io/1.0/identifiers/".to_string() };
+//! resolvers.push(&http_resolver);
+//! let series_resolver = SeriesResolver { resolvers };
+//! let deref_result = series_resolver.dereference(
+//!     &"did:ion:EiClkZMDxPKqC9c-umQfTkR8vvZ9JPhl_xLDI9Nfk38w5w".to_string().try_into().unwrap(),
+//!     &DereferencingInputMetadata::default()
+//! ).await;
+//! # }
+//! ```
+
 #[cfg(not(feature = "wasm"))]
 pub mod c;
 mod did_methods;
