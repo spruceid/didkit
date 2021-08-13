@@ -27,7 +27,6 @@ configurations {
 
 dependencies {
     implementation fileTree(dir: 'libs', include: ["*.jar"])
-    includeJars(name: 'didkit', ext: 'jar')
 
     testImplementation 'junit:junit:4.13.2'
 }
