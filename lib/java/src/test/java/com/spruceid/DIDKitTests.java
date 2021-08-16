@@ -1,15 +1,17 @@
 package com.spruceid;
 
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.StringContains.containsString;
+import static org.hamcrest.core.StringStartsWith.startsWith;
 
 class DIDKitTests {
 
     @Test
     void mainTests() throws DIDKitException {
-        String version = DIDKit.getVersion();
+        System.out.println(DIDKit.getVersion());
 
         // Generate key
         String jwk = DIDKit.generateEd25519Key();
@@ -21,13 +23,7 @@ class DIDKitTests {
         String verificationMethod = DIDKit.keyToVerificationMethod("key", jwk);
 
         // Trigger Exception
-        boolean threw = false;
-        try {
-            DIDKit.keyToDID("key", "{}");
-        } catch (DIDKitException e) {
-            threw = true;
-        }
-        assert threw;
+        Assertions.assertThrows(DIDKitException.class, () -> DIDKit.keyToDID("key", "{}"));
 
         // Issue Credential (LDP)
         String credential = "{"
@@ -58,7 +54,7 @@ class DIDKitTests {
                 + "  \"proofPurpose\": \"assertionMethod\""
                 + "}";
         String vcResult = DIDKit.verifyCredential(vc, vcVerifyOptions);
-        assert vcResult.contains("\"errors\":[]");
+        assertThat(vcResult, containsString("\"errors\":[]"));
 
         // Verify Credential (JWT)
         vcVerifyOptions = "{"
@@ -66,7 +62,7 @@ class DIDKitTests {
                 + "  \"proofFormat\": \"jwt\""
                 + "}";
         vcResult = DIDKit.verifyCredential(vcJwt, vcVerifyOptions);
-        assert vcResult.contains("\"errors\":[]");
+        assertThat(vcResult, containsString("\"errors\":[]"));
 
         // Issue Presentation (LDP)
         String presentation = "{"
@@ -88,14 +84,14 @@ class DIDKitTests {
                 + "  \"proofFormat\": \"jwt\","
                 + "  \"verificationMethod\": \"" + verificationMethod + "\""
                 + "}";
-        String vpJwt = DIDKit.issuePresentation(presentation, vpOptions, jwk);
+        String vpJwt = DIDKit.issuePresentation(presentation, vpOptionsJwt, jwk);
 
         // Verify Presentation (LDP)
         String vpVerifyOptions = "{"
                 + "  \"proofPurpose\": \"authentication\""
                 + "}";
         String vpResult = DIDKit.verifyPresentation(vp, vpVerifyOptions);
-        assert vpResult.contains("\"errors\":[]");
+        assertThat(vpResult, containsString("\"errors\":[]"));
 
         // Verify Presentation (JWT)
         vpVerifyOptions = "{"
@@ -107,11 +103,11 @@ class DIDKitTests {
 
         // Resolve DID
         String resolutionResult = DIDKit.resolveDID(did, "{}");
-        assert resolutionResult.contains("\"didDocument\":{");
+        assertThat(resolutionResult, containsString("\"didDocument\":{"));
 
         // Dereference DID URL
         String dereferencingResult = DIDKit.dereferenceDIDURL(verificationMethod, "{}");
-        assert dereferencingResult.startsWith("[{");
+        assertThat(dereferencingResult, startsWith("[{"));
 
         // Create a DIDAuth VP (LDP)
         vpOptions = "{"
@@ -136,7 +132,7 @@ class DIDKitTests {
                 + "  \"proofPurpose\": \"authentication\""
                 + "}";
         vpResult = DIDKit.verifyPresentation(vp, vpVerifyOptions);
-        assert vpResult.contains("\"errors\":[]");
+        assertThat(vpResult, containsString("\"errors\":[]"));
 
         // Verify DIDAuth VP (JWT)
         vpVerifyOptions = "{"
@@ -145,6 +141,6 @@ class DIDKitTests {
                 + "  \"proofFormat\": \"jwt\""
                 + "}";
         vpResult = DIDKit.verifyPresentation(vpJwt, vpVerifyOptions);
-        assert vpResult.contains("\"errors\":[]");
+        assertThat(vpResult, containsString("\"errors\":[]"));
     }
 }
