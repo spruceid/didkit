@@ -1,5 +1,7 @@
 package com.spruceid;
 
+import org.scijava.nativelib.NativeLoader;
+
 public class DIDKit {
     public static native String getVersion();
     public static native String generateEd25519Key() throws DIDKitException;
@@ -14,6 +16,10 @@ public class DIDKit {
     public static native String dereferenceDIDURL(String didUrl, String inputMetadata);
 
     static {
-        System.loadLibrary("didkit");
+        try {
+            NativeLoader.loadLibrary("didkit");
+        } catch (Exception e) {
+            System.out.println(e);
+        }
     }
 }
