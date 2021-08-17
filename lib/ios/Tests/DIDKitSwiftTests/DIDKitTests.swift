@@ -16,20 +16,20 @@ class DIDKitTests: XCTestCase {
 
   func test_keyToDID() throws {
     let key = try DIDKit.generateEd25519Key()
-    let did = try DIDKit.keyToDID(method: "tz", jwk: key)
+    let did = try DIDKit.keyToDID(method: "key", jwk: key)
     XCTAssertFalse(did.isEmpty)
   }
 
   func test_keyToVerificationMethod() throws {
     let key = try DIDKit.generateEd25519Key()
-    let vm = try DIDKit.keyToVerificationMethod(method: "tz", jwk: key)
+    let vm = try DIDKit.keyToVerificationMethod(method: "key", jwk: key)
     XCTAssertFalse(vm.isEmpty)
   }
 
   func test_issueAndVerifyCredential() throws {
     let key = try DIDKit.generateEd25519Key()
-    let did = try DIDKit.keyToDID(method: "tz", jwk: key)
-    let verificationMethod = try DIDKit.keyToVerificationMethod(method: "tz", jwk: key)
+    let did = try DIDKit.keyToDID(method: "key", jwk: key)
+    let verificationMethod = try DIDKit.keyToVerificationMethod(method: "key", jwk: key)
     let options = [
       "proofPurpose": "assertionMethod",
       "verificationMethod": verificationMethod,
@@ -53,8 +53,8 @@ class DIDKitTests: XCTestCase {
 
   func test_issueAndVerifyPresentation() throws {
     let key = try DIDKit.generateEd25519Key()
-    let did = try DIDKit.keyToDID(method: "tz", jwk: key)
-    let verificationMethod = try DIDKit.keyToVerificationMethod(method: "tz", jwk: key)
+    let did = try DIDKit.keyToDID(method: "key", jwk: key)
+    let verificationMethod = try DIDKit.keyToVerificationMethod(method: "key", jwk: key)
     let options = [
       "proofPurpose": "authentication",
       "verificationMethod": verificationMethod,
@@ -86,7 +86,7 @@ class DIDKitTests: XCTestCase {
 
   func test_resolveDID() throws {
     let key = try DIDKit.generateEd25519Key()
-    let did = try DIDKit.keyToDID(method: "tz", jwk: key)
+    let did = try DIDKit.keyToDID(method: "key", jwk: key)
     let resolutionResult = try XCTUnwrap(
       try JSON.decode(DIDKit.resolveDID(did: did, inputMetadata: "{}")) as? [String: Any])
     let didDocument = try XCTUnwrap(resolutionResult["didDocument"] as? [String: Any])
@@ -95,7 +95,7 @@ class DIDKitTests: XCTestCase {
 
   func test_dereferenceDIDURL() throws {
     let key = try DIDKit.generateEd25519Key()
-    let verificationMethod = try DIDKit.keyToVerificationMethod(method: "tz", jwk: key)
+    let verificationMethod = try DIDKit.keyToVerificationMethod(method: "key", jwk: key)
     let derefResult = try JSON.decode(
       DIDKit.dereferenceDIDURL(didURL: verificationMethod, inputMetadata: "{}"))
     let list = try XCTUnwrap(derefResult as? [Any])
@@ -104,8 +104,8 @@ class DIDKitTests: XCTestCase {
 
   func test_didAuth() throws {
     let key = try DIDKit.generateEd25519Key()
-    let did = try DIDKit.keyToDID(method: "tz", jwk: key)
-    let verificationMethod = try DIDKit.keyToVerificationMethod(method: "tz", jwk: key)
+    let did = try DIDKit.keyToDID(method: "key", jwk: key)
+    let verificationMethod = try DIDKit.keyToVerificationMethod(method: "key", jwk: key)
     let challenge = UUID().uuidString
     let proofOptions = [
       "proofPurpose": "assertionMethod",
