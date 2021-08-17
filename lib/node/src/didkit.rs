@@ -4,6 +4,7 @@ use didkit::error::Error as DIDKitError;
 #[cfg(doc)]
 use didkit::error::{didkit_error_code, didkit_error_message};
 use didkit::get_verification_method;
+use didkit::jwk_from_tezos_key as tz_to_jwk;
 use didkit::runtime;
 use didkit::ProofPreparation;
 use didkit::Source;
@@ -162,12 +163,15 @@ pub fn delegate_capability(mut cx: FunctionContext) -> JsResult<JsValue> {
     let key = arg!(cx, 3, JWK);
 
     let rt = throws!(cx, runtime::get())?;
-    let fut = del.generate_proof(
-        &key,
-        &options,
-        &parents.iter().map(|p| p.as_ref()).collect::<Vec<&str>>(),
-    );
-    let result = throws!(cx, neon_serde::to_value(&mut cx, &rt.block_on(fut)))?;
+    let proof = throws!(
+        cx,
+        rt.block_on(del.generate_proof(
+            &key,
+            &options,
+            &parents.iter().map(|p| p.as_ref()).collect::<Vec<&str>>(),
+        ))
+    )?;
+    let result = throws!(cx, neon_serde::to_value(&mut cx, &proof))?;
     Ok(result)
 }
 
@@ -178,12 +182,15 @@ pub fn prepare_delegate_capability(mut cx: FunctionContext) -> JsResult<JsValue>
     let key = arg!(cx, 3, JWK);
 
     let rt = throws!(cx, runtime::get())?;
-    let fut = del.prepare_proof(
-        &key,
-        &options,
-        &parents.iter().map(|p| p.as_ref()).collect::<Vec<&str>>(),
-    );
-    let result = throws!(cx, neon_serde::to_value(&mut cx, &rt.block_on(fut)))?;
+    let prep = throws!(
+        cx,
+        rt.block_on(del.prepare_proof(
+            &key,
+            &options,
+            &parents.iter().map(|p| p.as_ref()).collect::<Vec<&str>>(),
+        ))
+    )?;
+    let result = throws!(cx, neon_serde::to_value(&mut cx, &prep))?;
     Ok(result)
 }
 
@@ -193,8 +200,8 @@ pub fn complete_delegate_capability(mut cx: FunctionContext) -> JsResult<JsValue
     let sig = arg!(cx, 2, String);
 
     let rt = throws!(cx, runtime::get())?;
-    let proof = rt.block_on(prep.complete(&sig));
-    let result = throws!(cx, neon_serde::to_value(&mut cx, del.set_proof(proof)))?;
+    let proof = throws!(cx, rt.block_on(prep.complete(&sig)))?;
+    let result = throws!(cx, neon_serde::to_value(&mut cx, &del.set_proof(proof)))?;
     Ok(result)
 }
 
@@ -203,8 +210,8 @@ pub fn verify_delegation(mut cx: FunctionContext) -> JsResult<JsValue> {
     let options = arg!(cx, 1, LinkedDataProofOptions);
 
     let rt = throws!(cx, runtime::get())?;
-    let fut = del.verify(options, DID_METHODS.to_resolver());
-    let result = throws!(cx, neon_serde::to_value(&mut cx, &rt.block_on(fut)))?;
+    let res = rt.block_on(del.verify(Some(options), DID_METHODS.to_resolver()));
+    let result = throws!(cx, neon_serde::to_value(&mut cx, &res))?;
     Ok(result)
 }
 
@@ -215,8 +222,8 @@ pub fn invoke_capability(mut cx: FunctionContext) -> JsResult<JsValue> {
     let key = arg!(cx, 3, JWK);
 
     let rt = throws!(cx, runtime::get())?;
-    let fut = inv.generate_proof(&key, &options, &target);
-    let result = throws!(cx, neon_serde::to_value(&mut cx, &rt.block_on(fut)))?;
+    let proof = throws!(cx, rt.block_on(inv.generate_proof(&key, &options, &target)))?;
+    let result = throws!(cx, neon_serde::to_value(&mut cx, &inv.set_proof(proof)))?;
     Ok(result)
 }
 
@@ -227,8 +234,8 @@ pub fn prepare_invoke_capability(mut cx: FunctionContext) -> JsResult<JsValue> {
     let key = arg!(cx, 3, JWK);
 
     let rt = throws!(cx, runtime::get())?;
-    let fut = inv.prepare_proof(&key, &options, &target);
-    let result = throws!(cx, neon_serde::to_value(&mut cx, &rt.block_on(fut)))?;
+    let prep = throws!(cx, rt.block_on(inv.prepare_proof(&key, &options, &target)))?;
+    let result = throws!(cx, neon_serde::to_value(&mut cx, &prep))?;
     Ok(result)
 }
 
@@ -238,8 +245,8 @@ pub fn complete_invoke_capability(mut cx: FunctionContext) -> JsResult<JsValue> 
     let sig = arg!(cx, 2, String);
 
     let rt = throws!(cx, runtime::get())?;
-    let proof = rt.block_on(prep.complete(&sig));
-    let result = throws!(cx, neon_serde::to_value(&mut cx, inv.set_proof(proof)))?;
+    let res = throws!(cx, rt.block_on(prep.complete(&sig)))?;
+    let result = throws!(cx, neon_serde::to_value(&mut cx, &inv.set_proof(res)))?;
     Ok(result)
 }
 
@@ -249,8 +256,8 @@ pub fn verify_invocation(mut cx: FunctionContext) -> JsResult<JsValue> {
     let options = arg!(cx, 2, LinkedDataProofOptions);
 
     let rt = throws!(cx, runtime::get())?;
-    let fut = inv.verify(options, DID_METHODS.to_resolver(), del);
-    let result = throws!(cx, neon_serde::to_value(&mut cx, &rt.block_on(fut)))?;
+    let res = rt.block_on(inv.verify(Some(options), DID_METHODS.to_resolver(), &del));
+    let result = throws!(cx, neon_serde::to_value(&mut cx, &res))?;
     Ok(result)
 }
 
@@ -259,7 +266,14 @@ pub fn verify_invocation_signature(mut cx: FunctionContext) -> JsResult<JsValue>
     let options = arg!(cx, 1, LinkedDataProofOptions);
 
     let rt = throws!(cx, runtime::get())?;
-    let fut = inv.verify_signature(options, DID_METHODS.to_resolver());
-    let result = throws!(cx, neon_serde::to_value(&mut cx, &rt.block_on(fut)))?;
+    let res = rt.block_on(inv.verify_signature(Some(options), DID_METHODS.to_resolver()));
+    let result = throws!(cx, neon_serde::to_value(&mut cx, &res))?;
+    Ok(result)
+}
+
+pub fn jwk_from_tezos_key(mut cx: FunctionContext) -> JsResult<JsValue> {
+    let tzk = arg!(cx, 0, String);
+    let jwk = throws!(cx, tz_to_jwk(&tzk))?;
+    let result = throws!(cx, neon_serde::to_value(&mut cx, &jwk))?;
     Ok(result)
 }

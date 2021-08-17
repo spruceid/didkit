@@ -46,5 +46,7 @@ register_module!(mut m, {
         didkit::verify_invocation_signature,
     )?;
 
+    m.export_function("jwkFromTezosKey", didkit::jwk_from_tezos_key)?;
+
     Ok(())
 });
