@@ -1,4 +1,3 @@
-use std::convert::TryInto;
 use std::fs::File;
 use std::io::{stdin, stdout, BufReader, BufWriter, Read, Write};
 use std::path::PathBuf;
@@ -86,6 +85,8 @@ pub enum DIDKit {
         holder: String,
         #[structopt(flatten)]
         proof_options: ProofOptions,
+        #[structopt(flatten)]
+        resolver_options: ResolverOptions,
     },
     /*
     /// Update a DID Document’s authentication.
@@ -104,6 +105,8 @@ pub enum DIDKit {
         key: KeyArg,
         #[structopt(flatten)]
         proof_options: ProofOptions,
+        #[structopt(flatten)]
+        resolver_options: ResolverOptions,
     },
     /// Verify Credential
     VCVerifyCredential {
@@ -118,6 +121,8 @@ pub enum DIDKit {
         key: KeyArg,
         #[structopt(flatten)]
         proof_options: ProofOptions,
+        #[structopt(flatten)]
+        resolver_options: ResolverOptions,
     },
     /// Verify Presentation
     VCVerifyPresentation {
@@ -393,7 +398,12 @@ fn main() {
             println!("{}", vm);
         }
 
-        DIDKit::VCIssueCredential { key, proof_options } => {
+        DIDKit::VCIssueCredential {
+            key,
+            resolver_options,
+            proof_options,
+        } => {
+            let resolver = resolver_options.to_resolver();
             let credential_reader = BufReader::new(stdin());
             let mut credential: VerifiableCredential =
                 serde_json::from_reader(credential_reader).unwrap();
@@ -412,7 +422,7 @@ fn main() {
                         todo!("ssh-agent for JWT not implemented");
                     }
                     let jwt = rt
-                        .block_on(credential.generate_jwt(jwk_opt.as_ref(), &options))
+                        .block_on(credential.generate_jwt(jwk_opt.as_ref(), &options, &resolver))
                         .unwrap();
                     print!("{}", jwt);
                 }
@@ -422,6 +432,7 @@ fn main() {
                             &credential,
                             jwk_opt.as_ref(),
                             options,
+                            &resolver,
                             ssh_agent_sock_opt,
                         ))
                         .unwrap();
@@ -471,10 +482,16 @@ fn main() {
             }
         }
 
-        DIDKit::VCIssuePresentation { key, proof_options } => {
+        DIDKit::VCIssuePresentation {
+            key,
+            resolver_options,
+            proof_options,
+        } => {
+            let resolver = resolver_options.to_resolver();
             let presentation_reader = BufReader::new(stdin());
             let mut presentation: VerifiablePresentation =
                 serde_json::from_reader(presentation_reader).unwrap();
+
             let jwk_opt: Option<JWK> = key.get_jwk_opt();
             let ssh_agent_sock_opt = if key.ssh_agent {
                 ssh_agent_sock = get_ssh_agent_sock();
@@ -490,7 +507,7 @@ fn main() {
                         todo!("ssh-agent for JWT not implemented");
                     }
                     let jwt = rt
-                        .block_on(presentation.generate_jwt(jwk_opt.as_ref(), &options))
+                        .block_on(presentation.generate_jwt(jwk_opt.as_ref(), &options, &resolver))
                         .unwrap();
                     print!("{}", jwt);
                 }
@@ -500,6 +517,7 @@ fn main() {
                             &presentation,
                             jwk_opt.as_ref(),
                             options,
+                            &resolver,
                             ssh_agent_sock_opt,
                         ))
                         .unwrap();
@@ -647,7 +665,9 @@ fn main() {
             key,
             holder,
             proof_options,
+            resolver_options,
         } => {
+            let resolver = resolver_options.to_resolver();
             let mut presentation = VerifiablePresentation::default();
             presentation.holder = Some(ssi::vc::URI::String(holder));
             let proof_format = proof_options.proof_format.clone();
@@ -665,7 +685,7 @@ fn main() {
                         todo!("ssh-agent for JWT not implemented");
                     }
                     let jwt = rt
-                        .block_on(presentation.generate_jwt(jwk_opt.as_ref(), &options))
+                        .block_on(presentation.generate_jwt(jwk_opt.as_ref(), &options, &resolver))
                         .unwrap();
                     print!("{}", jwt);
                 }
@@ -675,6 +695,7 @@ fn main() {
                             &presentation,
                             jwk_opt.as_ref(),
                             options,
+                            &resolver,
                             ssh_agent_sock_opt,
                         ))
                         .unwrap();

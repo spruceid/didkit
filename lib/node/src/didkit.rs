@@ -65,20 +65,21 @@ pub fn issue_credential(mut cx: FunctionContext) -> JsResult<JsValue> {
     let options = arg!(cx, 1, JWTOrLDPOptions);
     let key = arg!(cx, 2, JWK);
     let proof_format = options.proof_format.unwrap_or_default();
+    let resolver = DID_METHODS.to_resolver();
 
     let rt = throws!(cx, runtime::get())?;
     let vc = match proof_format {
         ProofFormat::JWT => {
             let jwt = throws!(
                 cx,
-                rt.block_on(credential.generate_jwt(Some(&key), &options.ldp_options))
+                rt.block_on(credential.generate_jwt(Some(&key), &options.ldp_options, resolver))
             )?;
             cx.string(jwt).as_value(&mut cx)
         }
         ProofFormat::LDP => {
             let proof = throws!(
                 cx,
-                rt.block_on(credential.generate_proof(&key, &options.ldp_options))
+                rt.block_on(credential.generate_proof(&key, &options.ldp_options, resolver))
             )?;
             credential.add_proof(proof);
             throws!(cx, neon_serde::to_value(&mut cx, &credential))?
@@ -105,9 +106,13 @@ pub fn issue_presentation(mut cx: FunctionContext) -> JsResult<JsValue> {
     let mut presentation = arg!(cx, 0, VerifiablePresentation);
     let options = arg!(cx, 1, LinkedDataProofOptions);
     let key = arg!(cx, 2, JWK);
+    let resolver = DID_METHODS.to_resolver();
 
     let rt = throws!(cx, runtime::get())?;
-    let proof = throws!(cx, rt.block_on(presentation.generate_proof(&key, &options)))?;
+    let proof = throws!(
+        cx,
+        rt.block_on(presentation.generate_proof(&key, &options, resolver))
+    )?;
     presentation.add_proof(proof);
 
     let vp = throws!(cx, neon_serde::to_value(&mut cx, &presentation))?;
@@ -118,12 +123,16 @@ pub fn did_auth(mut cx: FunctionContext) -> JsResult<JsValue> {
     let holder = arg!(cx, 0, String);
     let options = arg!(cx, 1, LinkedDataProofOptions);
     let key = arg!(cx, 2, JWK);
+    let resolver = DID_METHODS.to_resolver();
 
     let mut presentation = VerifiablePresentation::default();
     presentation.holder = Some(ssi::vc::URI::String(holder));
 
     let rt = throws!(cx, runtime::get())?;
-    let proof = throws!(cx, rt.block_on(presentation.generate_proof(&key, &options)))?;
+    let proof = throws!(
+        cx,
+        rt.block_on(presentation.generate_proof(&key, &options, resolver))
+    )?;
     presentation.add_proof(proof);
 
     let vp = throws!(cx, neon_serde::to_value(&mut cx, &presentation))?;

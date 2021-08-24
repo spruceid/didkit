@@ -136,16 +136,17 @@ async fn issue_credential(
     let key: JWK = serde_json::from_str(&key)?;
     let options: JWTOrLDPOptions = serde_json::from_str(&proof_options)?;
     let proof_format = options.proof_format.unwrap_or_default();
+    let resolver = DID_METHODS.to_resolver();
     let vc_string = match proof_format {
         ProofFormat::JWT => {
             let vc_jwt = credential
-                .generate_jwt(Some(&key), &options.ldp_options)
+                .generate_jwt(Some(&key), &options.ldp_options, resolver)
                 .await?;
             vc_jwt
         }
         ProofFormat::LDP => {
             let proof = credential
-                .generate_proof(&key, &options.ldp_options)
+                .generate_proof(&key, &options.ldp_options, resolver)
                 .await?;
             credential.add_proof(proof);
             let vc_json = serde_json::to_string(&credential)?;
@@ -179,7 +180,10 @@ async fn prepare_issue_credential(
     let public_key: JWK = serde_json::from_str(&public_key)?;
     let credential = VerifiableCredential::from_json_unsigned(&credential)?;
     let options: LinkedDataProofOptions = serde_json::from_str(&linked_data_proof_options)?;
-    let preparation = credential.prepare_proof(&public_key, &options).await?;
+    let resolver = DID_METHODS.to_resolver();
+    let preparation = credential
+        .prepare_proof(&public_key, &options, resolver)
+        .await?;
     let preparation_json = serde_json::to_string(&preparation)?;
     Ok(preparation_json)
 }
@@ -287,15 +291,16 @@ async fn issue_presentation(
     let key: JWK = serde_json::from_str(&key)?;
     let options: JWTOrLDPOptions = serde_json::from_str(&proof_options)?;
     let proof_format = options.proof_format.unwrap_or_default();
+    let resolver = DID_METHODS.to_resolver();
     let vp_string = match proof_format {
         ProofFormat::JWT => {
             presentation
-                .generate_jwt(Some(&key), &options.ldp_options)
+                .generate_jwt(Some(&key), &options.ldp_options, resolver)
                 .await?
         }
         ProofFormat::LDP => {
             let proof = presentation
-                .generate_proof(&key, &options.ldp_options)
+                .generate_proof(&key, &options.ldp_options, resolver)
                 .await?;
             presentation.add_proof(proof);
             serde_json::to_string(&presentation)?
@@ -378,15 +383,16 @@ async fn did_auth(holder: String, proof_options: String, key: String) -> Result<
     let key: JWK = serde_json::from_str(&key)?;
     let options: JWTOrLDPOptions = serde_json::from_str(&proof_options)?;
     let proof_format = options.proof_format.unwrap_or_default();
+    let resolver = DID_METHODS.to_resolver();
     let vp_string = match proof_format {
         ProofFormat::JWT => {
             presentation
-                .generate_jwt(Some(&key), &options.ldp_options)
+                .generate_jwt(Some(&key), &options.ldp_options, resolver)
                 .await?
         }
         ProofFormat::LDP => {
             let proof = presentation
-                .generate_proof(&key, &options.ldp_options)
+                .generate_proof(&key, &options.ldp_options, resolver)
                 .await?;
             presentation.add_proof(proof);
             serde_json::to_string(&presentation)?

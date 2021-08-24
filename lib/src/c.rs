@@ -120,6 +120,7 @@ fn issue_credential(
     proof_options_json_ptr: *const c_char,
     key_json_ptr: *const c_char,
 ) -> Result<*const c_char, Error> {
+    let resolver = DID_METHODS.to_resolver();
     let credential_json = unsafe { CStr::from_ptr(credential_json_ptr) }.to_str()?;
     let proof_options_json = unsafe { CStr::from_ptr(proof_options_json_ptr) }.to_str()?;
     let key_json = unsafe { CStr::from_ptr(key_json_ptr) }.to_str()?;
@@ -130,10 +131,11 @@ fn issue_credential(
     let rt = runtime::get()?;
     let out = match proof_format {
         ProofFormat::JWT => {
-            rt.block_on(credential.generate_jwt(Some(&key), &options.ldp_options))?
+            rt.block_on(credential.generate_jwt(Some(&key), &options.ldp_options, resolver))?
         }
         ProofFormat::LDP => {
-            let proof = rt.block_on(credential.generate_proof(&key, &options.ldp_options))?;
+            let proof =
+                rt.block_on(credential.generate_proof(&key, &options.ldp_options, resolver))?;
             credential.add_proof(proof);
             serde_json::to_string(&credential)?
         }
@@ -205,6 +207,7 @@ fn issue_presentation(
     proof_options_json_ptr: *const c_char,
     key_json_ptr: *const c_char,
 ) -> Result<*const c_char, Error> {
+    let resolver = DID_METHODS.to_resolver();
     let presentation_json = unsafe { CStr::from_ptr(presentation_json_ptr) }.to_str()?;
     let proof_options_json = unsafe { CStr::from_ptr(proof_options_json_ptr) }.to_str()?;
     let key_json = unsafe { CStr::from_ptr(key_json_ptr) }.to_str()?;
@@ -215,10 +218,11 @@ fn issue_presentation(
     let rt = runtime::get()?;
     let out = match proof_format {
         ProofFormat::JWT => {
-            rt.block_on(presentation.generate_jwt(Some(&key), &options.ldp_options))?
+            rt.block_on(presentation.generate_jwt(Some(&key), &options.ldp_options, resolver))?
         }
         ProofFormat::LDP => {
-            let proof = rt.block_on(presentation.generate_proof(&key, &options.ldp_options))?;
+            let proof =
+                rt.block_on(presentation.generate_proof(&key, &options.ldp_options, resolver))?;
             presentation.add_proof(proof);
             serde_json::to_string(&presentation)?
         }
@@ -249,6 +253,7 @@ fn did_auth(
     proof_options_json_ptr: *const c_char,
     key_json_ptr: *const c_char,
 ) -> Result<*const c_char, Error> {
+    let resolver = DID_METHODS.to_resolver();
     let holder = unsafe { CStr::from_ptr(holder_ptr) }.to_str()?;
     let proof_options_json = unsafe { CStr::from_ptr(proof_options_json_ptr) }.to_str()?;
     let key_json = unsafe { CStr::from_ptr(key_json_ptr) }.to_str()?;
@@ -260,10 +265,11 @@ fn did_auth(
     let rt = runtime::get()?;
     let out = match proof_format {
         ProofFormat::JWT => {
-            rt.block_on(presentation.generate_jwt(Some(&key), &options.ldp_options))?
+            rt.block_on(presentation.generate_jwt(Some(&key), &options.ldp_options, resolver))?
         }
         ProofFormat::LDP => {
-            let proof = rt.block_on(presentation.generate_proof(&key, &options.ldp_options))?;
+            let proof =
+                rt.block_on(presentation.generate_proof(&key, &options.ldp_options, resolver))?;
             presentation.add_proof(proof);
             serde_json::to_string(&presentation)?
         }

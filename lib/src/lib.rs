@@ -118,6 +118,7 @@ pub async fn generate_proof(
     document: &(dyn ssi::ldp::LinkedDataDocument + Sync),
     key: Option<&JWK>,
     options: LinkedDataProofOptions,
+    resolver: &dyn DIDResolver,
     ssh_agent_sock_path_opt: Option<&str>,
 ) -> Result<ssi::vc::Proof, GenerateProofError> {
     use ssi::ldp::LinkedDataProofs;
@@ -130,11 +131,12 @@ pub async fn generate_proof(
         Some(sock_path) => {
             use tokio::net::UnixStream;
             let mut ssh_agent_sock = UnixStream::connect(sock_path).await?;
-            crate::ssh_agent::generate_proof(&mut ssh_agent_sock, document, options, key).await?
+            crate::ssh_agent::generate_proof(&mut ssh_agent_sock, document, options, resolver, key)
+                .await?
         }
         None => {
             let jwk = key.expect("JWK, Key Path, or SSH Agent option is required.");
-            LinkedDataProofs::sign(document, &options, &jwk, None).await?
+            LinkedDataProofs::sign(document, &options, resolver, &jwk, None).await?
         }
     };
 

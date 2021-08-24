@@ -222,7 +222,7 @@ impl DIDKitHTTPSvc {
             let body = match proof_format {
                 ProofFormat::JWT => {
                     let jwt = match credential
-                        .generate_jwt(Some(&key), &options.ldp_options)
+                        .generate_jwt(Some(&key), &options.ldp_options, &resolver)
                         .await
                     {
                         Ok(reader) => reader,
@@ -233,7 +233,10 @@ impl DIDKitHTTPSvc {
                     Body::from(jwt.into_bytes())
                 }
                 ProofFormat::LDP => {
-                    let proof = match credential.generate_proof(key, &options.ldp_options).await {
+                    let proof = match credential
+                        .generate_proof(key, &options.ldp_options, &resolver)
+                        .await
+                    {
                         Ok(reader) => reader,
                         Err(err) => {
                             return Self::response(StatusCode::BAD_REQUEST, err.to_string()).await;
@@ -350,7 +353,10 @@ impl DIDKitHTTPSvc {
             };
             let body = match proof_format {
                 ProofFormat::JWT => {
-                    let jwt = match presentation.generate_jwt(Some(&key), &ldp_options).await {
+                    let jwt = match presentation
+                        .generate_jwt(Some(&key), &ldp_options, &resolver)
+                        .await
+                    {
                         Ok(reader) => reader,
                         Err(err) => {
                             return Self::response(StatusCode::BAD_REQUEST, err.to_string()).await;
@@ -359,7 +365,10 @@ impl DIDKitHTTPSvc {
                     Body::from(jwt.into_bytes())
                 }
                 ProofFormat::LDP => {
-                    let proof = match presentation.generate_proof(key, &ldp_options).await {
+                    let proof = match presentation
+                        .generate_proof(key, &ldp_options, &resolver)
+                        .await
+                    {
                         Ok(reader) => reader,
                         Err(err) => {
                             return Self::response(StatusCode::BAD_REQUEST, err.to_string()).await;
