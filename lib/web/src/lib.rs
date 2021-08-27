@@ -446,6 +446,7 @@ async fn delegate_capability(
         .generate_proof(
             &key,
             &options,
+            DID_METHODS.to_resolver(),
             &parents.iter().map(|p| p.as_ref()).collect::<Vec<&str>>(),
         )
         .await?;
@@ -484,6 +485,7 @@ async fn prepare_delegate_capability(
         .prepare_proof(
             &public_key,
             &options,
+            DID_METHODS.to_resolver(),
             &parents.iter().map(|p| p.as_ref()).collect::<Vec<&str>>(),
         )
         .await?;
@@ -561,7 +563,12 @@ async fn invoke_capability(
     let key: JWK = serde_json::from_str(&key)?;
     let options: LinkedDataProofOptions = serde_json::from_str(&linked_data_proof_options)?;
     let proof = invocation
-        .generate_proof(&key, &options, &URI::String(target_id))
+        .generate_proof(
+            &key,
+            &options,
+            DID_METHODS.to_resolver(),
+            &URI::String(target_id),
+        )
         .await?;
     let json = serde_json::to_string(&invocation.set_proof(proof))?;
     Ok(json)
@@ -594,7 +601,12 @@ async fn prepare_invoke_capability(
     let invocation: Invocation<Value> = serde_json::from_str(&invocation)?;
     let options: LinkedDataProofOptions = serde_json::from_str(&linked_data_proof_options)?;
     let preparation = invocation
-        .prepare_proof(&public_key, &options, &URI::String(target_id))
+        .prepare_proof(
+            &public_key,
+            &options,
+            DID_METHODS.to_resolver(),
+            &URI::String(target_id),
+        )
         .await?;
     let preparation_json = serde_json::to_string(&preparation)?;
     Ok(preparation_json)

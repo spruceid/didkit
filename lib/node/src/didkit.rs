@@ -168,6 +168,7 @@ pub fn delegate_capability(mut cx: FunctionContext) -> JsResult<JsValue> {
         rt.block_on(del.generate_proof(
             &key,
             &options,
+            DID_METHODS.to_resolver(),
             &parents.iter().map(|p| p.as_ref()).collect::<Vec<&str>>(),
         ))
     )?;
@@ -187,6 +188,7 @@ pub fn prepare_delegate_capability(mut cx: FunctionContext) -> JsResult<JsValue>
         rt.block_on(del.prepare_proof(
             &key,
             &options,
+            DID_METHODS.to_resolver(),
             &parents.iter().map(|p| p.as_ref()).collect::<Vec<&str>>(),
         ))
     )?;
@@ -222,7 +224,10 @@ pub fn invoke_capability(mut cx: FunctionContext) -> JsResult<JsValue> {
     let key = arg!(cx, 3, JWK);
 
     let rt = throws!(cx, runtime::get())?;
-    let proof = throws!(cx, rt.block_on(inv.generate_proof(&key, &options, &target)))?;
+    let proof = throws!(
+        cx,
+        rt.block_on(inv.generate_proof(&key, &options, DID_METHODS.to_resolver(), &target))
+    )?;
     let result = throws!(cx, neon_serde::to_value(&mut cx, &inv.set_proof(proof)))?;
     Ok(result)
 }
@@ -234,7 +239,10 @@ pub fn prepare_invoke_capability(mut cx: FunctionContext) -> JsResult<JsValue> {
     let key = arg!(cx, 3, JWK);
 
     let rt = throws!(cx, runtime::get())?;
-    let prep = throws!(cx, rt.block_on(inv.prepare_proof(&key, &options, &target)))?;
+    let prep = throws!(
+        cx,
+        rt.block_on(inv.prepare_proof(&key, &options, DID_METHODS.to_resolver(), &target))
+    )?;
     let result = throws!(cx, neon_serde::to_value(&mut cx, &prep))?;
     Ok(result)
 }
