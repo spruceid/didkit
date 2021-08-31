@@ -16,13 +16,12 @@ $ sudo apt install -y python3.6 python3-pip
 
 ### Python dependencies
 
-- django-qr-code
-- didkit
-- Django
 - DIDKit
+- Django
+- django-qr-code
 
 ```bash
-$ python3 -m pip install django-qr-code django didkit
+$ python3 -m pip install didkit django django-qr-code
 ```
 
 ### Building DIDKit
