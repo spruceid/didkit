@@ -26,10 +26,15 @@ $ python3 -m pip install django-qr-code django
 
 ### Building DIDKit
 
-DIDKit is used to handle credentials and presentations, since it's not yet
-publically available in PyPI manual installation is required.
+DIDKit is used to handle credentials and presentations.
 
-To do so got to the root folder of this repository and run:
+It can be installed via pip/PiPy with a single command, like this:
+
+```bash
+$ python3 -m pip install didkit
+```
+Or, if you want to customize the library in some way and build it 
+manually, simply run:
 ```bash
 $ make -C lib ../target/test/python.stamp
 ```
