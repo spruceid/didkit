@@ -19,17 +19,17 @@ $ sudo apt install -y python3.6 python3-pip
 - django-qr-code
 - didkit
 - Django
+- DIDKit
 
 ```bash
-$ python3 -m pip install django-qr-code django
+$ python3 -m pip install django-qr-code django didkit
 ```
 
 ### Building DIDKit
 
-DIDKit is used to handle credentials and presentations, since it's not yet
-publically available in PyPI manual installation is required.
+DIDKit is available in PyPI, but if you want to build it manually, go to
+the root folder of this repository and run:
 
-To do so got to the root folder of this repository and run:
 ```bash
 $ make -C lib ../target/test/python.stamp
 ```
