@@ -195,12 +195,13 @@ then
 	echo 'Unable to create challenge.'
 	exit 1
 fi
+# Create a DID Auth VP (Verifiable Presentation for DID Authentication).
+# Use a default verification method and proof purpose instead of passing
+# the -v and -p options.
 if ! didkit did-auth \
 	-k key.jwk \
 	-h "$did" \
-	-p authentication \
 	-C "$challenge" \
-	-v "$verification_method" \
 	-f "$vp_proof_format" \
 	> auth
 then
