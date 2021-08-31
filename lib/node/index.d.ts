@@ -45,4 +45,17 @@ declare module "didkit" {
   function verifyPresentation(vp: any, options: Options): VerifyResult;
 
   function DIDAuth(did: string, options: Options, key: Key): string;
+
+  function delegateCapability(del: any, options: Options, parents: string[], key: Key): any;
+  function prepareDelegateCapability(del: any, options: Options, parents: string[], key: Key): any;
+  function completeDelegateCapability(del: any, prep: any, sig: string): any;
+  function verifyDelegation(del: any, options: Options): VerifyResult;
+
+  function invokeCapability(inv: any, target: string, options: Options, key: Key): any;
+  function prepareInvokeCapability(inv: any, target: string, options: Options, key: Key): any;
+  function completeInvokeCapability(inv: any, prep: any, sig: string): any;
+  function verifyInvocation(inv: any, del: any, options: Options): VerifyResult;
+  function verifyInvocationSignature(inv: any, options: Options): VerifyResult;
+
+  function jwkFromTezosKey(key: string): Ed25519Key;
 }

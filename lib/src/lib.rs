@@ -33,6 +33,8 @@ pub use ssi::vc::Presentation as VerifiablePresentation;
 pub use ssi::vc::ProofPurpose;
 pub use ssi::vc::VerificationResult;
 pub use ssi::vc::URI;
+pub use ssi::zcap::{Delegation, Invocation};
+pub use ssi::tzkey::jwk_from_tezos_key;
 
 use core::str::FromStr;
 use serde::{Deserialize, Serialize};

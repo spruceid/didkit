@@ -4,16 +4,23 @@ use didkit::error::Error as DIDKitError;
 #[cfg(doc)]
 use didkit::error::{didkit_error_code, didkit_error_message};
 use didkit::get_verification_method;
+use didkit::jwk_from_tezos_key as tz_to_jwk;
 use didkit::runtime;
+use didkit::ProofPreparation;
 use didkit::Source;
 use didkit::VerifiableCredential;
 use didkit::VerifiablePresentation;
 use didkit::DID_METHODS;
 use didkit::JWK;
+use didkit::URI;
+use didkit::{Delegation, Invocation};
 use didkit::{JWTOrLDPOptions, LinkedDataProofOptions, ProofFormat};
 
 use crate::error::Error;
 use crate::{arg, throws};
+
+type GenericInvocation = Invocation<serde_json::Value>;
+type GenericDelegation = Delegation<serde_json::Value>;
 
 pub static VERSION: &str = env!("CARGO_PKG_VERSION");
 
@@ -146,5 +153,135 @@ pub fn verify_presentation(mut cx: FunctionContext) -> JsResult<JsValue> {
     let rt = throws!(cx, runtime::get())?;
     let result = rt.block_on(vp.verify(Some(options), DID_METHODS.to_resolver()));
     let result = throws!(cx, neon_serde::to_value(&mut cx, &result))?;
+    Ok(result)
+}
+
+pub fn delegate_capability(mut cx: FunctionContext) -> JsResult<JsValue> {
+    let del = arg!(cx, 0, GenericDelegation);
+    let options = arg!(cx, 1, LinkedDataProofOptions);
+    let parents = arg!(cx, 2, Vec<String>);
+    let key = arg!(cx, 3, JWK);
+
+    let rt = throws!(cx, runtime::get())?;
+    let proof = throws!(
+        cx,
+        rt.block_on(del.generate_proof(
+            &key,
+            &options,
+            DID_METHODS.to_resolver(),
+            &parents.iter().map(|p| p.as_ref()).collect::<Vec<&str>>(),
+        ))
+    )?;
+    let result = throws!(cx, neon_serde::to_value(&mut cx, &proof))?;
+    Ok(result)
+}
+
+pub fn prepare_delegate_capability(mut cx: FunctionContext) -> JsResult<JsValue> {
+    let del = arg!(cx, 0, GenericDelegation);
+    let options = arg!(cx, 1, LinkedDataProofOptions);
+    let parents = arg!(cx, 2, Vec<String>);
+    let key = arg!(cx, 3, JWK);
+
+    let rt = throws!(cx, runtime::get())?;
+    let prep = throws!(
+        cx,
+        rt.block_on(del.prepare_proof(
+            &key,
+            &options,
+            DID_METHODS.to_resolver(),
+            &parents.iter().map(|p| p.as_ref()).collect::<Vec<&str>>(),
+        ))
+    )?;
+    let result = throws!(cx, neon_serde::to_value(&mut cx, &prep))?;
+    Ok(result)
+}
+
+pub fn complete_delegate_capability(mut cx: FunctionContext) -> JsResult<JsValue> {
+    let del = arg!(cx, 0, GenericDelegation);
+    let prep = arg!(cx, 1, ProofPreparation);
+    let sig = arg!(cx, 2, String);
+
+    let rt = throws!(cx, runtime::get())?;
+    let proof = throws!(cx, rt.block_on(prep.complete(&sig)))?;
+    let result = throws!(cx, neon_serde::to_value(&mut cx, &del.set_proof(proof)))?;
+    Ok(result)
+}
+
+pub fn verify_delegation(mut cx: FunctionContext) -> JsResult<JsValue> {
+    let del = arg!(cx, 0, GenericDelegation);
+    let options = arg!(cx, 1, LinkedDataProofOptions);
+
+    let rt = throws!(cx, runtime::get())?;
+    let res = rt.block_on(del.verify(Some(options), DID_METHODS.to_resolver()));
+    let result = throws!(cx, neon_serde::to_value(&mut cx, &res))?;
+    Ok(result)
+}
+
+pub fn invoke_capability(mut cx: FunctionContext) -> JsResult<JsValue> {
+    let inv = arg!(cx, 0, GenericInvocation);
+    let target = arg!(cx, 1, URI);
+    let options = arg!(cx, 2, LinkedDataProofOptions);
+    let key = arg!(cx, 3, JWK);
+
+    let rt = throws!(cx, runtime::get())?;
+    let proof = throws!(
+        cx,
+        rt.block_on(inv.generate_proof(&key, &options, DID_METHODS.to_resolver(), &target))
+    )?;
+    let result = throws!(cx, neon_serde::to_value(&mut cx, &inv.set_proof(proof)))?;
+    Ok(result)
+}
+
+pub fn prepare_invoke_capability(mut cx: FunctionContext) -> JsResult<JsValue> {
+    let inv = arg!(cx, 0, GenericInvocation);
+    let target = arg!(cx, 1, URI);
+    let options = arg!(cx, 2, LinkedDataProofOptions);
+    let key = arg!(cx, 3, JWK);
+
+    let rt = throws!(cx, runtime::get())?;
+    let prep = throws!(
+        cx,
+        rt.block_on(inv.prepare_proof(&key, &options, DID_METHODS.to_resolver(), &target))
+    )?;
+    let result = throws!(cx, neon_serde::to_value(&mut cx, &prep))?;
+    Ok(result)
+}
+
+pub fn complete_invoke_capability(mut cx: FunctionContext) -> JsResult<JsValue> {
+    let inv = arg!(cx, 0, GenericInvocation);
+    let prep = arg!(cx, 1, ProofPreparation);
+    let sig = arg!(cx, 2, String);
+
+    let rt = throws!(cx, runtime::get())?;
+    let res = throws!(cx, rt.block_on(prep.complete(&sig)))?;
+    let result = throws!(cx, neon_serde::to_value(&mut cx, &inv.set_proof(res)))?;
+    Ok(result)
+}
+
+pub fn verify_invocation(mut cx: FunctionContext) -> JsResult<JsValue> {
+    let inv = arg!(cx, 0, GenericInvocation);
+    let del = arg!(cx, 1, GenericDelegation);
+    let options = arg!(cx, 2, LinkedDataProofOptions);
+
+    let rt = throws!(cx, runtime::get())?;
+    let res = rt.block_on(inv.verify(Some(options), DID_METHODS.to_resolver(), &del));
+    let result = throws!(cx, neon_serde::to_value(&mut cx, &res))?;
+    Ok(result)
+}
+
+pub fn verify_invocation_signature(mut cx: FunctionContext) -> JsResult<JsValue> {
+    let inv = arg!(cx, 0, GenericInvocation);
+    let options = arg!(cx, 1, LinkedDataProofOptions);
+
+    let rt = throws!(cx, runtime::get())?;
+    let res = rt.block_on(inv.verify_signature(Some(options), DID_METHODS.to_resolver()));
+    let result = throws!(cx, neon_serde::to_value(&mut cx, &res))?;
+    Ok(result)
+}
+
+pub fn jwk_from_tezos_key(mut cx: FunctionContext) -> JsResult<JsValue> {
+    let tzk = arg!(cx, 0, String);
+    let jwk = throws!(cx, tz_to_jwk(&tzk))?;
+    let result = throws!(cx, neon_serde::to_value(&mut cx, &jwk))?;
     Ok(result)
 }
