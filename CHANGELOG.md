@@ -5,6 +5,23 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+### Fixed
+- Improve .Jar file, swift wrapper, and gradle build process.
+- Add ssh-agent flag to CLI.
+- Improve P-256 signing.
+- Use Default with LinkedDataProofOptions.
+- Rename functions on Python package.
+- Improve iOS build process
+- Improve TypeScript support in Node.js package
+
+### Added
+- work-in-progress implementation of [ZCapLD][] in WASM.
+- updated SSI verification to include resolution step where necessary.
+- maven and cocoapods packaging.
+- added SSH public key-to-DID method.
+- Enable `did:webkey`.
+- Issue and verify JWT VCs and VPs.
+- Add JWKFromTezos function in WASM
 
 ## [0.2.1] - 2021-04-13
 ### Fixed
@@ -90,6 +107,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [vc-http-api-0.1.1]: https://w3c-ccg.github.io/vc-http-api/versions/v0.0.1/
 [vc-http-api-test-server]: https://github.com/w3c-ccg/vc-http-api/tree/b4df10d/packages/vc-http-api-test-server
 [wasm-pack]: https://rustwasm.github.io/wasm-pack/
+[zcap-ld]: https://w3c-ccg.github.io/zcap-ld/
 
 [Unreleased]: https://github.com/spruceid/didkit/compare/v0.2.1...HEAD
 [0.2.1]: https://github.com/spruceid/didkit/releases/tag/v0.2.1
