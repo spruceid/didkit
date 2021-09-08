@@ -64,6 +64,7 @@ One of `-k` (`--key-path`), `-j` (`--jwk`) or `-S` (`--ssh-agent`) is required.
 
 The following options correspond to linked data [proof options][] as specified in [ld-proofs][] and [vc-http-api][]:
 
+- `-t, --type <type>` - `type` of proof object to create.
 - `-C, --challenge <challenge>` - [challenge][] property of the proof
 - `-c, --created <created>` - [created][] property of the proof. ISO8601 datetime. Defaults to the current time.
   time.
