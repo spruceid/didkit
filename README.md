@@ -13,7 +13,7 @@ suitability across different platforms including embedded systems. DIDKit
 embeds the [`ssi`](https://github.com/spruceid/ssi) library, which contains the
 core functionality.
 
-![DIDKit core components](https://spruceid.dev/assets/images/didkit-core-components-7abba2778ffe8dde24997f305e706bd8.png)
+![DIDKit core components](https://user-images.githubusercontent.com/37127325/132885609-a5ca8019-e072-47ca-8088-1e278df7b3fe.png)
 
 ## Maturity Disclaimer
 In the v0.1 release on January 27th, 2021, DIDKit has not yet undergone a
