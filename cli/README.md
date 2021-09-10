@@ -55,6 +55,7 @@ The proof type is set automatically based on the key file provided. JWK paramete
 #### Options
 
 - `-r, --did-resolver <url>` - [DID resolver HTTP(S) endpoint][did-resolution-https-binding], used for DID resolution and DID URL dereferencing for non-built-in DID Methods. Equivalent to environmental variable `DID_RESOLVER`.
+- `-R, --did-resolver-override <url>` - [DID resolver HTTP(S) endpoint][did-resolution-https-binding], used for DID resolution and DID URL dereferencing for all DID Methods. Equivalent to environmental variable `DID_RESOLVER_OVERRIDE`.
 - `-k, --key-path <file>` - Filename of JWK file for signing. Conflicts with `-j`.
 - `-j, --jwk <jwk>` - JWK for signing. Conflicts with `-k`.
 - `-S, --ssh-agent` - Use SSH agent for signing instead of JWK private key. See the section on SSH Agent below for more info.
@@ -98,6 +99,7 @@ Corresponds to [/credentials/verify](https://w3c-ccg.github.io/vc-http-api/#oper
 #### Options
 
 - `-r, --did-resolver <url>` - [DID resolver HTTP(S) endpoint][did-resolution-https-binding], used for DID resolution and DID URL dereferencing for non-built-in DID Methods. Equivalent to environmental variable `DID_RESOLVER`.
+- `-R, --did-resolver-override <url>` - [DID resolver HTTP(S) endpoint][did-resolution-https-binding], used for DID resolution and DID URL dereferencing for all DID Methods. Equivalent to environmental variable `DID_RESOLVER_OVERRIDE`.
 
 The following options are linked data [proof options][] as specified in [ld-proofs][] and [vc-http-api][]. If there is more than one proof present, at least one must pass all the requirements passed in the options.
 
@@ -155,6 +157,7 @@ Resolve a DID to a DID document, according to [DID Resolution][did-resolution].
 - `-m, --with-metadata` - Return a the resolved DID document with resolution metadata and document metadata, in a [DID Resolution Result][did-resolution-result] object.
 - `-i <name=value>` - A [DID Resolution input metadata][did-resolution-input-metadata] property. If `=` is omitted, boolean `true` is used as the value, otherwise, value is a string. May be repeated to add multiple properties. If used multiple times with the same `name`, the values are combined into an array value to form a single property.
 - `-r, --did-resolver <url>` - [DID resolver HTTP(S) endpoint][did-resolution-https-binding], used for DID resolution and DID URL dereferencing for non-built-in DID Methods. Equivalent to environmental variable `DID_RESOLVER`.
+- `-R, --did-resolver-override <url>` - [DID resolver HTTP(S) endpoint][did-resolution-https-binding], used for DID resolution and DID URL dereferencing for all DID Methods. Equivalent to environmental variable `DID_RESOLVER_OVERRIDE`.
 
 #### Output
 Returns the resolved DID document, optionally with metadata.
@@ -177,6 +180,7 @@ Dereference a DID URL to a resource, as in [did-core - DID URL Dereferencing][di
 - `-m, --with-metadata` - Return the resulting resource with resolution metadata and document metadata, in a [DID Resolution Result][did-resolution-result] object.
 - `-i <name=value>` - A [DID URL Dereferencing input metadata][did-url-dereferencing-input-metadata] property. If `=` is omitted, boolean `true` is used as the value, otherwise, value is a string. May be repeated to add multiple properties. If used multiple times with the same `name`, the values are combined into an array value to form a single property.
 - `-r, --did-resolver <url>` - [DID resolver HTTP(S) endpoint][did-resolution-https-binding], used for DID resolution and DID URL dereferencing for non-built-in DID Methods. Equivalent to environmental variable `DID_RESOLVER`.
+- `-R, --did-resolver-override <url>` - [DID resolver HTTP(S) endpoint][did-resolution-https-binding], used for DID resolution and DID URL dereferencing for all DID Methods. Equivalent to environmental variable `DID_RESOLVER_OVERRIDE`.
 
 #### Output
 Returns the resource dereferenced from the DID URL, optionally with metadata.
