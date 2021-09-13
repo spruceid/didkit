@@ -5,23 +5,33 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
-### Fixed
-- Improve .Jar file, swift wrapper, and gradle build process.
-- Add ssh-agent flag to CLI.
-- Improve P-256 signing.
-- Use Default with LinkedDataProofOptions.
-- Rename functions on Python package.
-- Improve iOS build process
-- Improve TypeScript support in Node.js package
-
 ### Added
-- work-in-progress implementation of [ZCapLD][] in WASM.
-- updated SSI verification to include resolution step where necessary.
-- maven and cocoapods packaging.
-- added SSH public key-to-DID method.
+- Issue and verify JWT [VCs][vc-data-model] and [VPs][Verifiable Presentations].
+- Implement signing using `ssh-agent`.
+- Add [ZCAP-LD][] functions in WASM.
+- Package Android library for Maven.
+- Add CLI subcommand (`ssh-pk-to-jwk`) to convert SSH public key to JWK.
+- Implement Swift library for iOS; package for Cocoapods.
 - Enable `did:webkey`.
-- Issue and verify JWT VCs and VPs.
-- Add JWKFromTezos function in WASM
+- Add JWKFromTezos function in WASM.
+- Add Typescript type declarations to Node.js package.
+- Build dynamic library on macOS.
+
+### Changed
+- Build AAR file using Gradle.
+- Publish AAR package to GitHub.
+- Rename functions in Python package to use snake-case.
+- Update for interface changes in `ssi`.
+
+### Deprecated
+- Deprecated camelCase functions in Python package.
+
+### Removed
+- Removed Android AAR Make target (`target/test/android.stamp`).
+
+### Fixed
+- Fix various build errors.
+- Use EC compression for P-256 `did:key`.
 
 ## [0.2.1] - 2021-04-13
 ### Fixed
