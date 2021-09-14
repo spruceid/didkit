@@ -101,19 +101,6 @@ jobs:
     - name: Test binary-signing verify example
       run: examples/binary-signing/index.sh verify examples/binary-signing/hello.txt examples/binary-signing/hello-vc.jsonld
 
-    - name: Checkout vc-http-api v0.0.1
-      uses: actions/checkout@v2
-      with:
-        repository: spruceid/vc-http-api
-        path: vc-http-api
-        ref: eef5ef2bb2321e4eac3f7e82a2adb7ccd4db1982
-
-    - name: Run vc-http-api plugfest-2020 test suite
-      working-directory: vc-http-api/packages/plugfest-2020
-      run: |
-        npm i
-        ./vendors/spruce/test.sh
-
     - name: Checkout VC HTTP API Test Suite
       uses: actions/checkout@v2
       with:
