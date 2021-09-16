@@ -22,6 +22,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Publish AAR package to GitHub.
 - Rename functions in Python package to use snake-case.
 - Update for interface changes in `ssi`.
+- Update to use `ssi v0.3`
 
 ### Deprecated
 - Deprecated camelCase functions in Python package.

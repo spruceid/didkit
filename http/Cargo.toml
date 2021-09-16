@@ -31,7 +31,7 @@ serde_urlencoded = "0.7"
 hyper = { version = "0.14", features = ["server", "client", "http1", "http2", "stream"] }
 tower-service = "0.3"
 futures-util = { version = "0.3", default-features = false }
-ssi = { version = "0.2", path = "../../ssi", default-features = false }
+ssi = { version = "0.3", path = "../../ssi", default-features = false }
 percent-encoding = "2.1"
 
 [dev-dependencies]
