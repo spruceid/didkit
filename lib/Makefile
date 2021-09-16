@@ -159,32 +159,17 @@ $(TARGET)/test/node.stamp: $(NODE_SRC) | $(TARGET)/test
 ## WASM
 
 WEB_SRC=web/Cargo.toml $(wildcard web/src/*.rs)
-WASM_SRC=web/loader/wasm/package.json web/loader/wasm/webpack.config.js web/loader/wasm/didkit-loader.js $(WEB_SRC)
 
 .PHONY: install-wasm-pack
 install-wasm-pack:
-	 curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh 
+	 curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh
 
-$(TARGET)/test/wasm.stamp: $(WASM_SRC) | $(TARGET)/test
-	cd web && wasm-pack build --target web --out-dir pkg/wasm
-	npm --prefix web/loader/wasm install
-	npm --prefix web/loader/wasm run build
+$(TARGET)/test/wasm.stamp: $(WEB_SRC) | $(TARGET)/test
+	cd web && wasm-pack build --target web --out-dir pkg/web
+	echo "No test was run"
+	# TODO write automated tests for at least Node.js, and maybe for the bundled output format.
+	# The existing web app installation didn't really make sense as the (dependency) installation has changed.
 	touch $@
-
-## WASM-ASM-JS
-
-ASM_SRC=web/loader/asmjs/package.json web/loader/asmjs/webpack.config.js $(WEB_SRC)
-
-BINARYEN_ROOT?="$(HOME)/binaryen"
-
-$(TARGET)/test/asmjs.stamp: $(ASM_SRC) | $(TARGET)/test
-	cd web && wasm-pack build --target bundler --out-dir pkg/asmjs
-	cd web/pkg/asmjs && $(BINARYEN_ROOT)/bin/wasm2js --pedantic -o didkit_wasm_bg1.js didkit_wasm_bg.wasm
-	cd web/loader/asmjs && ./repack.sh
-	npm --prefix web/loader/asmjs install
-	npm --prefix web/loader/asmjs run build
-	npm --prefix web/loader/asmjs run test
-	touch $@ 
 
 ## Cleanup
 
