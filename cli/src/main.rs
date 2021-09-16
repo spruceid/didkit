@@ -458,6 +458,8 @@ fn main() {
                 ProofFormat::JWT => {
                     let mut jwt = String::new();
                     credential_reader.read_to_string(&mut jwt).unwrap();
+                    // Trim off whitespace that may have been added by a text editor.
+                    jwt = jwt.trim().to_string();
                     rt.block_on(VerifiableCredential::verify_jwt(
                         &jwt,
                         Some(options),
@@ -543,6 +545,8 @@ fn main() {
                 ProofFormat::JWT => {
                     let mut jwt = String::new();
                     presentation_reader.read_to_string(&mut jwt).unwrap();
+                    // Trim off whitespace that may have been added by a text editor.
+                    jwt = jwt.trim().to_string();
                     rt.block_on(VerifiablePresentation::verify_jwt(
                         &jwt,
                         Some(options),
