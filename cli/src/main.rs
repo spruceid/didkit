@@ -31,12 +31,14 @@ pub enum DIDKit {
     },
     /// Output a DID for a given JWK and DID method name or pattern.
     KeyToDID {
+        /// DID method id or pattern. e.g. `key`, `tz`, or `pkh:tz`
         method_pattern: String,
         #[structopt(flatten)]
         key: KeyArg,
     },
     /// Output a verificationMethod DID URL for a JWK and DID method name/pattern
     KeyToVerificationMethod {
+        /// DID method id or pattern. e.g. `key`, `tz`, or `pkh:tz`
         method_pattern: Option<String>,
         #[structopt(flatten)]
         key: KeyArg,
