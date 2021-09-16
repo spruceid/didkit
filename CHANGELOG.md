@@ -28,6 +28,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Removed
 - Removed Android AAR Make target (`target/test/android.stamp`).
+- Removed `did:sol` implementation until it can be made conformant with specification.
 
 ### Fixed
 - Fix various build errors.

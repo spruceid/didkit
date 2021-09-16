@@ -33,7 +33,7 @@ did-method-key = { version = "0.1", path = "../../ssi/did-key" }
 did-tz = { version = "0.1", path = "../../ssi/did-tezos", default-features = false }
 did-ethr = { version = "0.0.1", path = "../../ssi/did-ethr" }
 did-pkh = { version = "0.0.1", path = "../../ssi/did-pkh" }
-did-sol = { version = "0.0.1", path = "../../ssi/did-sol" }
+#did-sol = { version = "0.0.1", path = "../../ssi/did-sol" }
 did-web = { version = "0.1", path = "../../ssi/did-web" }
 did-webkey = { version = "0.1", path = "../../ssi/did-webkey" }
 did-onion = { version = "0.1", path = "../../ssi/did-onion" }
