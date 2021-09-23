@@ -1,0 +1,3 @@
+[submodule "lib/didkit-go"]
+	path = lib/didkit-go
+	url = https://github.com/spruceid/didkit-go.git
