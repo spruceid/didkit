@@ -1,3 +1,4 @@
 [submodule "lib/didkit-go"]
 	path = lib/didkit-go
 	url = git@github.com:spruceid/didkit-go
+	branch = main
