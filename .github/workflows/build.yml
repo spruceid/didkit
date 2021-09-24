@@ -170,8 +170,8 @@ jobs:
 
     - name: Test Go Package
       uses: actions/setup-go@v2
-        with:
-          go-version: '^1.13.1'
+      with:
+        go-version: '^1.13.1'
       run: |
         cd lib/didkit-go
         go test
