@@ -23,6 +23,7 @@ jobs:
       uses: actions/checkout@v2
       with:
         path: didkit
+        submodules: true
 
     - name: Checkout SSI library
       uses: actions/checkout@v2
@@ -166,6 +167,16 @@ jobs:
 
     - name: Test Python Package
       run: make -C lib install-python
+
+    - name: Test Go Package
+      - uses: actions/setup-go@v2
+        with:
+          go-version: '^1.13.1'
+      - run: |
+        cd lib/didkit-go
+        go test
+        cd ../..
+
 
   build_ios:
     runs-on: macos-latest
