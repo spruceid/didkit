@@ -1,4 +1,0 @@
-build
-dist
-*.egg*
-.mypy_cache
