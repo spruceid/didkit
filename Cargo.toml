@@ -5,7 +5,8 @@ members = [
   "lib",
   "lib/cbindings",
   "lib/node",
-  "lib/web"
+  "lib/web",
+  "lib/python"
 ]
 
 default-members = [

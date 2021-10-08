@@ -1,0 +1,17 @@
+[tool.poetry]
+name = "pydidkit_tests"
+version = "0.1.0"
+description = "Python tests for DIDKit"
+authors = ["Simon Bihel <simon.bihel@spruceid.com>"]
+
+[tool.poetry.dependencies]
+python = "^3.9"
+pydidkit = {path = "../../../target/wheels/pydidkit-0.3.0-cp39-cp39-linux_x86_64.whl"}
+pytest = "^6.2.5"
+pytest-asyncio = "^0.15.1"
+
+[tool.poetry.dev-dependencies]
+
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"

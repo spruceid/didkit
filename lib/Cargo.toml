@@ -21,6 +21,7 @@ include = [
 [features]
 default = ["ring", "secp256k1", "p256"]
 ring = ["ssi/ring"]
+no-ring = ["ssi/ed25519-dalek", "ssi/sha2", "ssi/rsa", "ssi/rand"]
 wasm = []
 http-did = ["ssi/http-did"]
 secp256k1 = ["ssi/libsecp256k1", "did-tz/secp256k1", "did-method-key/secp256k1"]
