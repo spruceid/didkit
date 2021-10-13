@@ -35,17 +35,10 @@ python3 -m pip install dist/didkit-`cat setup.cfg | grep version | cut -d' ' -f3
 ```
 
 ## Maturity Disclaimer
-In the v0.1 release on January 27th, 2021, DIDKit has not yet undergone a
-formal security audit and to desired levels of confidence for suitable use in
-production systems. This implementation is currently suitable for exploratory
-work and experimentation only. We welcome feedback on the usability,
-architecture, and security of this implementation and are committed to a
-conducting a formal audit with a reputable security firm before the v1.0
-release.
 
-We are setting up a process to accept contributions. Please feel free to open
-issues or PRs in the interim, but we cannot merge external changes until this
-process is in place.
-
-We are also in the process of creating crates.io entries for the DIDKit and SSI
-packages.
+Please note: this readme documents an early-stage open-source product ported 
+manually to python, and we are still incorporating feedback from our first 
+comprehensive third-party code audit. These artefacts are presented as 
+functional "betas" for experimentation and to show the direction of the 
+project (inviting proposals for changes of direction, even!). They are not,
+ however, intended for transacting real-world business yet.

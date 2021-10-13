@@ -1,10 +1,9 @@
-FROM ekidd/rust-musl-builder as builder
+FROM clux/muslrust as builder
 
-ADD --chown=rust:rust . /didkit
-ADD --chown=rust:rust ./ssi /ssi
+ADD . /didkit
+ADD ./ssi /ssi
 WORKDIR /didkit/cli
 
-ENV CARGO_NET_GIT_FETCH_WITH_CLI=true
 RUN cargo build --release
 
 FROM alpine

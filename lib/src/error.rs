@@ -27,6 +27,7 @@ pub enum Error {
     UnableToGenerateDID,
     UnknownDIDMethod,
     UnableToGetVerificationMethod,
+    UnknownProofFormat(String),
 
     #[doc(hidden)]
     __Nonexhaustive,
@@ -89,6 +90,7 @@ impl fmt::Display for Error {
             Error::UnableToGenerateDID => write!(f, "Unable to generate DID"),
             Error::UnknownDIDMethod => write!(f, "Unknown DID method"),
             Error::UnableToGetVerificationMethod => write!(f, "Unable to get verification method"),
+            Error::UnknownProofFormat(format) => write!(f, "Unknown proof format: {}", format),
             _ => unreachable!(),
         }
     }

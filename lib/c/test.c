@@ -31,9 +31,9 @@ int main() {
 
     // Get verificationMethod for key
     const char *verification_method = didkit_key_to_verification_method("key", key);
-    if (verification_method == NULL) errx(1, "key to did: %s", didkit_error_message());
+    if (verification_method == NULL) errx(1, "key to vm: %s", didkit_error_message());
 
-    // Issue Credential
+    // Issue Credential (LDP)
     char credential[0x1000];
     snprintf(credential, sizeof(credential), "{"
         "   \"@context\": \"https://www.w3.org/2018/credentials/v1\","
@@ -50,14 +50,30 @@ int main() {
             "  \"proofPurpose\": \"assertionMethod\","
             "  \"verificationMethod\": \"%s\""
             "}", verification_method);
-    const char *vc = didkit_vc_issue_credential(credential, vc_options, key);
-    if (vc == NULL) errx(1, "issue credential: %s", didkit_error_message());
+    const char *vc_ldp = didkit_vc_issue_credential(credential, vc_options, key);
+    if (vc_ldp == NULL) errx(1, "issue credential (LDP): %s", didkit_error_message());
 
-    // Verify Credential
+    // Issue credential (JWT)
+    snprintf(vc_options, sizeof vc_options, "{"
+            "  \"proofPurpose\": \"assertionMethod\","
+            "  \"proofFormat\": \"jwt\","
+            "  \"verificationMethod\": \"%s\""
+            "}", verification_method);
+    const char *vc_jwt = didkit_vc_issue_credential(credential, vc_options, key);
+    if (vc_jwt == NULL) errx(1, "issue credential (JWT): %s", didkit_error_message());
+
+    // Verify Credential (LDP)
     const char *vc_verify_options = "{\"proofPurpose\": \"assertionMethod\"}";
-    const char *res = didkit_vc_verify_credential(vc, vc_verify_options);
-    if (res == NULL) errx(1, "verify credential: %s", didkit_error_message());
-    if (strstr(res, "\"errors\":[]") == NULL) errx(1, "verify credential result: %s", res);
+    const char *res = didkit_vc_verify_credential(vc_ldp, vc_verify_options);
+    if (res == NULL) errx(1, "verify credential (LDP): %s", didkit_error_message());
+    if (strstr(res, "\"errors\":[]") == NULL) errx(1, "verify credential (LDP) result: %s", res);
+    didkit_free_string(res);
+
+    // Verify Credential (JWT)
+    vc_verify_options = "{\"proofFormat\": \"jwt\"}";
+    res = didkit_vc_verify_credential(vc_jwt, vc_verify_options);
+    if (res == NULL) errx(1, "verify credential (JWT): %s", didkit_error_message());
+    if (strstr(res, "\"errors\":[]") == NULL) errx(1, "verify credential (JWT) result: %s", res);
     didkit_free_string(res);
 
     // Issue Presentation
@@ -68,7 +84,7 @@ int main() {
         "   \"type\": [\"VerifiablePresentation\"],"
         "   \"holder\": \"%s\","
         "   \"verifiableCredential\": %s"
-        "}", did, vc);
+        "}", did, vc_ldp);
     char vp_options[0x1000];
     snprintf(vp_options, sizeof vp_options, "{"
             "  \"proofPurpose\": \"authentication\","
@@ -85,7 +101,7 @@ int main() {
     didkit_free_string(res);
 
     didkit_free_string(vp);
-    didkit_free_string(vc);
+    didkit_free_string(vc_ldp);
 
     // Resolve DID
     const char *did_doc = didkit_did_resolve(did, NULL);
@@ -99,7 +115,7 @@ int main() {
     if (strncmp(result, "[{", 2) != 0) errx(1, "DID dereferencing result: %s", result);
     didkit_free_string(result);
 
-    // Generate a DIDAuth Verifiable Presentation.
+    // Generate a DIDAuth Verifiable Presentation (LDP).
     // Prepare challenge and domain for VP request
     srand(time(NULL));
     int challenge = rand();
@@ -110,18 +126,42 @@ int main() {
             "  \"challenge\": \"%d\""
             "}", verification_method, challenge);
     vp = didkit_did_auth(did, vp_options, key);
-    if (vp == NULL) errx(1, "DIDAuth: %s", didkit_error_message());
+    if (vp == NULL) errx(1, "DIDAuth (LDP): %s", didkit_error_message());
 
-    // Verify Presentation
+    // Generate a DIDAuth Verifiable Presentation (JWT).
+    int challenge_jwt = rand();
+    snprintf(vp_options, sizeof vp_options, "{"
+            "  \"proofPurpose\": \"authentication\","
+            "  \"verificationMethod\": \"%s\","
+            "  \"proofFormat\": \"jwt\","
+            "  \"challenge\": \"%d\""
+            "}", verification_method, challenge_jwt);
+    const char *vp_jwt = didkit_did_auth(did, vp_options, key);
+    if (vp_jwt == NULL) errx(1, "DIDAuth (JWT): %s", didkit_error_message());
+
+    // Verify DIDAuth Presentation (LDP)
     char didauth_vp_verify_options[0x1000];
     snprintf(vp_options, sizeof vp_options, "{"
             "  \"proofPurpose\": \"authentication\","
             "  \"challenge\": \"%d\""
             "}", challenge);
-    res = didkit_vc_verify_presentation(vp, vp_verify_options);
-    if (res == NULL) errx(1, "verify DIDAuth: %s", didkit_error_message());
-    if (strstr(res, "\"errors\":[]") == NULL) errx(1, "verify DIDAuth result: %s", res);
+    res = didkit_vc_verify_presentation(vp, vp_options);
+    if (res == NULL) errx(1, "verify DIDAuth (LDP): %s", didkit_error_message());
+    if (strstr(res, "\"errors\":[]") == NULL) errx(1, "verify DIDAuth result (LDP): %s", res);
     didkit_free_string(res);
+    didkit_free_string(vp);
+
+    // Verify DIDAuth Presentation (JWT)
+    snprintf(vp_options, sizeof vp_options, "{"
+            "  \"proofPurpose\": \"authentication\","
+            "  \"proofFormat\": \"jwt\","
+            "  \"challenge\": \"%d\""
+            "}", challenge_jwt);
+    res = didkit_vc_verify_presentation(vp_jwt, vp_options);
+    if (res == NULL) errx(1, "verify DIDAuth (JWT): %s", didkit_error_message());
+    if (strstr(res, "\"errors\":[]") == NULL) errx(1, "verify DIDAuth result (JWT): %s", res);
+    didkit_free_string(res);
+    didkit_free_string(vp_jwt);
 
     didkit_free_string(verification_method);
     didkit_free_string(did);

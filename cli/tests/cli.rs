@@ -5,7 +5,7 @@ use std::process::{Command, Stdio};
 static BIN: &str = env!("CARGO_BIN_EXE_didkit");
 
 const DID_KEY_K256: &'static str = "did:key:zQ3shokFTS3brHcDQrn82RUDfCZESWL1ZdCEJwekUDPQiYBme";
-const DID_KEY_P256: &'static str = "did:key:zrurwcJZss4ruepVNu1H3xmSirvNbzgBk9qrCktB6kaewXnJAhYWwtP3bxACqBpzjZdN7TyHNzzGGSSH5qvZsSDir9z";
+const DID_KEY_P256: &'static str = "did:key:zDnaerDaTF5BXEavCrfRZEk316dpbLsfPDZ3WJ5hRTPFU2169";
 
 #[test]
 fn generate_key() {
@@ -219,6 +219,39 @@ fn didkit_cli() {
     verify_stdin.write_all(&vp).unwrap();
     let verify_output = verify_presentation.wait_with_output().unwrap();
     assert!(verify_output.status.success());
+
+    // Convert JSON-LD to RDF N-Quads with URDNA2015
+    let mut to_rdf = Command::new(BIN)
+        .args(&["to-rdf-urdna2015"])
+        .stdin(Stdio::piped())
+        .stdout(Stdio::piped())
+        .stderr(Stdio::inherit())
+        .spawn()
+        .unwrap();
+    let jsonld = r#"{
+      "@context": {
+        "a": {
+          "@id": "example:foo:a",
+          "@type": "example:foo:something"
+        },
+        "b": "example:bar:b",
+        "c": "example:cat"
+      },
+      "a": "aaa",
+      "b": {
+        "c": "AAA"
+      }
+    }"#;
+    let rdf_expected = r#"_:c14n0 <example:bar:b> _:c14n1 .
+_:c14n0 <example:foo:a> "aaa"^^<example:foo:something> .
+_:c14n1 <example:cat> "AAA" .
+"#;
+    let to_rdf_stdin = to_rdf.stdin.as_mut().unwrap();
+    to_rdf_stdin.write_all(jsonld.as_bytes()).unwrap();
+    let to_rdf_output = to_rdf.wait_with_output().unwrap();
+    assert!(to_rdf_output.status.success());
+    let rdf = String::from_utf8(to_rdf_output.stdout).unwrap();
+    assert_eq!(rdf, rdf_expected);
 }
 
 #[tokio::test]

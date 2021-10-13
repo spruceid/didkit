@@ -1,20 +1,20 @@
 name: didkit
 description: A new flutter plugin project.
-version: 0.0.1
+version: 0.0.2
 author: Spruce Systems, Inc.
 homepage: https://github.com/spruceid/didkit/tree/main/lib/flutter
 
 environment:
-  sdk: ">=2.11.0 <3.0.0"
+  sdk: ">=2.12.0 <3.0.0"
 
 dependencies:
-  ffi: ^0.3.0-nullsafety.1
+  ffi: ^1.0.0
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
-  pedantic: ^1.10.0
-  uuid: ^3.0.0-nullsafety.0
+  pedantic: ^1.11.0
+  uuid: ^3.0.4
 
 flutter:
   plugin:

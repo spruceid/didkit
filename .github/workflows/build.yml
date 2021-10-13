@@ -29,7 +29,7 @@ jobs:
       with:
         repository: spruceid/ssi
         path: ssi
-        ref: 65036c6dfa005457cded27ee1358997b55da1924
+        ref: c66972290377c6b4bf9b63b2dfdc047dbdcfd989
         submodules: true
 
     - name: Cache Cargo registry and build artifacts
@@ -52,6 +52,9 @@ jobs:
     - name: Test CLI
       run: cli/tests/example.sh
 
+    - name: Test CLI with ssh-agent
+      run: cli/tests/ssh-agent.sh
+
     - name: Test HTTP server
       run: http/tests/example.sh
 
@@ -65,6 +68,39 @@ jobs:
         DID_METHOD: tz
       run: http/tests/example.sh
 
+    - name: Test CLI (JWT)
+      env:
+        PROOF_FORMAT: jwt
+      run: cli/tests/example.sh
+
+    - name: Test CLI (JWT VC in LDP VP)
+      env:
+        VC_PROOF_FORMAT: jwt
+      run: cli/tests/example.sh
+
+    - name: Test CLI (LDP VC in JWT VP)
+      env:
+        VP_PROOF_FORMAT: jwt
+      run: cli/tests/example.sh
+
+    - name: Test HTTP server (JWT)
+      env:
+        PROOF_FORMAT: jwt
+      run: http/tests/example.sh
+
+    - name: Test HTTP server (JWT VC in LDP VP)
+      env:
+        VC_PROOF_FORMAT: jwt
+      run: cli/tests/example.sh
+
+    - name: Test HTTP server (LDP VC in JWT VP)
+      env:
+        VP_PROOF_FORMAT: jwt
+      run: cli/tests/example.sh
+
+    - name: Test binary-signing verify example
+      run: examples/binary-signing/index.sh verify examples/binary-signing/hello.txt examples/binary-signing/hello-vc.jsonld
+
     - name: Checkout vc-http-api v0.0.1
       uses: actions/checkout@v2
       with:
@@ -72,20 +108,20 @@ jobs:
         path: vc-http-api
         ref: eef5ef2bb2321e4eac3f7e82a2adb7ccd4db1982
 
-    - name: Run vc-http-api test suite
+    - name: Run vc-http-api plugfest-2020 test suite
       working-directory: vc-http-api/packages/plugfest-2020
       run: |
         npm i
         ./vendors/spruce/test.sh
 
-    - name: Checkout vc-http-api v0.0.2
+    - name: Checkout VC HTTP API Test Suite
       uses: actions/checkout@v2
       with:
-        repository: spruceid/vc-http-api
-        path: didkit/http/tests/vc-http-api/vc-http-api
-        ref: df9d1bf9540771d114f5b4c4348777378a3f0447
+        repository: w3c-ccg/vc-http-api-test-suite
+        path: didkit/http/tests/vc-http-api/vc-http-api-test-suite
+        ref: 163603de2d36289f5220029fd1ed410a969bd057
 
-    - name: Run vc-http-api v0.0.2 test suite
+    - name: Run VC HTTP API Test Suite
       working-directory: didkit/http/tests/vc-http-api
       run: |
         npm install
@@ -113,11 +149,11 @@ jobs:
     - name: Test C FFI
       run: make -C lib ../target/test/c.stamp
 
-    - name: Test Node.js package
+    - name: Test Node.js (Neon) package
       run: make -C lib ../target/test/node.stamp
 
     - name: Test WASM package
-      run: make -C lib ../target/test/wasm.stamp 
+      run: make -C lib ../target/test/wasm.stamp
 
     - name: Test JNI
       run: make -C lib ../target/test/java.stamp
@@ -126,7 +162,40 @@ jobs:
       run: make -C lib ../target/test/flutter.stamp
 
     - name: Build Android Archive
-      run: make -C lib ../target/test/aar.stamp
+      run: make -C lib ../target/test/android.stamp
 
     - name: Test Python Package
       run: make -C lib install-python
+
+  build_ios:
+    runs-on: macos-latest
+    steps:
+    - name: Checkout DIDKit repository
+      uses: actions/checkout@v2
+      with:
+        path: didkit
+
+    - name: Checkout SSI library
+      uses: actions/checkout@v2
+      with:
+        repository: spruceid/ssi
+        path: ssi
+        ref: c66972290377c6b4bf9b63b2dfdc047dbdcfd989
+        submodules: true
+
+    - name: Cache Cargo registry and build artifacts
+      uses: actions/cache@v2
+      with:
+        path: |
+          ~/.cargo/registry
+          ~/.cargo/git
+          target
+        key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.toml', 'lib/Makefile', '**.rs') }}
+        restore-keys: |
+          ${{ runner.os }}-cargo-
+
+    - name: Install Rust iOS targets
+      run: make -C lib install-rustup-ios
+
+    - name: Build iOS Library
+      run: make -C lib ../target/test/ios.stamp

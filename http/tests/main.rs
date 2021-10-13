@@ -18,7 +18,7 @@ const DID_KEY: &'static str = "did:key:z6MkiVpwA241guqtKWAkohHpcAry7S94QQb6ukW3G
 const VERIFICATION_METHOD: &'static str = "did:key:z6MkiVpwA241guqtKWAkohHpcAry7S94QQb6ukW3GcCsugbK#z6MkiVpwA241guqtKWAkohHpcAry7S94QQb6ukW3GcCsugbK";
 
 const DID_KEY_K256: &'static str = "did:key:zQ3shokFTS3brHcDQrn82RUDfCZESWL1ZdCEJwekUDPQiYBme";
-const DID_KEY_P256: &'static str = "did:key:zrurwcJZss4ruepVNu1H3xmSirvNbzgBk9qrCktB6kaewXnJAhYWwtP3bxACqBpzjZdN7TyHNzzGGSSH5qvZsSDir9z";
+const DID_KEY_P256: &'static str = "did:key:zDnaerDaTF5BXEavCrfRZEk316dpbLsfPDZ3WJ5hRTPFU2169";
 
 const ISSUE_CRED_REQ: &str = r#"{
     "credential": {

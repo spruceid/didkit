@@ -1,0 +1,16 @@
+PODS:
+  - DIDKit (0.2.1)
+
+DEPENDENCIES:
+  - DIDKit (from `../../../`)
+
+EXTERNAL SOURCES:
+  DIDKit:
+    :path: "../../../"
+
+SPEC CHECKSUMS:
+  DIDKit: f5e08817517c13c434c4a96ca1f718ecf3b9d024
+
+PODFILE CHECKSUM: 828b53c88ca10c84af8a285a8d6df204b3e6b76d
+
+COCOAPODS: 1.10.1

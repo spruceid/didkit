@@ -55,7 +55,12 @@ The proof type is set automatically based on the key file provided. JWK paramete
 #### Options
 
 - `-r, --did-resolver <url>` - [DID resolver HTTP(S) endpoint][did-resolution-https-binding], used for DID resolution and DID URL dereferencing for non-built-in DID Methods. Equivalent to environmental variable `DID_RESOLVER`.
-- `-k, --key-path <key>` (required, conflicts with jwk) - Filename of JWK for signing.
+- `-R, --did-resolver-override <url>` - [DID resolver HTTP(S) endpoint][did-resolution-https-binding], used for DID resolution and DID URL dereferencing for all DID Methods. Equivalent to environmental variable `DID_RESOLVER_OVERRIDE`.
+- `-k, --key-path <file>` - Filename of JWK file for signing. Conflicts with `-j`.
+- `-j, --jwk <jwk>` - JWK for signing. Conflicts with `-k`.
+- `-S, --ssh-agent` - Use SSH agent for signing instead of JWK private key. See the section on SSH Agent below for more info.
+
+One of `-k` (`--key-path`), `-j` (`--jwk`) or `-S` (`--ssh-agent`) is required.
 
 The following options correspond to linked data [proof options][] as specified in [ld-proofs][] and [vc-http-api][]:
 
@@ -63,7 +68,6 @@ The following options correspond to linked data [proof options][] as specified i
 - `-c, --created <created>` - [created][] property of the proof. ISO8601 datetime. Defaults to the current time.
   time.
 - `-d, --domain <domain>` - [domain][] property of the proof
-- `-j, --jwk <jwk>` (required, conflicts with key-path) - JWK for signing.
 - `-p, --proof-purpose <proof-purpose>` [proofPurpose][] property of the proof.
 - `-v, --verification-method <verification-method>` [verificationMethod][]
   property of the proof. URI for proof verification information, e.g. a public key identifier.
@@ -72,6 +76,19 @@ The following options correspond to linked data [proof options][] as specified i
 
 - `RSA`
 - `OKP` (`curve`: `Ed25519`)
+
+#### SSH Agent
+
+DIDKit can use [SSH Agent][] for signing, as an alternative to signing with a JWK private key.
+If the `-S` (`--ssh-agent`) CLI option is used, DIDKit will attempt to connect to a local instance of `ssh-agent`, via the [UNIX socket][] refered to by environmental variable `SSH_AUTH_SOCK`, following the [SSH Agent Protocol][].
+
+##### Key selection
+
+When `-S` (`--ssh-agent`) is used, the JWK referred to by `-k` (`--key-file`) or `-j` (`--jwk`) is treated as a public key and used to select which key from SSH Agent to use for signing. If no JWK option is used, then the SSH Agent is expected to have only one key, and that key is used for signing.
+
+[SSH Agent]: https://en.wikipedia.org/wiki/Ssh-agent
+[UNIX socket]: https://en.wikipedia.org/wiki/Unix_domain_socket
+[SSH Agent Protocol]: https://datatracker.ietf.org/doc/html/draft-miller-ssh-agent-04
 
 ### `didkit vc-verify-credential`
 
@@ -82,6 +99,7 @@ Corresponds to [/credentials/verify](https://w3c-ccg.github.io/vc-http-api/#oper
 #### Options
 
 - `-r, --did-resolver <url>` - [DID resolver HTTP(S) endpoint][did-resolution-https-binding], used for DID resolution and DID URL dereferencing for non-built-in DID Methods. Equivalent to environmental variable `DID_RESOLVER`.
+- `-R, --did-resolver-override <url>` - [DID resolver HTTP(S) endpoint][did-resolution-https-binding], used for DID resolution and DID URL dereferencing for all DID Methods. Equivalent to environmental variable `DID_RESOLVER_OVERRIDE`.
 
 The following options are linked data [proof options][] as specified in [ld-proofs][] and [vc-http-api][]. If there is more than one proof present, at least one must pass all the requirements passed in the options.
 
@@ -139,6 +157,7 @@ Resolve a DID to a DID document, according to [DID Resolution][did-resolution].
 - `-m, --with-metadata` - Return a the resolved DID document with resolution metadata and document metadata, in a [DID Resolution Result][did-resolution-result] object.
 - `-i <name=value>` - A [DID Resolution input metadata][did-resolution-input-metadata] property. If `=` is omitted, boolean `true` is used as the value, otherwise, value is a string. May be repeated to add multiple properties. If used multiple times with the same `name`, the values are combined into an array value to form a single property.
 - `-r, --did-resolver <url>` - [DID resolver HTTP(S) endpoint][did-resolution-https-binding], used for DID resolution and DID URL dereferencing for non-built-in DID Methods. Equivalent to environmental variable `DID_RESOLVER`.
+- `-R, --did-resolver-override <url>` - [DID resolver HTTP(S) endpoint][did-resolution-https-binding], used for DID resolution and DID URL dereferencing for all DID Methods. Equivalent to environmental variable `DID_RESOLVER_OVERRIDE`.
 
 #### Output
 Returns the resolved DID document, optionally with metadata.
@@ -161,6 +180,7 @@ Dereference a DID URL to a resource, as in [did-core - DID URL Dereferencing][di
 - `-m, --with-metadata` - Return the resulting resource with resolution metadata and document metadata, in a [DID Resolution Result][did-resolution-result] object.
 - `-i <name=value>` - A [DID URL Dereferencing input metadata][did-url-dereferencing-input-metadata] property. If `=` is omitted, boolean `true` is used as the value, otherwise, value is a string. May be repeated to add multiple properties. If used multiple times with the same `name`, the values are combined into an array value to form a single property.
 - `-r, --did-resolver <url>` - [DID resolver HTTP(S) endpoint][did-resolution-https-binding], used for DID resolution and DID URL dereferencing for non-built-in DID Methods. Equivalent to environmental variable `DID_RESOLVER`.
+- `-R, --did-resolver-override <url>` - [DID resolver HTTP(S) endpoint][did-resolution-https-binding], used for DID resolution and DID URL dereferencing for all DID Methods. Equivalent to environmental variable `DID_RESOLVER_OVERRIDE`.
 
 #### Output
 Returns the resource dereferenced from the DID URL, optionally with metadata.
