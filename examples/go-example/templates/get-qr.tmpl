@@ -1,0 +1,16 @@
+<html>
+    <head>
+        <title> Credential offer </title>
+        <link href="https://unpkg.com/tailwindcss@^2/dist/tailwind.min.css" rel="stylesheet">
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    </head>
+    <body class="flex flex-col items-center w-screen h-screen justify-center">
+        <h1 class="text-4xl font-bold">Credential Offer</h1>
+        <h3 class="text-xl italic mb-20">Scan with your credential wallet</h3>
+        <a href="/offer{{.url}}">
+            <img src="data:image/png;base64,{{.qr}}" />
+        </a>
+        <a href="/index.html">BACK</a>
+    </body>
+</html>
