@@ -28,3 +28,5 @@ And update the library path
 ```bash
 $ go mod edit -replace=github.com/spruceid/didkit-go=../../lib/didkit-go
 ```
+
+Create your `.env` following the `.env.example` and you will be ready to GO!
