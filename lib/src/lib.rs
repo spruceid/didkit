@@ -44,10 +44,10 @@ use serde::{Deserialize, Serialize};
 #[serde(rename_all = "camelCase")]
 #[serde(deny_unknown_fields)]
 pub struct JWTOrLDPOptions {
-    /// Linked data proof options from vc-http-api
+    /// Linked data proof options from vc-api (vc-http-api)
     #[serde(flatten)]
     pub ldp_options: LinkedDataProofOptions,
-    /// Proof format (not standard in vc-http-api)
+    /// Proof format (not standard in vc-api)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub proof_format: Option<ProofFormat>,
 }

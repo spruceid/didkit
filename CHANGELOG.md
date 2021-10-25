@@ -95,7 +95,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Deriving [did:key][] and [did:tz][] DIDs from Ed25519 keypairs.
 - Ed25519 keypair generation.
 - CLI (`didkit`).
-- HTTP server (`didkit-http`) implementing [vc-http-api `0.0.1`][vc-http-api-0.1.1].
+- HTTP server (`didkit-http`) implementing [vc-http-api `0.0.1`][vc-http-api-0.0.1].
 - C shared library (`didkit.so`).
 - Java package (`didkit.jar`).
 - Android library (`didkit.aar`).
@@ -119,7 +119,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [jsp]: https://www.oracle.com/java/technologies/jspt.html
 [ssi-0.2.0-pre]: https://github.com/spruceid/ssi/compare/v0.1.0...1ecb3d90a0fdd06a4ae3b34064a908918b51a230
 [vc-data-model]: https://w3c.github.io/vc-data-model/
-[vc-http-api-0.1.1]: https://w3c-ccg.github.io/vc-http-api/versions/v0.0.1/
+[vc-http-api-0.0.1]: https://w3c-ccg.github.io/vc-api/versions/v0.0.1/
 [vc-http-api-test-server]: https://github.com/w3c-ccg/vc-http-api/tree/b4df10d/packages/vc-http-api-test-server
 [wasm-pack]: https://rustwasm.github.io/wasm-pack/
 [zcap-ld]: https://w3c-ccg.github.io/zcap-ld/

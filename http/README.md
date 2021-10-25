@@ -44,7 +44,7 @@ library. Struct `didkit_http::DIDKitHTTPMakeSvc` implements a Tower
 
 ### Verifiable Credentials and Verifiable Presentations
 
-The following routes implement [W3C CCG's VC HTTP API (vc-http-api)][vc-http-api] [v0.0.1][vc-http-api-0.0.1]. POST bodies should be `application/json`. Output will be `application/json` on success; on error it will be either `application/json` or plain text. For more details, see `vc-http-api`.
+The following routes implement [W3C CCG's VC (HTTP) API (vc-http-api)][vc-api] [v0.0.1][vc-http-api-0.0.1]. POST bodies should be `application/json`. Output will be `application/json` on success; on error it will be either `application/json` or plain text. For more details, see [vc-api][].
 
 #### POST `/credentials/issue`
 
@@ -71,6 +71,6 @@ The following route implements the [DID Resolution HTTP(S) Binding][did-http].
 Resolve a DID to a DID document, or dereference a DID URL to a resource. Parameter `<uri>` is the DID or DID URL to resolve/dereference.
 
 [did-http]: https://w3c-ccg.github.io/did-resolution/#bindings-https
-[vc-http-api]: https://w3c-ccg.github.io/vc-http-api/
-[vc-http-api-0.0.1]: https://github.com/w3c-ccg/vc-http-api/pull/72
+[vc-api]: https://w3c-ccg.github.io/vc-api/
+[vc-http-api-0.0.1]: https://github.com/w3c-ccg/vc-api/pull/72
 [did-resolution-https-binding]: https://w3c-ccg.github.io/did-resolution/#bindings-https

@@ -164,7 +164,7 @@ pub enum DIDKit {
 #[derive(StructOpt, Debug)]
 #[non_exhaustive]
 pub struct ProofOptions {
-    // Options as in vc-http-api
+    // Options as in vc-api (vc-http-api)
     #[structopt(env, short, long)]
     pub type_: Option<String>,
     #[structopt(env, short, long)]
