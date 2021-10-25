@@ -22,13 +22,17 @@ pub mod error;
 use accept::HttpAccept;
 pub use error::Error;
 
-use hyper::body::Buf;
 use hyper::header::{ACCEPT, CONTENT_TYPE, LOCATION};
 use hyper::{Body, Response};
 use hyper::{Method, Request, StatusCode};
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 use tower_service::Service;
+
+/// Maximum size (bytes) for request payloads.
+///
+/// Larger payloads will result in a HTTP 413 error.
+pub const MAX_BODY_LENGTH: usize = 2097152; // 2MB
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 #[serde(untagged)]
@@ -102,6 +106,28 @@ pub async fn pick_key<'a>(
         Ok(key) => key,
     };
     keys.get(&public_key)
+}
+
+async fn get_body_bytes_limited(req: Request<Body>) -> Result<Vec<u8>, (StatusCode, String)> {
+    use hyper::body::HttpBody;
+    let mut body = req.into_body();
+    let mut bytes = Vec::new();
+    while let Some(buf) = body.data().await {
+        let buf = match buf {
+            Ok(buf) => buf,
+            Err(err) => {
+                return Err((StatusCode::INTERNAL_SERVER_ERROR, err.to_string()));
+            }
+        };
+        if bytes.len() + buf.len() > MAX_BODY_LENGTH {
+            return Err((
+                StatusCode::PAYLOAD_TOO_LARGE,
+                "Request too large".to_string(),
+            ));
+        }
+        bytes.append(&mut buf.to_vec());
+    }
+    Ok(bytes)
 }
 
 impl DIDKitHTTPSvc {
@@ -204,8 +230,13 @@ impl DIDKitHTTPSvc {
         let keys = self.keys.clone();
         let resolver_options = self.resolver_options.clone();
         Box::pin(async move {
-            let body_reader = hyper::body::aggregate(req).await?.reader();
-            let issue_req: IssueCredentialRequest = match serde_json::from_reader(body_reader) {
+            let bytes = match get_body_bytes_limited(req).await {
+                Ok(bytes) => bytes,
+                Err((status_code, message)) => {
+                    return Self::response(status_code, message).await;
+                }
+            };
+            let issue_req: IssueCredentialRequest = match serde_json::from_slice(&bytes) {
                 Ok(reader) => reader,
                 Err(err) => {
                     return Self::response(StatusCode::BAD_REQUEST, err.to_string()).await;
@@ -277,8 +308,13 @@ impl DIDKitHTTPSvc {
         };
         let resolver_options = self.resolver_options.clone();
         Box::pin(async move {
-            let body_reader = hyper::body::aggregate(req).await?.reader();
-            let verify_req: VerifyCredentialRequest = match serde_json::from_reader(body_reader) {
+            let bytes = match get_body_bytes_limited(req).await {
+                Ok(bytes) => bytes,
+                Err((status_code, message)) => {
+                    return Self::response(status_code, message).await;
+                }
+            };
+            let verify_req: VerifyCredentialRequest = match serde_json::from_slice(&bytes) {
                 Ok(reader) => reader,
                 Err(err) => {
                     return Self::response(StatusCode::BAD_REQUEST, err.to_string()).await;
@@ -333,8 +369,13 @@ impl DIDKitHTTPSvc {
         let keys = self.keys.clone();
         let resolver_options = self.resolver_options.clone();
         Box::pin(async move {
-            let body_reader = hyper::body::aggregate(req).await?.reader();
-            let issue_req: ProvePresentationRequest = match serde_json::from_reader(body_reader) {
+            let bytes = match get_body_bytes_limited(req).await {
+                Ok(bytes) => bytes,
+                Err((status_code, message)) => {
+                    return Self::response(status_code, message).await;
+                }
+            };
+            let issue_req: ProvePresentationRequest = match serde_json::from_slice(&bytes) {
                 Ok(reader) => reader,
                 Err(err) => {
                     return Self::response(StatusCode::BAD_REQUEST, err.to_string()).await;
@@ -408,8 +449,13 @@ impl DIDKitHTTPSvc {
         };
         let resolver_options = self.resolver_options.clone();
         Box::pin(async move {
-            let body_reader = hyper::body::aggregate(req).await?.reader();
-            let verify_req: VerifyPresentationRequest = match serde_json::from_reader(body_reader) {
+            let bytes = match get_body_bytes_limited(req).await {
+                Ok(bytes) => bytes,
+                Err((status_code, message)) => {
+                    return Self::response(status_code, message).await;
+                }
+            };
+            let verify_req: VerifyPresentationRequest = match serde_json::from_slice(&bytes) {
                 Ok(reader) => reader,
                 Err(err) => {
                     return Self::response(StatusCode::BAD_REQUEST, err.to_string()).await;
@@ -657,10 +703,13 @@ impl Service<Request<Body>> for DIDKitHTTPSvc {
             "/verify/credentials" => return self.verify_credentials(req),
             "/prove/presentations" => return self.prove_presentations(req),
             "/verify/presentations" => return self.verify_presentations(req),
-            // vc-http-api 0.0.2-unstable
+            // vc-http-api 0.0.2-unstable - https://w3c-ccg.github.io/vc-api/versions/v0.0.2/
             "/credentials/issue" => return self.issue_credentials(req),
             "/credentials/verify" => return self.verify_credentials(req),
+            // /credentials/prove is a mistake (should be /presentations/prove) but leaving in
+            // for backwards-compatibility.
             "/credentials/prove" => return self.prove_presentations(req),
+            "/presentations/prove" => return self.prove_presentations(req),
             "/presentations/verify" => return self.verify_presentations(req),
             _ => {}
         };

@@ -164,6 +164,8 @@ pub enum DIDKit {
 pub struct ProofOptions {
     // Options as in vc-http-api
     #[structopt(env, short, long)]
+    pub type_: Option<String>,
+    #[structopt(env, short, long)]
     pub verification_method: Option<URI>,
     #[structopt(env, short, long)]
     pub proof_purpose: Option<ProofPurpose>,
@@ -220,6 +222,7 @@ impl KeyArg {
 impl From<ProofOptions> for LinkedDataProofOptions {
     fn from(options: ProofOptions) -> LinkedDataProofOptions {
         LinkedDataProofOptions {
+            type_: options.type_,
             verification_method: options.verification_method,
             proof_purpose: options.proof_purpose,
             created: options.created,
