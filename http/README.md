@@ -46,6 +46,12 @@ library. Struct `didkit_http::DIDKitHTTPMakeSvc` implements a Tower
 
 The following routes implement [W3C CCG's VC HTTP API (vc-http-api)][vc-http-api] [v0.0.1][vc-http-api-0.0.1]. POST bodies should be `application/json`. Output will be `application/json` on success; on error it will be either `application/json` or plain text. For more details, see `vc-http-api`.
 
+#### Limits
+
+#### Maximum payload size
+
+DIDKit HTTP's POST endpoints implement a request payload maximum size of 2MB, to protect against resource exhaustion due to excessively large payloads. This limit is in a constant, `MAX_BODY_LENGTH`, but in the future might be made configurable: https://github.com/spruceid/didkit/issues/236.
+
 #### POST `/credentials/issue`
 
 Issue a verifiable credential. The server uses its configured key and the given linked data proof options to generate a proof and append it to the given credential. On success, the resulting verifiable credential is returned, with HTTP status 201.
@@ -80,7 +86,7 @@ DIDKit HTTP does not implement any endpoint authorization or access control. Any
 
 ### Denial of Service
 
-DIDKit HTTP does not implement protection against resource exhaustion. Clients may be able to overwhelm the server with excessively large, slow, and/or concurrent requests. To protect against resource exhaustion, deployments should use a reverse proxy with rate limiting, request payload size limiting, load balancing across multiple DIDKit HTTP instances, and/or other protections.
+DIDKit HTTP does not implement complete protection against resource exhaustion. Clients may be able to overwhelm the server with excessively slow and/or concurrent requests. To protect against resource exhaustion, deployments should use a reverse proxy with rate limiting, load balancing across multiple DIDKit HTTP instances, and/or other protections.
 
 [did-http]: https://w3c-ccg.github.io/did-resolution/#bindings-https
 [vc-http-api]: https://w3c-ccg.github.io/vc-http-api/
