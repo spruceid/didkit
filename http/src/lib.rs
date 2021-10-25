@@ -657,10 +657,13 @@ impl Service<Request<Body>> for DIDKitHTTPSvc {
             "/verify/credentials" => return self.verify_credentials(req),
             "/prove/presentations" => return self.prove_presentations(req),
             "/verify/presentations" => return self.verify_presentations(req),
-            // vc-http-api 0.0.2-unstable
+            // vc-http-api 0.0.2-unstable - https://w3c-ccg.github.io/vc-api/versions/v0.0.2/
             "/credentials/issue" => return self.issue_credentials(req),
             "/credentials/verify" => return self.verify_credentials(req),
+            // /credentials/prove is a mistake (should be /presentations/prove) but leaving in
+            // for backwards-compatibility.
             "/credentials/prove" => return self.prove_presentations(req),
+            "/presentations/prove" => return self.prove_presentations(req),
             "/presentations/verify" => return self.verify_presentations(req),
             _ => {}
         };

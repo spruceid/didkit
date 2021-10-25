@@ -54,7 +54,7 @@ Issue a verifiable credential. The server uses its configured key and the given 
 
 Verify a verifiable credential. The server verifies the given credential with the given linked data proof options. To successfully verify, the credential must contain at least one proof that verifies successfully. Verification results include a list of checks performed, warnings that should be flagged to the user, and errors encountered. On success, the errors list will be empty, and the HTTP status code will be 200.
 
-#### POST `/credentials/prove`
+#### POST `/presentations/prove`
 
 Create a verifiable presentation. Given a presentation and linked data proof options, the server uses its key to generate a proof and append it to the presentation. On success, returns the verifiable presentation and HTTP status 201.
 
