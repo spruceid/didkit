@@ -72,6 +72,8 @@ Resolve a DID to a DID document, or dereference a DID URL to a resource. Paramet
 
 ## Security Considerations
 
+Spruce does not use DIDKit HTTP in any production environments except with a reverse proxy, and does not recommend them for production use-cases without a holistic review of security levels.  The following is not an exhaustive list, but should be considered in any such review.
+
 ### Authorization
 
 DIDKit HTTP does not implement any endpoint authorization or access control. Any client can request a signature/proof creation from the server's key(s) using the issue credential/presentation endpoints. To limit access to some or all of DIDKit HTTP's endpoints, a deployment should place DIDKit HTTP behind a reverse proxy with appropriate settings.
