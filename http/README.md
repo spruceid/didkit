@@ -70,6 +70,16 @@ The following route implements the [DID Resolution HTTP(S) Binding][did-http].
 
 Resolve a DID to a DID document, or dereference a DID URL to a resource. Parameter `<uri>` is the DID or DID URL to resolve/dereference.
 
+## Security Considerations
+
+### Authorization
+
+DIDKit HTTP does not implement any endpoint authorization or access control. Any client can request a signature/proof creation from the server's key(s) using the issue credential/presentation endpoints. To limit access to some or all of DIDKit HTTP's endpoints, a deployment should place DIDKit HTTP behind a reverse proxy with appropriate settings.
+
+### Denial of Service
+
+DIDKit HTTP does not implement protection against resource exhaustion. Clients may be able to overwhelm the server with excessively large, slow, and/or concurrent requests. To protect against resource exhaustion, deployments should use a reverse proxy with rate limiting, request payload size limiting, load balancing across multiple DIDKit HTTP instances, and/or other protections.
+
 [did-http]: https://w3c-ccg.github.io/did-resolution/#bindings-https
 [vc-http-api]: https://w3c-ccg.github.io/vc-http-api/
 [vc-http-api-0.0.1]: https://github.com/w3c-ccg/vc-http-api/pull/72
