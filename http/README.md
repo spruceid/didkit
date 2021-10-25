@@ -66,7 +66,7 @@ Verify a verifiable presentation using the given proof options. Returns a verifi
 
 The following route implements the [DID Resolution HTTP(S) Binding][did-http].
 
-#### POST `/identifiers/<uri>`
+#### GET `/identifiers/<uri>`
 
 Resolve a DID to a DID document, or dereference a DID URL to a resource. Parameter `<uri>` is the DID or DID URL to resolve/dereference.
 
