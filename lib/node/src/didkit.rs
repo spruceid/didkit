@@ -15,6 +15,7 @@ use didkit::JWK;
 use didkit::URI;
 use didkit::{Delegation, Invocation};
 use didkit::{JWTOrLDPOptions, LinkedDataProofOptions, ProofFormat};
+use didkit::{ResolutionInputMetadata, ResolutionResult};
 
 use crate::error::Error;
 use crate::{arg, throws};
@@ -283,5 +284,21 @@ pub fn jwk_from_tezos_key(mut cx: FunctionContext) -> JsResult<JsValue> {
     let tzk = arg!(cx, 0, String);
     let jwk = throws!(cx, tz_to_jwk(&tzk))?;
     let result = throws!(cx, neon_serde::to_value(&mut cx, &jwk))?;
+    Ok(result)
+}
+
+pub fn did_resolve(mut cx: FunctionContext) -> JsResult<JsValue> {
+    let did = arg!(cx, 0, String);
+    let input_metadata: ResolutionInputMetadata = arg!(cx, 1, ResolutionInputMetadata);
+    let resolver = DID_METHODS.to_resolver();
+    let rt = throws!(cx, runtime::get())?;
+    let (res_meta, doc_opt, doc_meta_opt) = rt.block_on(resolver.resolve(&did, &input_metadata));
+    let result = ResolutionResult {
+        did_document: doc_opt,
+        did_resolution_metadata: Some(res_meta),
+        did_document_metadata: doc_meta_opt,
+        ..Default::default()
+    };
+    let result = throws!(cx, neon_serde::to_value(&mut cx, &result))?;
     Ok(result)
 }

@@ -69,4 +69,36 @@ below. The available options for each function can be found in the
 }
 ```
 
+### Resolving DIDs
+
+[DID Resolution](https://www.w3.org/TR/did-core/#did-resolution) resolves a
+DID, with [DID Resolution options](https://www.w3.org/TR/did-core/#did-resolution-options),
+to a DID Resolution Result ([ResolutionResult](https://w3c-ccg.github.io/did-resolution/#did-resolution-result)
+structure). The DID Resultion Result includes the resolved DID document, along with
+[DID resolution metadata](https://www.w3.org/TR/did-core/#did-resolution-metadata)
+and [DID document metadata](https://www.w3.org/TR/did-core/#did-document-metadata).
+This result is equivalent to what [DIDKit CLI][CLI docs] returns when using the
+`-m` (`--with-metadata`) option (`didkit did-resolve -m <did>`).
+
+- `DIDKit.didResolutionResult(did, resolutionOptions)`
+
+```js
+const did = 'did:web:identity.foundation';
+const resolutionOptions = {};
+const didResolutionResult = DIDKit.didResolve(did, resolutionOptions);
+console.log(didResolutionResult)
+```
+Output:
+```js
+{
+  '@context': 'https://w3id.org/did-resolution/v1',
+  didDocument: {
+    '@context': [ 'https://www.w3.org/ns/did/v1' ],
+    id: 'did:web:identity.foundation'
+  },
+  didResolutionMetadata: {},
+  didDocumentMetadata: {}
+}
+```
+
 [CLI docs]: https://github.com/spruceid/didkit/blob/main/cli/README.md
