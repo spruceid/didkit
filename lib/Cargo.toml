@@ -21,6 +21,7 @@ include = [
 [features]
 default = ["ring", "secp256k1", "p256"]
 ring = ["ssi/ring"]
+no-ring = ["ssi/ed25519-dalek", "ssi/sha2", "ssi/rsa", "ssi/rand"]
 wasm = []
 http-did = ["ssi/http-did"]
 secp256k1 = ["ssi/libsecp256k1", "did-tz/secp256k1", "did-method-key/secp256k1"]
@@ -38,6 +39,7 @@ did-webkey = { version = "0.1", path = "../../ssi/did-webkey" }
 did-onion = { version = "^0.1.1", path = "../../ssi/did-onion" }
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
+# TODO feature-gate JNI, or extract it in another crate like we do for Python (and probably WASM as well)
 jni = "0.17"
 lazy_static = "1.4"
 thiserror = "1.0"
