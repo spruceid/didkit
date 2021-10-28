@@ -32,6 +32,7 @@ pub enum DIDKit {
     /// Output a DID for a given JWK and DID method name or pattern.
     KeyToDID {
         /// DID method id or pattern. e.g. `key`, `tz`, or `pkh:tz`
+        #[structopt(default_value = "key")]
         method_pattern: String,
         #[structopt(flatten)]
         key: KeyArg,
