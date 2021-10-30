@@ -16,7 +16,7 @@ endif
 .PHONY: test
 test: $(TARGET)/test/c.stamp \
 	$(TARGET)/test/java.stamp \
-	$(TARGET)/test/aar.stamp \
+	$(TARGET)/test/android.stamp \
 	$(TARGET)/test/flutter.stamp \
 	$(TARGET)/test/node.stamp \
 	$(TARGET)/test/wasm.stamp
@@ -46,18 +46,6 @@ $(TARGET)/test/c.stamp: $(TARGET)/cabi-test $(TARGET)/release/$(LIB_NAME) | $(TA
 
 $(TARGET)/cabi-test: c/test.c $(TARGET)/release/libdidkit.so $(TARGET)/didkit.h
 	$(CC) -I$(TARGET) -L$(TARGET)/release $< -ldl -ldidkit -o $@
-
-## Python
-$(TARGET)/test/python.stamp: $(TARGET)/release/$(LIB_NAME) | $(TARGET)/test
-	rm -rf python/dist/*
-	python3 -m pip install --upgrade pip build
-	python3 -m build python/
-	touch $@
-
-.PHONY: install-python
-install-python: $(TARGET)/test/python.stamp
-	python3 -m pip install python/dist/didkit-*.whl
-	python3 -m unittest python/didkit/tests.py -v
 
 ## Java
 
@@ -105,16 +93,8 @@ ANDROID_LIBS=\
 	$(TARGET)/aarch64-linux-android/release/libdidkit.so\
 	$(TARGET)/x86_64-linux-android/release/libdidkit.so
 
-$(TARGET)/test/aar.stamp: $(TARGET)/didkit.aar | $(TARGET)/test
-	rm -rf tmp/test-aar
-	mkdir -p tmp/test-aar
-	cd tmp/test-aar && unzip -q ../../$< || unzip -l ../../$< 
-	cd tmp/test-aar && unzip -qo classes.jar com/spruceid/DIDKit.class || unzip -l classes.jar
-	javap tmp/test-aar/com/spruceid/DIDKit.class | grep -q 'public class com.spruceid.DIDKit'
+$(TARGET)/test/android.stamp: $(TARGET)/didkit.jar $(ANDROID_LIBS) | $(TARGET)/test
 	touch $@
-
-$(TARGET)/didkit.aar: $(TARGET)/didkit.jar android/AndroidManifest.xml android/R.txt $(ANDROID_LIBS) | android/res
-	$(ANDROID_TOOLS)/aapt package -f -S android/res -F $@ --ignore-assets '.*:*~:README.md' android
 
 $(TARGET)/%/release/libdidkit.so: $(RUST_SRC)
 	PATH=$(TOOLCHAIN)/bin:"$(PATH)" \
@@ -167,32 +147,17 @@ $(TARGET)/test/node.stamp: $(NODE_SRC) | $(TARGET)/test
 ## WASM
 
 WEB_SRC=web/Cargo.toml $(wildcard web/src/*.rs)
-WASM_SRC=web/loader/wasm/package.json web/loader/wasm/webpack.config.js web/loader/wasm/didkit-loader.js $(WEB_SRC)
 
 .PHONY: install-wasm-pack
 install-wasm-pack:
-	 curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh 
+	 curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh
 
-$(TARGET)/test/wasm.stamp: $(WASM_SRC) | $(TARGET)/test
-	cd web && wasm-pack build --target web --out-dir pkg/wasm
-	npm --prefix web/loader/wasm install
-	npm --prefix web/loader/wasm run build
+$(TARGET)/test/wasm.stamp: $(WEB_SRC) | $(TARGET)/test
+	cd web && wasm-pack build --target web --out-dir pkg/web
+	echo "No test was run"
+	# TODO write automated tests for at least Node.js, and maybe for the bundled output format.
+	# The existing web app installation didn't really make sense as the (dependency) installation has changed.
 	touch $@
-
-## WASM-ASM-JS
-
-ASM_SRC=web/loader/asmjs/package.json web/loader/asmjs/webpack.config.js $(WEB_SRC)
-
-BINARYEN_ROOT?="$(HOME)/binaryen"
-
-$(TARGET)/test/asmjs.stamp: $(ASM_SRC) | $(TARGET)/test
-	cd web && wasm-pack build --target bundler --out-dir pkg/asmjs
-	cd web/pkg/asmjs && $(BINARYEN_ROOT)/bin/wasm2js --pedantic -o didkit_wasm_bg1.js didkit_wasm_bg.wasm
-	cd web/loader/asmjs && ./repack.sh
-	npm --prefix web/loader/asmjs install
-	npm --prefix web/loader/asmjs run build
-	npm --prefix web/loader/asmjs run test
-	touch $@ 
 
 ## Cleanup
 

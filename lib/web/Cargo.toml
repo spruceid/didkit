@@ -18,6 +18,7 @@ path = "../"
 default-features = false
 features = ["wasm"]
 
+# TODO remove dependency on ssi
 [dependencies.ssi]
 path = "../../../ssi"
 default-features = false
@@ -42,10 +43,13 @@ crate-type = ["cdylib"]
 wasm-opt = false
 
 [features]
-default = ["generate", "issue", "verify"]
+default = ["generate", "issue", "verify", "invoke", "delegate"]
 
 generate = []
 issue = []
 verify = []
 credential = []
 presentation = []
+delegate = []
+invoke = []
+zcap = []

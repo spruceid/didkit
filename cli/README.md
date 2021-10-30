@@ -48,13 +48,14 @@ Given a [JWK][] and a supported DID method name or pattern, output the correspon
 
 Issue a verifiable credential. Reads credential on stdin, constructs a [linked data proof][ld-proofs] to add to the credential, and outputs the resulting verifiable credential.
 
-Corresponds to [/credentials/issue](https://w3c-ccg.github.io/vc-http-api/#operation/issueCredential) in [vc-http-api][].
+Corresponds to [/credentials/issue](https://w3c-ccg.github.io/vc-api/#issue-credential) in [vc-http-api][].
 
 The proof type is set automatically based on the key file provided. JWK parameters besides the cryptographic components, such as [kid][] (Key ID), are ignored currently. For an RSA key, the [alg][] (Algorithm) parameter is ignored and `RS256` is used for it, for [RsaSignature2018][].
 
 #### Options
 
 - `-r, --did-resolver <url>` - [DID resolver HTTP(S) endpoint][did-resolution-https-binding], used for DID resolution and DID URL dereferencing for non-built-in DID Methods. Equivalent to environmental variable `DID_RESOLVER`.
+- `-R, --did-resolver-override <url>` - [DID resolver HTTP(S) endpoint][did-resolution-https-binding], used for DID resolution and DID URL dereferencing for all DID Methods. Equivalent to environmental variable `DID_RESOLVER_OVERRIDE`.
 - `-k, --key-path <file>` - Filename of JWK file for signing. Conflicts with `-j`.
 - `-j, --jwk <jwk>` - JWK for signing. Conflicts with `-k`.
 - `-S, --ssh-agent` - Use SSH agent for signing instead of JWK private key. See the section on SSH Agent below for more info.
@@ -63,6 +64,7 @@ One of `-k` (`--key-path`), `-j` (`--jwk`) or `-S` (`--ssh-agent`) is required.
 
 The following options correspond to linked data [proof options][] as specified in [ld-proofs][] and [vc-http-api][]:
 
+- `-t, --type <type>` - `type` of proof object to create.
 - `-C, --challenge <challenge>` - [challenge][] property of the proof
 - `-c, --created <created>` - [created][] property of the proof. ISO8601 datetime. Defaults to the current time.
   time.
@@ -93,11 +95,12 @@ When `-S` (`--ssh-agent`) is used, the JWK referred to by `-k` (`--key-file`) or
 
 Verify a verifiable credential. Reads verifiable credential on standard input, and outputs verification result. Returns exit status zero if credential successfully verified, or non-zero if errors were encountered.
 
-Corresponds to [/credentials/verify](https://w3c-ccg.github.io/vc-http-api/#operation/verifyCredential) in [vc-http-api][].
+Corresponds to [/credentials/verify](https://w3c-ccg.github.io/vc-api/#verify-credential) in [vc-http-api][].
 
 #### Options
 
 - `-r, --did-resolver <url>` - [DID resolver HTTP(S) endpoint][did-resolution-https-binding], used for DID resolution and DID URL dereferencing for non-built-in DID Methods. Equivalent to environmental variable `DID_RESOLVER`.
+- `-R, --did-resolver-override <url>` - [DID resolver HTTP(S) endpoint][did-resolution-https-binding], used for DID resolution and DID URL dereferencing for all DID Methods. Equivalent to environmental variable `DID_RESOLVER_OVERRIDE`.
 
 The following options are linked data [proof options][] as specified in [ld-proofs][] and [vc-http-api][]. If there is more than one proof present, at least one must pass all the requirements passed in the options.
 
@@ -135,7 +138,7 @@ Verification result properties:
 
 Issue a verifiable presentation. Reads presentation on stdin, generates proof to add to it, and outputs the resulting verifiable presentation.
 
-Corresponds to [/credentials/prove](https://w3c-ccg.github.io/vc-http-api/#operation/provePresentation) in [vc-http-api][].
+Corresponds to [/presentations/prove](https://w3c-ccg.github.io/vc-api/#prove-presentation) in [vc-http-api][].
 
 Options are the same as for [didkit vc-issue-credential](#didkit-vc-issue-credential).
 
@@ -143,7 +146,7 @@ Options are the same as for [didkit vc-issue-credential](#didkit-vc-issue-creden
 
 Verify a verifiable presentation. Reads verifiable presentation on stdin, and outputs verification result. Returns exit status zero if presentation successfully verified, or non-zero if errors were encountered.
 
-Corresponds to [/presentations/verify](https://w3c-ccg.github.io/vc-http-api/#operation/verifyPresentation) in [vc-http-api][].
+Corresponds to [/presentations/verify](https://w3c-ccg.github.io/vc-api/#verify-presentation) in [vc-http-api][].
 
 Options and output format are the same as for [didkit vc-verify-credential](#didkit-vc-verify-credential).
 
@@ -155,6 +158,7 @@ Resolve a DID to a DID document, according to [DID Resolution][did-resolution].
 - `-m, --with-metadata` - Return a the resolved DID document with resolution metadata and document metadata, in a [DID Resolution Result][did-resolution-result] object.
 - `-i <name=value>` - A [DID Resolution input metadata][did-resolution-input-metadata] property. If `=` is omitted, boolean `true` is used as the value, otherwise, value is a string. May be repeated to add multiple properties. If used multiple times with the same `name`, the values are combined into an array value to form a single property.
 - `-r, --did-resolver <url>` - [DID resolver HTTP(S) endpoint][did-resolution-https-binding], used for DID resolution and DID URL dereferencing for non-built-in DID Methods. Equivalent to environmental variable `DID_RESOLVER`.
+- `-R, --did-resolver-override <url>` - [DID resolver HTTP(S) endpoint][did-resolution-https-binding], used for DID resolution and DID URL dereferencing for all DID Methods. Equivalent to environmental variable `DID_RESOLVER_OVERRIDE`.
 
 #### Output
 Returns the resolved DID document, optionally with metadata.
@@ -177,6 +181,7 @@ Dereference a DID URL to a resource, as in [did-core - DID URL Dereferencing][di
 - `-m, --with-metadata` - Return the resulting resource with resolution metadata and document metadata, in a [DID Resolution Result][did-resolution-result] object.
 - `-i <name=value>` - A [DID URL Dereferencing input metadata][did-url-dereferencing-input-metadata] property. If `=` is omitted, boolean `true` is used as the value, otherwise, value is a string. May be repeated to add multiple properties. If used multiple times with the same `name`, the values are combined into an array value to form a single property.
 - `-r, --did-resolver <url>` - [DID resolver HTTP(S) endpoint][did-resolution-https-binding], used for DID resolution and DID URL dereferencing for non-built-in DID Methods. Equivalent to environmental variable `DID_RESOLVER`.
+- `-R, --did-resolver-override <url>` - [DID resolver HTTP(S) endpoint][did-resolution-https-binding], used for DID resolution and DID URL dereferencing for all DID Methods. Equivalent to environmental variable `DID_RESOLVER_OVERRIDE`.
 
 #### Output
 Returns the resource dereferenced from the DID URL, optionally with metadata.

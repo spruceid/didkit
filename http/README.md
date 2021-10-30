@@ -44,7 +44,7 @@ library. Struct `didkit_http::DIDKitHTTPMakeSvc` implements a Tower
 
 ### Verifiable Credentials and Verifiable Presentations
 
-The following routes implement [W3C CCG's VC HTTP API (vc-http-api)][vc-http-api] [v0.0.1][vc-http-api-0.0.1]. POST bodies should be `application/json`. Output will be `application/json` on success; on error it will be either `application/json` or plain text. For more details, see `vc-http-api`.
+The following routes implement [W3C CCG's VC (HTTP) API (vc-http-api)][vc-api] [v0.0.1][vc-http-api-0.0.1]. POST bodies should be `application/json`. Output will be `application/json` on success; on error it will be either `application/json` or plain text. For more details, see [vc-api][].
 
 #### POST `/credentials/issue`
 
@@ -54,7 +54,7 @@ Issue a verifiable credential. The server uses its configured key and the given 
 
 Verify a verifiable credential. The server verifies the given credential with the given linked data proof options. To successfully verify, the credential must contain at least one proof that verifies successfully. Verification results include a list of checks performed, warnings that should be flagged to the user, and errors encountered. On success, the errors list will be empty, and the HTTP status code will be 200.
 
-#### POST `/credentials/prove`
+#### POST `/presentations/prove`
 
 Create a verifiable presentation. Given a presentation and linked data proof options, the server uses its key to generate a proof and append it to the presentation. On success, returns the verifiable presentation and HTTP status 201.
 
@@ -66,11 +66,11 @@ Verify a verifiable presentation using the given proof options. Returns a verifi
 
 The following route implements the [DID Resolution HTTP(S) Binding][did-http].
 
-#### POST `/identifiers/<uri>`
+#### GET `/identifiers/<uri>`
 
 Resolve a DID to a DID document, or dereference a DID URL to a resource. Parameter `<uri>` is the DID or DID URL to resolve/dereference.
 
 [did-http]: https://w3c-ccg.github.io/did-resolution/#bindings-https
-[vc-http-api]: https://w3c-ccg.github.io/vc-http-api/
-[vc-http-api-0.0.1]: https://github.com/w3c-ccg/vc-http-api/pull/72
+[vc-api]: https://w3c-ccg.github.io/vc-api/
+[vc-http-api-0.0.1]: https://github.com/w3c-ccg/vc-api/pull/72
 [did-resolution-https-binding]: https://w3c-ccg.github.io/did-resolution/#bindings-https

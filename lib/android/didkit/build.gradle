@@ -1,0 +1,64 @@
+plugins {
+    id 'com.android.library'
+    id 'maven-publish'
+}
+
+android {
+    compileSdk 31
+
+    defaultConfig {
+        minSdk 21
+        targetSdk 31
+        versionCode 1
+        versionName "0.2.1"
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+        }
+    }
+}
+
+configurations {
+    includeJars
+}
+
+dependencies {
+    implementation fileTree(dir: 'libs', include: ["*.jar"])
+
+    testImplementation 'junit:junit:4.13.2'
+}
+
+project.afterEvaluate {
+    def isAndroidLibraryProject = project.plugins.hasPlugin('com.android.library')
+    if(isAndroidLibraryProject) {
+        task copyDeps(type:Copy) {
+            from configurations.includeJars {
+                include '**/*.jar'
+            }
+            into "./build/intermediates/packaged-classes/release/libs"
+        }
+        mergeReleaseJniLibFolders.dependsOn copyDeps
+
+        task copyDebugDeps(type:Copy) {
+            from configurations.includeJars {
+                include '**/*.jar'
+            }
+            into "./build/intermediates/packaged-classes/debug/libs"
+        }
+        mergeDebugJniLibFolders.dependsOn copyDebugDeps
+    }
+
+    publishing {
+        publications {
+            library(MavenPublication) {
+                setGroupId 'com.spruceid'
+                setArtifactId 'didkit'
+                version android.defaultConfig.versionName
+                artifact bundleReleaseAar
+            }
+        }
+    }
+}

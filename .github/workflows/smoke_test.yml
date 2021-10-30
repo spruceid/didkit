@@ -1,0 +1,12 @@
+name: smoke_tests
+
+on:
+  schedule:
+    - cron:  '0 0 * * *'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Build
+      run: cargo install didkit-cli

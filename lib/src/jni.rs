@@ -111,6 +111,7 @@ fn issue_credential(
     proof_options_jstring: JString,
     key_jstring: JString,
 ) -> Result<jstring, Error> {
+    let resolver = DID_METHODS.to_resolver();
     let credential_json: String = env.get_string(credential_jstring).unwrap().into();
     let proof_options_json: String = env.get_string(proof_options_jstring).unwrap().into();
     let key_json: String = env.get_string(key_jstring).unwrap().into();
@@ -121,10 +122,11 @@ fn issue_credential(
     let proof_format = options.proof_format.unwrap_or_default();
     let vc_string = match proof_format {
         ProofFormat::JWT => {
-            rt.block_on(credential.generate_jwt(Some(&key), &options.ldp_options))?
+            rt.block_on(credential.generate_jwt(Some(&key), &options.ldp_options, resolver))?
         }
         ProofFormat::LDP => {
-            let proof = rt.block_on(credential.generate_proof(&key, &options.ldp_options))?;
+            let proof =
+                rt.block_on(credential.generate_proof(&key, &options.ldp_options, resolver))?;
             credential.add_proof(proof);
             serde_json::to_string(&credential)?
         }
@@ -185,6 +187,7 @@ fn issue_presentation(
     proof_options_jstring: JString,
     key_jstring: JString,
 ) -> Result<jstring, Error> {
+    let resolver = DID_METHODS.to_resolver();
     let presentation_json: String = env.get_string(presentation_jstring).unwrap().into();
     let proof_options_json: String = env.get_string(proof_options_jstring).unwrap().into();
     let key_json: String = env.get_string(key_jstring).unwrap().into();
@@ -195,10 +198,11 @@ fn issue_presentation(
     let rt = runtime::get()?;
     let vp_string = match proof_format {
         ProofFormat::JWT => {
-            rt.block_on(presentation.generate_jwt(Some(&key), &options.ldp_options))?
+            rt.block_on(presentation.generate_jwt(Some(&key), &options.ldp_options, resolver))?
         }
         ProofFormat::LDP => {
-            let proof = rt.block_on(presentation.generate_proof(&key, &options.ldp_options))?;
+            let proof =
+                rt.block_on(presentation.generate_proof(&key, &options.ldp_options, resolver))?;
             presentation.add_proof(proof);
             serde_json::to_string(&presentation)?
         }
@@ -223,6 +227,7 @@ fn did_auth(
     proof_options_jstring: JString,
     key_jstring: JString,
 ) -> Result<jstring, Error> {
+    let resolver = DID_METHODS.to_resolver();
     let holder: String = env.get_string(holder_jstring).unwrap().into();
     let proof_options_json: String = env.get_string(proof_options_jstring).unwrap().into();
     let key_json: String = env.get_string(key_jstring).unwrap().into();
@@ -234,10 +239,11 @@ fn did_auth(
     let rt = runtime::get()?;
     let vp_string = match proof_format {
         ProofFormat::JWT => {
-            rt.block_on(presentation.generate_jwt(Some(&key), &options.ldp_options))?
+            rt.block_on(presentation.generate_jwt(Some(&key), &options.ldp_options, resolver))?
         }
         ProofFormat::LDP => {
-            let proof = rt.block_on(presentation.generate_proof(&key, &options.ldp_options))?;
+            let proof =
+                rt.block_on(presentation.generate_proof(&key, &options.ldp_options, resolver))?;
             presentation.add_proof(proof);
             serde_json::to_string(&presentation)?
         }
