@@ -35,7 +35,7 @@ pub enum DIDKit {
     /// that support this functionality.
     ///
     /// The DID method to use may be provided in the `method-pattern` argument. The default is
-    /// `did:key`.
+    /// "key", corresponding to did:key.
     ///
     /// For DID methods that have multiple ways of representing a key, `method-pattern` is
     /// method-specific but typically is a prefix, for example "pkh:tz" to generate a DID that
