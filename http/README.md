@@ -46,6 +46,12 @@ library. Struct `didkit_http::DIDKitHTTPMakeSvc` implements a Tower
 
 The following routes implement [W3C CCG's VC (HTTP) API (vc-http-api)][vc-api] [v0.0.1][vc-http-api-0.0.1]. POST bodies should be `application/json`. Output will be `application/json` on success; on error it will be either `application/json` or plain text. For more details, see [vc-api][].
 
+#### Limits
+
+#### Maximum payload size
+
+DIDKit HTTP's POST endpoints implement a request payload maximum size of 2MB, to protect against resource exhaustion due to excessively large payloads. This limit is in a constant, `MAX_BODY_LENGTH`, but in the future might be made configurable: https://github.com/spruceid/didkit/issues/236.
+
 #### POST `/credentials/issue`
 
 Issue a verifiable credential. The server uses its configured key and the given linked data proof options to generate a proof and append it to the given credential. On success, the resulting verifiable credential is returned, with HTTP status 201.
@@ -69,6 +75,18 @@ The following route implements the [DID Resolution HTTP(S) Binding][did-http].
 #### GET `/identifiers/<uri>`
 
 Resolve a DID to a DID document, or dereference a DID URL to a resource. Parameter `<uri>` is the DID or DID URL to resolve/dereference.
+
+## Security Considerations
+
+Spruce does not use DIDKit HTTP in any production environments except with a reverse proxy, and does not recommend them for production use-cases without a holistic review of security levels.  The following is not an exhaustive list, but should be considered in any such review.
+
+### Authorization
+
+DIDKit HTTP does not implement any endpoint authorization or access control. Any client can request a signature/proof creation from the server's key(s) using the issue credential/presentation endpoints. To limit access to some or all of DIDKit HTTP's endpoints, a deployment should place DIDKit HTTP behind a reverse proxy with appropriate settings.
+
+### Denial of Service
+
+DIDKit HTTP does not implement complete protection against resource exhaustion. Clients may be able to overwhelm the server with excessively slow and/or concurrent requests. To protect against resource exhaustion, deployments should use a reverse proxy with rate limiting, load balancing across multiple DIDKit HTTP instances, and/or other protections.
 
 [did-http]: https://w3c-ccg.github.io/did-resolution/#bindings-https
 [vc-api]: https://w3c-ccg.github.io/vc-api/
