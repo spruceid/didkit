@@ -137,7 +137,7 @@ sudo service redis-server start
 ### (Optional) Test Redis
 To ensure that mysql is working, try the following commands:
 ```bash
-$ apt-get install redis
+$ sudo apt-get install redis
 $ redis-cli
 127.0.0.1:6379> set foo "Hello, World!"
 127.0.0.1:6379> get foo
