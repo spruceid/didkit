@@ -151,7 +151,7 @@ Java dependencies, build the project, and then run it, you can execute the
 following commands from the root project directory:
 
 ```bash
-$ cd examples/java-sprintboot
+$ cd examples/java-springboot
 $ LD_LIBRARY_PATH=`pwd` ./mvnw spring-boot:run
 ```
 
