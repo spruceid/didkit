@@ -97,7 +97,7 @@ MariaDB [(none)]> quit
 ### (Optional) Test MySQL
 To ensure that mysql is working, try the following command:
 ```bash
-$ apt-get install mariadb-client
+$ sudo apt-get install mariadb-client
 $ mariadb -uroot -proot
 MariaDB [(none)]> SHOW DATABASES;
 MariaDB [(none)]> quit
