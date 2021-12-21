@@ -97,7 +97,7 @@ MariaDB [(none)]> quit
 ### (Optional) Test MySQL
 To ensure that mysql is working, try the following command:
 ```bash
-$ apt-get install mariadb-client
+$ sudo apt-get install mariadb-client
 $ mariadb -uroot -proot
 MariaDB [(none)]> SHOW DATABASES;
 MariaDB [(none)]> quit
@@ -137,7 +137,7 @@ sudo service redis-server start
 ### (Optional) Test Redis
 To ensure that mysql is working, try the following commands:
 ```bash
-$ apt-get install redis
+$ sudo apt-get install redis
 $ redis-cli
 127.0.0.1:6379> set foo "Hello, World!"
 127.0.0.1:6379> get foo
@@ -151,7 +151,7 @@ Java dependencies, build the project, and then run it, you can execute the
 following commands from the root project directory:
 
 ```bash
-$ cd examples/java-sprintboot
+$ cd examples/java-springboot
 $ LD_LIBRARY_PATH=`pwd` ./mvnw spring-boot:run
 ```
 
