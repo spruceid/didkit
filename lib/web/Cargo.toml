@@ -18,6 +18,7 @@ path = "../"
 default-features = false
 features = ["wasm"]
 
+# TODO remove dependency on ssi
 [dependencies.ssi]
 path = "../../../ssi"
 default-features = false

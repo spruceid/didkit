@@ -102,15 +102,15 @@ jobs:
     - name: Test binary-signing verify example
       run: examples/binary-signing/index.sh verify examples/binary-signing/hello.txt examples/binary-signing/hello-vc.jsonld
 
-    - name: Checkout VC HTTP API Test Suite
+    - name: Checkout VC API Test Suite
       uses: actions/checkout@v2
       with:
-        repository: w3c-ccg/vc-http-api-test-suite
-        path: didkit/http/tests/vc-http-api/vc-http-api-test-suite
-        ref: 163603de2d36289f5220029fd1ed410a969bd057
+        repository: w3c-ccg/vc-api-test-suite
+        path: didkit/http/tests/vc-api/vc-api-test-suite
+        ref: a74c63d2d015efcb1c5d22a5d283536026faf5ec
 
-    - name: Run VC HTTP API Test Suite
-      working-directory: didkit/http/tests/vc-http-api
+    - name: Run VC API Test Suite
+      working-directory: didkit/http/tests/vc-api
       run: |
         npm install
         npm test
@@ -151,9 +151,6 @@ jobs:
 
     - name: Build Android Archive
       run: make -C lib ../target/test/android.stamp
-
-    - name: Test Python Package
-      run: make -C lib install-python
 
   build_ios:
     runs-on: macos-latest

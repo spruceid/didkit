@@ -29,14 +29,27 @@ pub enum DIDKit {
         #[structopt(flatten)]
         key: KeyArg,
     },
-    /// Output a DID for a given JWK and DID method name or pattern.
+    /// Output a DID for a given JWK according to the provided DID method name or pattern
+    ///
+    /// Deterministically generate a DID from a public key JWK, for a DID method
+    /// that support this functionality.
+    ///
+    /// The DID method to use may be provided in the `method-pattern` argument. The default is
+    /// "key", corresponding to did:key.
+    ///
+    /// For DID methods that have multiple ways of representing a key, `method-pattern` is
+    /// method-specific but typically is a prefix, for example "pkh:tz" to generate a DID that
+    /// begins with `did:pkh:tz`.
     KeyToDID {
+        /// DID method name or pattern. e.g. `key`, `tz`, or `pkh:tz`
+        #[structopt(default_value = "key")]
         method_pattern: String,
         #[structopt(flatten)]
         key: KeyArg,
     },
     /// Output a verificationMethod DID URL for a JWK and DID method name/pattern
     KeyToVerificationMethod {
+        /// DID method id or pattern. e.g. `key`, `tz`, or `pkh:tz`
         method_pattern: Option<String>,
         #[structopt(flatten)]
         key: KeyArg,
@@ -162,7 +175,7 @@ pub enum DIDKit {
 #[derive(StructOpt, Debug)]
 #[non_exhaustive]
 pub struct ProofOptions {
-    // Options as in vc-http-api
+    // Options as in vc-api (vc-http-api)
     #[structopt(env, short, long)]
     pub type_: Option<String>,
     #[structopt(env, short, long)]

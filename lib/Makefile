@@ -47,18 +47,6 @@ $(TARGET)/test/c.stamp: $(TARGET)/cabi-test $(TARGET)/release/$(LIB_NAME) | $(TA
 $(TARGET)/cabi-test: c/test.c $(TARGET)/release/libdidkit.so $(TARGET)/didkit.h
 	$(CC) -I$(TARGET) -L$(TARGET)/release $< -ldl -ldidkit -o $@
 
-## Python
-$(TARGET)/test/python.stamp: $(TARGET)/release/$(LIB_NAME) | $(TARGET)/test
-	rm -rf python/dist/*
-	python3 -m pip install --upgrade pip build
-	python3 -m build python/
-	touch $@
-
-.PHONY: install-python
-install-python: $(TARGET)/test/python.stamp
-	python3 -m pip install python/dist/didkit-*.whl
-	python3 -m unittest python/didkit/tests.py -v
-
 ## Java
 
 JAVA_SRC=$(wildcard java/*/*/*.java java/*/*/*/*.java java/*/*/*/*/*.java)

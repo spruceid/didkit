@@ -1,4 +1,4 @@
-# VC HTTP API DIDKit HTTP test runner
+# VC API DIDKit HTTP test runner
 
 Runs the [VC HTTP API Test Server][vc-http-api-test-server] with a local instance of [DIDKit][didkit-http].
 
@@ -12,10 +12,10 @@ git clone https://github.com/spruceid/didkit
 git clone https://github.com/spruceid/ssi --recurse-submodules
 ```
 
-Checkout the `vc-http-api` test server:
+Checkout the `vc-api` test server:
 ```sh
-cd didkit/http/tests/vc-http-api
-git clone https://github.com/w3c-ccg/vc-http-api-test-suite --depth 1
+cd didkit/http/tests/vc-api
+git clone https://github.com/w3c-ccg/vc-api-test-suite --depth 1
 ```
 
 Install `npm` dependencies:
