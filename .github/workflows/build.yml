@@ -153,9 +153,6 @@ jobs:
     - name: Build Android Archive
       run: make -C lib ../target/test/android.stamp
 
-    - name: Test Python Package
-      run: make -C lib install-python
-
     - name: Setup Go
       uses: actions/setup-go@v2
       with:
