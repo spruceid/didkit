@@ -157,6 +157,10 @@ fn main() -> std::io::Result<()> {
                 writeln!(&mut out, include_str!("text/LLVM-exception.txt"))?;
                 continue;
             }
+            "Apache-2.0" => {
+                writeln!(&mut out, include_str!("../LICENSE"))?;
+                continue;
+            }
             _ => format!("text/{}.txt", license),
         };
         let mut file = File::open(license_filename)?;
