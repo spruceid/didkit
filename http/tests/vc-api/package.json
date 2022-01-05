@@ -10,6 +10,6 @@
   "license": "Apache-2.0",
   "dependencies": {
     "jest": "^26.6.3",
-    "vc-http-api-test-server": "file:vc-http-api-test-suite/packages/vc-http-api-test-server"
+    "vc-http-api-test-server": "file:vc-api-test-suite/packages/vc-http-api-test-server"
   }
 }

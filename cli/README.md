@@ -48,7 +48,7 @@ Given a [JWK][] and a supported DID method name or pattern, output the correspon
 
 Issue a verifiable credential. Reads credential on stdin, constructs a [linked data proof][ld-proofs] to add to the credential, and outputs the resulting verifiable credential.
 
-Corresponds to [/credentials/issue](https://w3c-ccg.github.io/vc-http-api/#operation/issueCredential) in [vc-http-api][].
+Corresponds to [/credentials/issue](https://w3c-ccg.github.io/vc-api/#issue-credential) in [vc-http-api][].
 
 The proof type is set automatically based on the key file provided. JWK parameters besides the cryptographic components, such as [kid][] (Key ID), are ignored currently. For an RSA key, the [alg][] (Algorithm) parameter is ignored and `RS256` is used for it, for [RsaSignature2018][].
 
@@ -64,6 +64,7 @@ One of `-k` (`--key-path`), `-j` (`--jwk`) or `-S` (`--ssh-agent`) is required.
 
 The following options correspond to linked data [proof options][] as specified in [ld-proofs][] and [vc-http-api][]:
 
+- `-t, --type <type>` - `type` of proof object to create.
 - `-C, --challenge <challenge>` - [challenge][] property of the proof
 - `-c, --created <created>` - [created][] property of the proof. ISO8601 datetime. Defaults to the current time.
   time.
@@ -94,7 +95,7 @@ When `-S` (`--ssh-agent`) is used, the JWK referred to by `-k` (`--key-file`) or
 
 Verify a verifiable credential. Reads verifiable credential on standard input, and outputs verification result. Returns exit status zero if credential successfully verified, or non-zero if errors were encountered.
 
-Corresponds to [/credentials/verify](https://w3c-ccg.github.io/vc-http-api/#operation/verifyCredential) in [vc-http-api][].
+Corresponds to [/credentials/verify](https://w3c-ccg.github.io/vc-api/#verify-credential) in [vc-http-api][].
 
 #### Options
 
@@ -137,7 +138,7 @@ Verification result properties:
 
 Issue a verifiable presentation. Reads presentation on stdin, generates proof to add to it, and outputs the resulting verifiable presentation.
 
-Corresponds to [/credentials/prove](https://w3c-ccg.github.io/vc-http-api/#operation/provePresentation) in [vc-http-api][].
+Corresponds to [/presentations/prove](https://w3c-ccg.github.io/vc-api/#prove-presentation) in [vc-http-api][].
 
 Options are the same as for [didkit vc-issue-credential](#didkit-vc-issue-credential).
 
@@ -145,7 +146,7 @@ Options are the same as for [didkit vc-issue-credential](#didkit-vc-issue-creden
 
 Verify a verifiable presentation. Reads verifiable presentation on stdin, and outputs verification result. Returns exit status zero if presentation successfully verified, or non-zero if errors were encountered.
 
-Corresponds to [/presentations/verify](https://w3c-ccg.github.io/vc-http-api/#operation/verifyPresentation) in [vc-http-api][].
+Corresponds to [/presentations/verify](https://w3c-ccg.github.io/vc-api/#verify-presentation) in [vc-http-api][].
 
 Options and output format are the same as for [didkit vc-verify-credential](#didkit-vc-verify-credential).
 

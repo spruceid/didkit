@@ -10,6 +10,7 @@ on:
 
 env:
   CARGO_TERM_COLOR: always
+  SSI_REF: c66972290377c6b4bf9b63b2dfdc047dbdcfd989
 
 defaults:
   run:
@@ -30,7 +31,7 @@ jobs:
       with:
         repository: spruceid/ssi
         path: ssi
-        ref: c66972290377c6b4bf9b63b2dfdc047dbdcfd989
+        ref: ${{env.SSI_REF}}
         submodules: true
 
     - name: Cache Cargo registry and build artifacts
@@ -102,28 +103,15 @@ jobs:
     - name: Test binary-signing verify example
       run: examples/binary-signing/index.sh verify examples/binary-signing/hello.txt examples/binary-signing/hello-vc.jsonld
 
-    - name: Checkout vc-http-api v0.0.1
+    - name: Checkout VC API Test Suite
       uses: actions/checkout@v2
       with:
-        repository: spruceid/vc-http-api
-        path: vc-http-api
-        ref: eef5ef2bb2321e4eac3f7e82a2adb7ccd4db1982
+        repository: w3c-ccg/vc-api-test-suite
+        path: didkit/http/tests/vc-api/vc-api-test-suite
+        ref: a74c63d2d015efcb1c5d22a5d283536026faf5ec
 
-    - name: Run vc-http-api plugfest-2020 test suite
-      working-directory: vc-http-api/packages/plugfest-2020
-      run: |
-        npm i
-        ./vendors/spruce/test.sh
-
-    - name: Checkout VC HTTP API Test Suite
-      uses: actions/checkout@v2
-      with:
-        repository: w3c-ccg/vc-http-api-test-suite
-        path: didkit/http/tests/vc-http-api/vc-http-api-test-suite
-        ref: 163603de2d36289f5220029fd1ed410a969bd057
-
-    - name: Run VC HTTP API Test Suite
-      working-directory: didkit/http/tests/vc-http-api
+    - name: Run VC API Test Suite
+      working-directory: didkit/http/tests/vc-api
       run: |
         npm install
         npm test
@@ -179,7 +167,6 @@ jobs:
         go test
         cd ../..
 
-
   build_ios:
     runs-on: macos-latest
     steps:
@@ -193,7 +180,7 @@ jobs:
       with:
         repository: spruceid/ssi
         path: ssi
-        ref: c66972290377c6b4bf9b63b2dfdc047dbdcfd989
+        ref: ${{env.SSI_REF}}
         submodules: true
 
     - name: Cache Cargo registry and build artifacts
@@ -212,3 +199,33 @@ jobs:
 
     - name: Build iOS Library
       run: make -C lib ../target/test/ios.stamp
+
+  build_windows:
+    runs-on: windows-latest
+    steps:
+    - name: Checkout DIDKit repository
+      uses: actions/checkout@v2
+      with:
+        path: didkit
+
+    - name: Checkout SSI library
+      uses: actions/checkout@v2
+      with:
+        repository: spruceid/ssi
+        path: ssi
+        ref: ${{env.SSI_REF}}
+        submodules: true
+
+    - name: Cache Cargo registry and build artifacts
+      uses: actions/cache@v2
+      with:
+        path: |
+          ~/.cargo/registry
+          ~/.cargo/git
+          target
+        key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.toml', 'lib/Makefile', '**.rs') }}
+        restore-keys: |
+          ${{ runner.os }}-cargo-
+
+    - name: Build
+      run: cargo build --verbose

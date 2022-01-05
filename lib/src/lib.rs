@@ -6,7 +6,7 @@ pub mod error;
 pub mod jni;
 #[cfg(not(feature = "wasm"))]
 pub mod runtime;
-#[cfg(not(feature = "wasm"))]
+#[cfg(not(any(feature = "wasm", target_os = "windows")))]
 pub mod ssh_agent;
 
 #[macro_use]
@@ -25,6 +25,7 @@ pub use ssi::did_resolve::{
 pub use ssi::jwk::JWK;
 pub use ssi::ldp::resolve_key;
 pub use ssi::ldp::ProofPreparation;
+pub use ssi::tzkey::jwk_from_tezos_key;
 pub use ssi::vc::get_verification_method;
 pub use ssi::vc::Credential as VerifiableCredential;
 pub use ssi::vc::CredentialOrJWT;
@@ -34,7 +35,6 @@ pub use ssi::vc::ProofPurpose;
 pub use ssi::vc::VerificationResult;
 pub use ssi::vc::URI;
 pub use ssi::zcap::{Delegation, Invocation};
-pub use ssi::tzkey::jwk_from_tezos_key;
 
 use core::str::FromStr;
 use serde::{Deserialize, Serialize};
@@ -44,10 +44,10 @@ use serde::{Deserialize, Serialize};
 #[serde(rename_all = "camelCase")]
 #[serde(deny_unknown_fields)]
 pub struct JWTOrLDPOptions {
-    /// Linked data proof options from vc-http-api
+    /// Linked data proof options from vc-api (vc-http-api)
     #[serde(flatten)]
     pub ldp_options: LinkedDataProofOptions,
-    /// Proof format (not standard in vc-http-api)
+    /// Proof format (not standard in vc-api)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub proof_format: Option<ProofFormat>,
 }
@@ -105,7 +105,7 @@ impl FromStr for ProofFormat {
 
 #[derive(thiserror::Error, Debug)]
 pub enum GenerateProofError {
-    #[cfg(not(feature = "wasm"))]
+    #[cfg(not(any(feature = "wasm", target_os = "windows")))]
     #[error("Unable to sign: {0}")]
     Sign(#[from] crate::ssh_agent::SignError),
     #[error("SSI: {0}")]
@@ -114,6 +114,8 @@ pub enum GenerateProofError {
     IO(#[from] std::io::Error),
     #[error("WASM support for ssh-agent is not enabled")]
     NoWASM,
+    #[error("Windows support for ssh-agent is not enabled")]
+    NoWindows,
 }
 
 pub async fn generate_proof(
@@ -129,7 +131,11 @@ pub async fn generate_proof(
         Some(sock_path) => {
             return Err(GenerateProofError::NoWASM);
         }
-        #[cfg(not(feature = "wasm"))]
+        #[cfg(target_os = "windows")]
+        Some(sock_path) => {
+            return Err(GenerateProofError::NoWindows);
+        }
+        #[cfg(not(any(feature = "wasm", target_os = "windows")))]
         Some(sock_path) => {
             use tokio::net::UnixStream;
             let mut ssh_agent_sock = UnixStream::connect(sock_path).await?;

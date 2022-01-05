@@ -40,7 +40,7 @@ const DIDKitHTTP = require('./didkit-http');
   const { results } = await jest.runCLI(
     {
       json: false,
-      roots: [path.join(__dirname, 'vc-http-api-test-suite', 'packages', 'vc-http-api-test-server')],
+      roots: [path.join(__dirname, 'vc-api-test-suite', 'packages', 'vc-http-api-test-server')],
       globals: JSON.stringify({ suiteConfig: config }),
       testTimeout: 60e3
     },
