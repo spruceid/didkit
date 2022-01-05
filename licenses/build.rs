@@ -148,7 +148,7 @@ fn main() -> std::io::Result<()> {
         writeln!(&mut out, "```")?;
         let license_filename = match &license[..] {
             "Apache-2.0 AND W3C-20150513 AND CC-BY-SA-3.0" => {
-                writeln!(&mut out, include_str!("text/ssi-contexts.txt"))?;
+                writeln!(&mut out, include_str!("../../ssi/contexts/LICENSES.md"))?;
                 continue;
             }
             "Apache-2.0 WITH LLVM-exception" => {
