@@ -27,6 +27,7 @@ fn normalize_license(license: String) -> Result<String, String> {
         "Apache-2.0 OR BSL-1.0" => license,
         "Unlicense/MIT" | "Unlicense OR MIT" => "Unlicense OR MIT".to_string(),
         "Apache-2.0 AND W3C-20150513 AND CC-BY-SA-3.0" => license,
+        "MIT OR Apache-2.0 OR BSD-2-Clause" => license,
         "0BSD OR MIT OR Apache-2.0" => license,
         "MPL-2.0" => license,
         "Apache-2.0 WITH LLVM-exception OR Apache-2.0 OR MIT" => license,
@@ -39,6 +40,7 @@ fn fix_license(name: &str, version: &str) -> Option<&'static str> {
     match (name, version) {
         ("sshkeys", "v0.3.1") => Some("BSD-2-Clause"),
         ("ring", "v0.16.20") => Some("Ring"),
+        ("fuchsia-cprng", "v0.1.1") => Some("BSD-3-Clause"),
         _ => None,
     }
 }
