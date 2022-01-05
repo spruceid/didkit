@@ -44,7 +44,7 @@ $(TARGET)/test/c.stamp: $(TARGET)/cabi-test $(TARGET)/release/$(LIB_NAME) | $(TA
 	LD_LIBRARY_PATH=$(TARGET)/release $(TARGET)/cabi-test
 	touch $@
 
-$(TARGET)/cabi-test: c/test.c $(TARGET)/release/libdidkit.so $(TARGET)/didkit.h
+$(TARGET)/cabi-test: c/test.c $(TARGET)/release/$(LIB_NAME) $(TARGET)/didkit.h
 	$(CC) -I$(TARGET) -L$(TARGET)/release $< -ldl -ldidkit -o $@
 
 ## Java
