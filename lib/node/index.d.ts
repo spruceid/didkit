@@ -1,4 +1,4 @@
-declare module "didkit" {
+declare module "@spruceid/didkit" {
   interface Ed25519Key {
     kty: string;
     crv: string;
@@ -20,6 +20,14 @@ declare module "didkit" {
     errors: string[];
     warnings: string[];
     checks: string[];
+  }
+
+  interface ResolutionInputMetadata {
+    accept?: string;
+    versionId?: string;
+    versionTime?: string;
+    noCache?: boolean;
+    propertySet?: object;
   }
 
   interface ResolutionResult {
@@ -85,5 +93,8 @@ declare module "didkit" {
 
   function jwkFromTezosKey(key: string): Ed25519Key;
 
-  function didResolve(did: string): ResolutionResult;
+  function didResolve(
+    did: string,
+    inputMetadata: ResolutionInputMetadata
+  ): ResolutionResult;
 }
