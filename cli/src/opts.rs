@@ -1,13 +1,13 @@
-use structopt::StructOpt;
+use clap::StructOpt;
 
 use didkit::{HTTPDIDResolver, SeriesResolver, DID_METHODS};
 
 #[derive(StructOpt, Debug, Clone, Default)]
 pub struct ResolverOptions {
-    #[structopt(env, short = "r", long, parse(from_str = HTTPDIDResolver::new))]
+    #[clap(env, short = 'r', long, parse(from_str = HTTPDIDResolver::new))]
     /// Fallback DID Resolver HTTP(S) endpoint, for non-built-in DID methods.
     pub did_resolver: Option<HTTPDIDResolver>,
-    #[structopt(env, short = "R", long, parse(from_str = HTTPDIDResolver::new))]
+    #[clap(env, short = 'R', long, parse(from_str = HTTPDIDResolver::new))]
     /// Override DID Resolver HTTP(S) endpoint, for all DID methods.
     pub did_resolver_override: Option<HTTPDIDResolver>,
 }
