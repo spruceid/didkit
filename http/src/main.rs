@@ -2,8 +2,8 @@ use std::fs::File;
 use std::io::BufReader;
 use std::path::PathBuf;
 
+use clap::{AppSettings, ArgGroup, Parser, StructOpt};
 use hyper::Server;
-use structopt::StructOpt;
 
 use didkit::JWK;
 use didkit_cli::opts::ResolverOptions;
@@ -13,23 +13,23 @@ use didkit_http::Error;
 #[derive(StructOpt, Debug)]
 pub struct DIDKitHttpOpts {
     /// Port to listen on
-    #[structopt(env, short, long)]
+    #[clap(env, short, long)]
     port: Option<u16>,
     /// Hostname to listen on
-    #[structopt(env, short = "s", long)]
+    #[clap(env, short = 's', long)]
     host: Option<std::net::IpAddr>,
     /// JWK to use for issuing
-    #[structopt(flatten)]
+    #[clap(flatten)]
     key: KeyArg,
-    #[structopt(flatten)]
+    #[clap(flatten)]
     resolver_options: ResolverOptions,
 }
 
 #[derive(StructOpt, Debug)]
 pub struct KeyArg {
-    #[structopt(env, short, long, parse(from_os_str), group = "key_group")]
+    #[clap(env, short, long, parse(from_os_str), group = "key_group")]
     key_path: Option<Vec<PathBuf>>,
-    #[structopt(
+    #[clap(
         env,
         short,
         long,
