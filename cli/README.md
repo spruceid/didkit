@@ -335,6 +335,13 @@ DIDKit's DID method operation commands ([create](#didkit-did-create-did-method),
 
 See the included [shell script](tests/example.sh).
 
+See also the following shell scripts demonstrating create, update, recover and deactivate operations:
+- [create and update service](tests/ion-create-update-svc.sh)
+- [create and update verification method](tests/ion-create-update-vm.sh)
+- [create and recover](tests/ion-create-recover.sh)
+- [create and deactivate](tests/ion-create-deactivate.sh)
+
+[ssi]: https://github.com/spruceid/ssi
 [JWK]: https://tools.ietf.org/html/rfc7517
 [ld-proofs]: https://w3c-ccg.github.io/ld-proofs/
 [vc-http-api]: https://w3c-ccg.github.io/vc-http-api/
