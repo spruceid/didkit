@@ -208,7 +208,7 @@ pub struct KeyArg {
         long,
         parse(try_from_str = serde_json::from_str),
         hide_env_values = true,
-        conflicts_with = "key_path",
+        conflicts_with = "key-path",
         group = "key_group",
         help = "WARNING: you should not use this through the CLI in a production environment, prefer its environment variable."
     )]
