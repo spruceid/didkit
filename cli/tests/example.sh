@@ -197,7 +197,7 @@ then
 fi
 if ! didkit did-auth \
 	-k key.jwk \
-	-h "$did" \
+	--holder "$did" \
 	-p authentication \
 	-C "$challenge" \
 	-v "$verification_method" \
