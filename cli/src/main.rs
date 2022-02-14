@@ -14,10 +14,11 @@ use sshkeys::PublicKey;
 use did_method_key::DIDKey;
 use didkit::generate_proof;
 use didkit::{
-    dereference, get_verification_method, runtime, DIDCreate, DIDDocumentOperation, DIDMethod,
-    DIDRecover, DIDResolver, DIDUpdate, DereferencingInputMetadata, Error, LinkedDataProofOptions,
-    Metadata, ProofFormat, ProofPurpose, ResolutionInputMetadata, ResolutionResult, Source,
-    VerifiableCredential, VerifiablePresentation, DIDURL, DID_METHODS, JWK, URI,
+    dereference, get_verification_method, runtime, DIDCreate, DIDDeactivate, DIDDocumentOperation,
+    DIDMethod, DIDRecover, DIDResolver, DIDUpdate, DereferencingInputMetadata, Error,
+    LinkedDataProofOptions, Metadata, ProofFormat, ProofPurpose, ResolutionInputMetadata,
+    ResolutionResult, Source, VerifiableCredential, VerifiablePresentation, DIDURL, DID_METHODS,
+    JWK, URI,
 };
 use didkit_cli::opts::ResolverOptions;
 use ssi::did::{Service, ServiceEndpoint, VerificationRelationship};
@@ -180,9 +181,20 @@ pub enum DIDKit {
         resolver_options: ResolverOptions,
     },
 
-    /*
     /// Deactivate a DID.
-    DIDDeactivate {},
+    DIDDeactivate {
+        did: String,
+
+        /// Filename of JWK to perform the DID Deactivate operation
+        #[clap(short, long, parse(from_os_str))]
+        key: Option<PathBuf>,
+
+        #[clap(short = 'o', name = "name=value")]
+        /// Options for DID deactivate operation
+        options: Vec<MetadataProperty>,
+    },
+
+    /*
     /// Create a Signed IETF JSON Patch to update a DID document.
     DIDPatch {},
     */
@@ -1150,6 +1162,27 @@ fn main() -> AResult<()> {
                     options,
                 })
                 .context("DID Recover failed")?;
+            let stdout_writer = BufWriter::new(stdout());
+            serde_json::to_writer_pretty(stdout_writer, &tx).unwrap();
+            println!("");
+        }
+
+        DIDKit::DIDDeactivate { did, key, options } => {
+            let method = DID_METHODS
+                .get_method(&did)
+                .map_err(|e| anyhow!("Unable to get DID method: {}", e))?;
+            let key = read_jwk_file_opt(&key).context("Read key for DID deactivation")?;
+            let options = metadata_properties_to_value(options)
+                .context("Parse options for DID deactivation")?;
+            let options = serde_json::from_value(options).context("Unable to convert options")?;
+
+            let tx = method
+                .deactivate(DIDDeactivate {
+                    did: did.clone(),
+                    key,
+                    options,
+                })
+                .context("DID deactivation failed")?;
             let stdout_writer = BufWriter::new(stdout());
             serde_json::to_writer_pretty(stdout_writer, &tx).unwrap();
             println!("");
