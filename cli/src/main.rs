@@ -3,7 +3,7 @@ use std::io::{stdin, stdout, BufReader, BufWriter, Read, Write};
 use std::path::PathBuf;
 use std::str::FromStr;
 
-use anyhow::Result as AResult;
+use anyhow::{anyhow, Context, Result as AResult};
 use chrono::prelude::*;
 use clap::{AppSettings, ArgGroup, Parser, StructOpt};
 use serde::Serialize;
@@ -13,7 +13,7 @@ use sshkeys::PublicKey;
 use did_method_key::DIDKey;
 use didkit::generate_proof;
 use didkit::{
-    dereference, get_verification_method, runtime, DIDMethod, DIDResolver,
+    dereference, get_verification_method, runtime, DIDCreate, DIDMethod, DIDResolver,
     DereferencingInputMetadata, Error, LinkedDataProofOptions, Metadata, ProofFormat, ProofPurpose,
     ResolutionInputMetadata, ResolutionResult, Source, VerifiableCredential,
     VerifiablePresentation, DID_METHODS, JWK, URI,
@@ -66,11 +66,33 @@ pub enum DIDKit {
         ssh_pk: PublicKey,
     },
 
-    /*
     // DID Functionality
     /// Create new DID Document.
-    DIDCreate {},
-    */
+    // See also: https://identity.foundation/did-registration/#create
+    //           (method), jobId, options, secret, didDocument
+    DIDCreate {
+        /// DID method name
+        method: String,
+
+        /// JWK file for default verification method
+        #[clap(short, long, parse(from_os_str))]
+        verification_key: Option<PathBuf>,
+
+        /// JWK file for DID Update operations
+        #[clap(short, long, parse(from_os_str))]
+        update_key: Option<PathBuf>,
+
+        /// JWK file for DID Recovery and/or Deactivate operations
+        #[clap(short, long, parse(from_os_str))]
+        recovery_key: Option<PathBuf>,
+
+        #[clap(short = 'o', name = "name=value")]
+        /// Options for DID create operation
+        ///
+        /// More info: https://identity.foundation/did-registration/#options
+        options: Vec<MetadataProperty>,
+    },
+
     /// Resolve a DID to a DID Document.
     DIDResolve {
         did: String,
@@ -218,6 +240,17 @@ pub struct KeyArg {
     /// Request signature using SSH Agent
     #[clap(short = 'S', long, group = "key_group")]
     ssh_agent: bool,
+}
+
+fn read_jwk_file_opt(pathbuf_opt: &Option<PathBuf>) -> AResult<Option<JWK>> {
+    let pathbuf = match pathbuf_opt {
+        Some(pb) => pb,
+        None => return Ok(None),
+    };
+    let key_file = File::open(pathbuf).context("Opening JWK file")?;
+    let key_reader = BufReader::new(key_file);
+    let jwk = serde_json::from_reader(key_reader).context("Reading JWK file")?;
+    Ok(Some(jwk))
 }
 
 impl KeyArg {
@@ -657,6 +690,39 @@ fn main() -> AResult<()> {
             let dataset_normalized = ssi::urdna2015::normalize(&dataset).unwrap();
             let normalized = dataset_normalized.to_nquads().unwrap();
             stdout().write_all(normalized.as_bytes()).unwrap();
+        }
+
+        DIDKit::DIDCreate {
+            method,
+            verification_key,
+            update_key,
+            recovery_key,
+            options,
+        } => {
+            let method = DID_METHODS
+                .get(&method)
+                .ok_or(anyhow!("Unable to get DID method"))?;
+            let verification_key = read_jwk_file_opt(&verification_key)
+                .context("Read verification key for DID Create")?;
+            let update_key =
+                read_jwk_file_opt(&update_key).context("Read update key for DID Create")?;
+            let recovery_key =
+                read_jwk_file_opt(&recovery_key).context("Read recovery key for DID Create")?;
+            let options =
+                metadata_properties_to_value(options).context("Parse options for DID Create")?;
+            let options = serde_json::from_value(options).context("Unable to convert options")?;
+
+            let tx = method
+                .create(DIDCreate {
+                    recovery_key,
+                    update_key,
+                    verification_key,
+                    options,
+                })
+                .context("DID Create failed")?;
+            let stdout_writer = BufWriter::new(stdout());
+            serde_json::to_writer_pretty(stdout_writer, &tx).unwrap();
+            println!("");
         }
 
         DIDKit::DIDResolve {
