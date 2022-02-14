@@ -15,8 +15,8 @@ use did_method_key::DIDKey;
 use didkit::generate_proof;
 use didkit::{
     dereference, get_verification_method, runtime, DIDCreate, DIDDocumentOperation, DIDMethod,
-    DIDResolver, DIDUpdate, DereferencingInputMetadata, Error, LinkedDataProofOptions, Metadata,
-    ProofFormat, ProofPurpose, ResolutionInputMetadata, ResolutionResult, Source,
+    DIDRecover, DIDResolver, DIDUpdate, DereferencingInputMetadata, Error, LinkedDataProofOptions,
+    Metadata, ProofFormat, ProofPurpose, ResolutionInputMetadata, ResolutionResult, Source,
     VerifiableCredential, VerifiablePresentation, DIDURL, DID_METHODS, JWK, URI,
 };
 use didkit_cli::opts::ResolverOptions;
@@ -114,6 +114,34 @@ pub enum DIDKit {
 
         #[clap(subcommand)]
         cmd: DIDUpdateCmd,
+    },
+
+    /// Recover a DID.
+    DIDRecover {
+        /// DID to recover
+        did: String,
+
+        /// New JWK file for default verification method
+        #[clap(short = 'v', long, parse(from_os_str))]
+        new_verification_key: Option<PathBuf>,
+
+        /// New JWK file for DID Update operations
+        #[clap(short = 'u', long, parse(from_os_str))]
+        new_update_key: Option<PathBuf>,
+
+        /// New JWK file for DID Recovery and/or Deactivate operations
+        #[clap(short = 'r', long, parse(from_os_str))]
+        new_recovery_key: Option<PathBuf>,
+
+        /// JWK file for performing this DID recover operation.
+        #[clap(short = 'R', long, parse(from_os_str))]
+        recovery_key: Option<PathBuf>,
+
+        #[clap(short = 'o', name = "name=value")]
+        /// Options for DID Recover operation
+        ///
+        /// More info: https://identity.foundation/did-registration/#options
+        options: Vec<MetadataProperty>,
     },
 
     /// Resolve a DID to a DID Document.
@@ -1084,6 +1112,44 @@ fn main() -> AResult<()> {
                     options,
                 })
                 .context("DID Update failed")?;
+            let stdout_writer = BufWriter::new(stdout());
+            serde_json::to_writer_pretty(stdout_writer, &tx).unwrap();
+            println!("");
+        }
+
+        DIDKit::DIDRecover {
+            did,
+            new_verification_key,
+            new_update_key,
+            new_recovery_key,
+            recovery_key,
+            options,
+        } => {
+            let method = DID_METHODS
+                .get_method(&did)
+                .map_err(|e| anyhow!("Unable to get DID method: {}", e))?;
+            let new_verification_key = read_jwk_file_opt(&new_verification_key)
+                .context("Read new signing key for DID recovery")?;
+            let new_update_key = read_jwk_file_opt(&new_update_key)
+                .context("Read new update key for DID recovery")?;
+            let new_recovery_key = read_jwk_file_opt(&new_recovery_key)
+                .context("Read new recovery key for DID recovery")?;
+            let recovery_key =
+                read_jwk_file_opt(&recovery_key).context("Read recovery key for DID recovery")?;
+            let options =
+                metadata_properties_to_value(options).context("Parse options for DID recovery")?;
+            let options = serde_json::from_value(options).context("Unable to convert options")?;
+
+            let tx = method
+                .recover(DIDRecover {
+                    did: did.clone(),
+                    recovery_key,
+                    new_recovery_key,
+                    new_update_key,
+                    new_verification_key,
+                    options,
+                })
+                .context("DID Recover failed")?;
             let stdout_writer = BufWriter::new(stdout());
             serde_json::to_writer_pretty(stdout_writer, &tx).unwrap();
             println!("");

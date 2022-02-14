@@ -283,11 +283,26 @@ Construct a [DID method transaction][] to remove a [verification method][verific
 #### Options
 - `-d, --did <did>` - DID whose DID document to update. Default: implied from `<id>`
 
+### `didkit did-recover <did>`
+
+Construct a [DID method transaction][] to perform a DID recover operation ([DID recovery][did-recovery]), if supported by the DID method.
+
+#### Options
+- `-o <name=value>` - Options for DID Recover operation.
+- `-r, --new-recovery-key <file>` - New JWK file for DID recovery and/or deactivation purposes, as used in Sidetree DID methods (e.g. `did:ion`).
+- `-u, --new-update-key <file>` - New JWK file for next DID update operation, as used in Sidetree DID Methods (e.g. `did:ion`).
+- `-v, --new-verification-key <file>` - New JWK file for default verification method
+- `-R, --recovery-key <file>` - JWK file for performing this DID recover operation
+
+#### Output
+
+A [DID method transaction][] for a DID Recover operation.
+
 ## Concepts
 
 ### DID method transaction
 
-DIDKit's DID method operation commands ([create](#didkit-did-create-did-method), [update](#didkit-did-update-subcommand)) do not fully perform the respective operation; instead, they return a data structure representing the partially applied operation, called a **DID method transaction**. The transaction is a verifiable message created by a DID controller to perform a [DID method operation][method-operations]. The transaction can be submitted, published, and/or fully performed, per the DID method.
+DIDKit's DID method operation commands ([create](#didkit-did-create-did-method), [update](#didkit-did-update-subcommand), [recover](#didkit-did-recover-did)) do not fully perform the respective operation; instead, they return a data structure representing the partially applied operation, called a **DID method transaction**. The transaction is a verifiable message created by a DID controller to perform a [DID method operation][method-operations]. The transaction can be submitted, published, and/or fully performed, per the DID method.
 
 ## Examples
 
@@ -329,6 +344,7 @@ See the included [shell script](tests/example.sh).
 [did-url-dereferencing-input-metadata]: https://w3c.github.io/did-core/#did-url-dereferencing-input-metadata-properties
 [did-resolution-https-binding]: https://w3c-ccg.github.io/did-resolution/#bindings-https
 [method-operations]: https://www.w3.org/TR/did-core/#method-operations
+[did-recovery]: https://www.w3.org/TR/did-core/#did-recovery
 [verification-methods]: https://www.w3.org/TR/did-core/#verification-methods
 [verification-relationships]: https://www.w3.org/TR/did-core/#verification-relationships
 [services]: https://www.w3.org/TR/did-core/#services
