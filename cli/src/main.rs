@@ -3,6 +3,7 @@ use std::io::{stdin, stdout, BufReader, BufWriter, Read, Write};
 use std::path::PathBuf;
 use std::str::FromStr;
 
+use anyhow::Result as AResult;
 use chrono::prelude::*;
 use clap::{AppSettings, ArgGroup, Parser, StructOpt};
 use serde::Serialize;
@@ -374,7 +375,7 @@ set. For more info, see the manual for ssh-agent(1) and ssh-add(1).
     }
 }
 
-fn main() {
+fn main() -> AResult<()> {
     let rt = runtime::get().unwrap();
     let opt = DIDKit::parse();
     let ssh_agent_sock;
@@ -772,4 +773,5 @@ fn main() {
             }
         }
     }
+    Ok(())
 }
