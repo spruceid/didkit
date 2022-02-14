@@ -260,7 +260,7 @@ pub enum KeyCmd {
 pub enum KeyGenerateCmd {
     Ed25519,
     Secp256k1,
-    Secp256p1,
+    Secp256r1,
 }
 
 #[derive(Debug, Serialize)]
@@ -392,7 +392,7 @@ fn main() {
                         let jwk = JWK::generate_secp256k1().unwrap();
                         serde_json::to_string(&jwk).unwrap()
                     }
-                    KeyGenerateCmd::Secp256p1 => {
+                    KeyGenerateCmd::Secp256r1 => {
                         let jwk = JWK::generate_p256().unwrap();
                         serde_json::to_string(&jwk).unwrap()
                     }
