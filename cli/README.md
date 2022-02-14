@@ -309,11 +309,27 @@ Construct a [DID method transaction][] to deactivate a DID, if supported by the 
 #### Output
 A [DID method transaction][] for a DID Deactivate operation.
 
+### `didkit did-from-tx`
+
+Reads a [DID method transaction][] on standard input, and extracts or derives its DID.
+
+#### Output
+
+The DID corresponding to the input transaction.
+
+### `didkit did-submit-tx <did>`
+
+Reads a [DID method transaction][] on standard input, and submits it in a method-specific way. Returns exit status zero if the transaction was successfully submitted.
+
+#### Output
+
+A method-specific data structure.
+
 ## Concepts
 
 ### DID method transaction
 
-DIDKit's DID method operation commands ([create](#didkit-did-create-did-method), [update](#didkit-did-update-subcommand), [recover](#didkit-did-recover-did), [deactivate](#didkit-did-deactivate-did)) do not fully perform the respective operation; instead, they return a data structure representing the partially applied operation, called a **DID method transaction**. The transaction is a verifiable message created by a DID controller to perform a [DID method operation][method-operations]. The transaction can be submitted, published, and/or fully performed, per the DID method.
+DIDKit's DID method operation commands ([create](#didkit-did-create-did-method), [update](#didkit-did-update-subcommand), [recover](#didkit-did-recover-did), [deactivate](#didkit-did-deactivate-did)) do not fully perform the respective operation; instead, they return a data structure representing the partially applied operation, called a **DID method transaction**. The transaction is a verifiable message created by a DID controller to perform a [DID method operation][method-operations]. The transaction can be submitted, published, and/or fully performed, per the DID method, using the [did-submit-tx](#didkit-did-submit-tx-did) subcommand.
 
 ## Examples
 
