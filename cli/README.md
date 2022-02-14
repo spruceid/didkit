@@ -210,11 +210,84 @@ Construct a [DID method transaction][] to create a DID with a given DID method.
 
 A [DID method transaction][] for a DID Create operation.
 
+### `didkit did-update <subcommand>`
+
+Construct a [DID method transaction][] to update a DID.
+
+#### Options
+- `-o <name=value>` - Options for DID Update operation.
+- `-u, --new-update-key <file>` - New JWK file for next DID update operations, as used in Sidetree DID Methods (e.g. `did:ion`).
+- `-U, --update-key <file>` - JWK file for performing this DID update operation
+
+#### Subcommands
+
+Updates to a DID document may be done using these `did-update` subcommands. These correspond roughly to [`didDocumentOperation`][didDocumentOperation] values in DIF DID registration and/or [DID State Patches][did-state-patches] in Sidetree.
+
+- [`set-service`](#didkit-did-update-set-service-id)
+- [`set-verification-method`](#didkit-did-update-set-verification-method-id)
+- [`remove-service`](#didkit-did-update-remove-service-id)
+- [`remove-verification-method`](#didkit-did-update-remove-verification-method-id)
+
+#### Output
+A [DID method transaction][] for a DID Update operation.
+
+### `didkit did-update set-service <id>`
+
+Construct a [DID method transaction][] to add or modify a [service][services] in a DID document.
+
+The identified service object is created if it is exists, or reset if it does not exist, to contain the properties corresponding to the options passed, i.e. the `type` and `serviceEndpoint` properties.
+
+#### Options
+- `-d, --did <did>` - DID whose DID document to update. Default: implied from `<id>`
+- `-t, --type <type>...` - Service type
+- `-e, --endpoint <endpoint>...` - serviceEndpoint URI or JSON object
+
+### `didkit did-update set-verification-method <id>`
+
+Construct a [DID method transaction][] to add or modify a [verification method][verification-methods] in a DID document.
+
+The identified verification method is created if it does not exist, or reset if it already exists. The verification method is constructed to contain properties as passed in the options.
+
+#### Options
+- `-c, --controller <did>` - Verification method controller property
+- `-d, --did <did>` - DID whose DID document to update. Default: implied from `<id>`
+- `-t, --type <type>` - Verification method type (required)
+
+##### Verification relationship options
+At least one [verification relationship][verification-relationships] (proof purpose) must be provided. Each of these options creates the respective verification relationship in the DID document for the verification method object.
+
+- `-S, --assertionMethod` - [Assertion](https://www.w3.org/TR/did-core/#assertion)
+- `-U, --authentication`- [Authentication](https://www.w3.org/TR/did-core/#authentication)
+- `-D, --capabilityDelegation`- [Capability Delegation](https://www.w3.org/TR/did-core/#capability-delegation)
+- `-I, --capabilityInvocation` - [Capability Invocation](https://www.w3.org/TR/did-core/#capability-invocation)
+- `-K, --keyAgreement` - [keyAgreement](https://www.w3.org/TR/did-core/#key-agreement)
+
+##### Public key options
+Exactly one public key property must be provided. Which properties are allowed depends on the verification method type.
+- `-j, --publicKeyJwk <JWK>` - [publicKeyJwk][] value
+- `-k, --publicKeyJwkPath <filename>` - [publicKeyJwk][] value read from file
+- `-m, --publicKeyMultibase <string>` - Multibase-encoded public key ([publicKeyMultibase][] value)
+- `-b, --blockchainAccountId <account>` - [blockchainAccountId](https://w3c-ccg.github.io/security-vocab/#blockchainAccountId) (CAIP-10) value
+
+### `didkit did-update remove-service <id>`
+
+Construct a [DID method transaction][] to remove a [service][services] from a DID document.
+
+#### Options
+- `-d, --did <did>` - DID whose DID document to update. Default: implied from `<id>`
+
+### `didkit did-update remove-verification-method <id>`
+
+Construct a [DID method transaction][] to remove a [verification method][verification-methods] from a DID document.
+
+#### Options
+- `-d, --did <did>` - DID whose DID document to update. Default: implied from `<id>`
+
 ## Concepts
 
 ### DID method transaction
 
-DIDKit's DID method operation commands (e.g. [create](#didkit-did-create-did-method)) do not fully perform the respective operation; instead, they return a data structure representing the partially applied operation, called a **DID method transaction**. The transaction is a verifiable message created by a DID controller to perform a [DID method operation][method-operations]. The transaction can be submitted, published, and/or fully performed, per the DID method.
+DIDKit's DID method operation commands ([create](#didkit-did-create-did-method), [update](#didkit-did-update-subcommand)) do not fully perform the respective operation; instead, they return a data structure representing the partially applied operation, called a **DID method transaction**. The transaction is a verifiable message created by a DID controller to perform a [DID method operation][method-operations]. The transaction can be submitted, published, and/or fully performed, per the DID method.
 
 ## Examples
 
@@ -256,3 +329,11 @@ See the included [shell script](tests/example.sh).
 [did-url-dereferencing-input-metadata]: https://w3c.github.io/did-core/#did-url-dereferencing-input-metadata-properties
 [did-resolution-https-binding]: https://w3c-ccg.github.io/did-resolution/#bindings-https
 [method-operations]: https://www.w3.org/TR/did-core/#method-operations
+[verification-methods]: https://www.w3.org/TR/did-core/#verification-methods
+[verification-relationships]: https://www.w3.org/TR/did-core/#verification-relationships
+[services]: https://www.w3.org/TR/did-core/#services
+[publicKeyJwk]: https://www.w3.org/TR/did-core/#dfn-publickeyjwk
+[publicKeyMultibase]: https://www.w3.org/TR/did-core/#dfn-publickeymultibase
+[DID method transaction]: #did-method-transaction
+[didDocumentOperation]: https://identity.foundation/did-registration/#diddocumentoperation
+[did-state-patches]: https://identity.foundation/sidetree/spec/v1.0.0/#did-state-patches

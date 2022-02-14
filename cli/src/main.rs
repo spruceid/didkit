@@ -1,9 +1,10 @@
+use std::convert::TryFrom;
 use std::fs::File;
 use std::io::{stdin, stdout, BufReader, BufWriter, Read, Write};
 use std::path::PathBuf;
 use std::str::FromStr;
 
-use anyhow::{anyhow, Context, Result as AResult};
+use anyhow::{anyhow, bail, Context, Error as AError, Result as AResult};
 use chrono::prelude::*;
 use clap::{AppSettings, ArgGroup, Parser, StructOpt};
 use serde::Serialize;
@@ -13,12 +14,14 @@ use sshkeys::PublicKey;
 use did_method_key::DIDKey;
 use didkit::generate_proof;
 use didkit::{
-    dereference, get_verification_method, runtime, DIDCreate, DIDMethod, DIDResolver,
-    DereferencingInputMetadata, Error, LinkedDataProofOptions, Metadata, ProofFormat, ProofPurpose,
-    ResolutionInputMetadata, ResolutionResult, Source, VerifiableCredential,
-    VerifiablePresentation, DID_METHODS, JWK, URI,
+    dereference, get_verification_method, runtime, DIDCreate, DIDDocumentOperation, DIDMethod,
+    DIDResolver, DIDUpdate, DereferencingInputMetadata, Error, LinkedDataProofOptions, Metadata,
+    ProofFormat, ProofPurpose, ResolutionInputMetadata, ResolutionResult, Source,
+    VerifiableCredential, VerifiablePresentation, DIDURL, DID_METHODS, JWK, URI,
 };
 use didkit_cli::opts::ResolverOptions;
+use ssi::did::{Service, ServiceEndpoint, VerificationRelationship};
+use ssi::one_or_many::OneOrMany;
 
 #[derive(StructOpt, Debug)]
 pub enum DIDKit {
@@ -93,6 +96,26 @@ pub enum DIDKit {
         options: Vec<MetadataProperty>,
     },
 
+    /// Update a DID.
+    DIDUpdate {
+        /// New JWK file for next DID Update operation
+        #[clap(short = 'u', long, parse(from_os_str))]
+        new_update_key: Option<PathBuf>,
+
+        /// JWK file for performing this DID update operation.
+        #[clap(short = 'U', long, parse(from_os_str))]
+        update_key: Option<PathBuf>,
+
+        #[clap(short = 'o', name = "name=value")]
+        /// Options for DID Update operation
+        ///
+        /// More info: https://identity.foundation/did-registration/#options
+        options: Vec<MetadataProperty>,
+
+        #[clap(subcommand)]
+        cmd: DIDUpdateCmd,
+    },
+
     /// Resolve a DID to a DID Document.
     DIDResolve {
         did: String,
@@ -128,11 +151,8 @@ pub enum DIDKit {
         #[clap(flatten)]
         resolver_options: ResolverOptions,
     },
+
     /*
-    /// Update a DID Document’s authentication.
-    DIDUpdateAuthentication {},
-    /// Update a DID Document’s service endpoint(s).
-    DIDUpdateServiceEndpoints {},
     /// Deactivate a DID.
     DIDDeactivate {},
     /// Create a Signed IETF JSON Patch to update a DID document.
@@ -199,6 +219,143 @@ pub enum DIDKit {
     */
 }
 
+// An id and optionally a DID
+//
+// where the id may be present in the DID's DID document
+// and may be a DID URL.
+//
+// Cannot put docstring here because it overwrites help text for did-update subcommands
+#[derive(StructOpt, Debug)]
+pub struct IdAndDid {
+    /// id (URI) of object to add/remove/update in DID document
+    id: DIDURL,
+
+    /// DID whose DID document to update. Default: implied from <id>
+    ///
+    /// Defaults to the DID that is the prefix from the <id> argument.
+    #[clap(short, long)]
+    did: Option<String>,
+}
+
+impl IdAndDid {
+    pub fn parse<'a>(self) -> AResult<(&'a dyn DIDMethod, String, DIDURL)> {
+        let Self { id, did } = self;
+        let method = DID_METHODS
+            .get_method(&id.did)
+            .map_err(|e| anyhow!("Unable to get DID method: {}", e))?;
+        Ok((*method, did.unwrap_or_else(|| id.did.clone()), id))
+    }
+}
+
+fn parse_service_endpoint(uri_or_object: &str) -> AResult<ServiceEndpoint> {
+    let s = uri_or_object.trim();
+    if s.starts_with('{') {
+        let value = serde_json::from_str(s).context("Parse URI or Object")?;
+        Ok(ServiceEndpoint::Map(value))
+    } else {
+        Ok(ServiceEndpoint::URI(s.to_string()))
+    }
+}
+
+#[derive(StructOpt, Debug)]
+#[clap(rename_all = "camelCase")]
+#[clap(group = ArgGroup::new("verification_relationship").multiple(true).required(true))]
+pub struct VerificationRelationships {
+    /// Allow using this verification method for authentication
+    #[clap(short = 'U', long, group = "verification_relationship")]
+    pub authentication: bool,
+
+    /// Allow using this verification method for making assertions
+    #[clap(short = 'S', long, group = "verification_relationship")]
+    pub assertion_method: bool,
+
+    /// Allow using this verification method for key agreement
+    #[clap(short = 'K', long, group = "verification_relationship")]
+    pub key_agreement: bool,
+
+    /// Allow using this verification method for capability invocation
+    #[clap(short = 'I', long, group = "verification_relationship")]
+    pub capability_invocation: bool,
+
+    /// Allow using this verification method for capability delegation
+    #[clap(short = 'D', long, group = "verification_relationship")]
+    pub capability_delegation: bool,
+}
+
+impl From<VerificationRelationships> for Vec<VerificationRelationship> {
+    fn from(vrels: VerificationRelationships) -> Vec<VerificationRelationship> {
+        let mut vrels_vec = vec![];
+        let VerificationRelationships {
+            authentication,
+            assertion_method,
+            capability_invocation,
+            capability_delegation,
+            key_agreement,
+        } = vrels;
+        if authentication {
+            vrels_vec.push(VerificationRelationship::Authentication);
+        }
+        if assertion_method {
+            vrels_vec.push(VerificationRelationship::AssertionMethod);
+        }
+        if key_agreement {
+            vrels_vec.push(VerificationRelationship::KeyAgreement);
+        }
+        if capability_invocation {
+            vrels_vec.push(VerificationRelationship::CapabilityInvocation);
+        }
+        if capability_delegation {
+            vrels_vec.push(VerificationRelationship::CapabilityDelegation);
+        }
+        vrels_vec
+    }
+}
+
+#[derive(StructOpt, Debug)]
+pub enum DIDUpdateCmd {
+    /// Add a verification method to the DID document
+    SetVerificationMethod {
+        #[clap(flatten)]
+        id_and_did: IdAndDid,
+
+        /// Verification method type
+        #[clap(short, long)]
+        type_: String,
+
+        /// Verification method controller property
+        ///
+        /// Defaults to the DID this update is for (the <did> option)
+        #[clap(short, long)]
+        controller: Option<String>,
+
+        #[clap(flatten)]
+        verification_relationships: VerificationRelationships,
+
+        #[clap(flatten)]
+        public_key: PublicKeyArg,
+    },
+
+    /// Add a service to the DID document
+    SetService {
+        #[clap(flatten)]
+        id_and_did: IdAndDid,
+
+        /// Service type
+        #[clap(short, long)]
+        r#type: Vec<String>,
+
+        /// serviceEndpoint URI or JSON object
+        #[clap(short, long, parse(try_from_str = parse_service_endpoint))]
+        endpoint: Vec<ServiceEndpoint>,
+    },
+
+    /// Remove a service endpoint from the DID document
+    RemoveService(IdAndDid),
+
+    /// Remove a verification method from the DID document
+    RemoveVerificationMethod(IdAndDid),
+}
+
 #[derive(StructOpt, Debug)]
 #[non_exhaustive]
 pub struct ProofOptions {
@@ -240,6 +397,102 @@ pub struct KeyArg {
     /// Request signature using SSH Agent
     #[clap(short = 'S', long, group = "key_group")]
     ssh_agent: bool,
+}
+
+#[derive(StructOpt, Debug)]
+#[clap(group = ArgGroup::new("public_key_group").required(true))]
+#[clap(rename_all = "camelCase")]
+pub struct PublicKeyArg {
+    /// Public key JSON Web Key (JWK)
+    #[clap(short = 'j', long, group = "public_key_group", parse(try_from_str = serde_json::from_str), name = "JWK")]
+    public_key_jwk: Option<JWK>,
+
+    /// Public key JWK read from file
+    #[clap(short = 'k', long, group = "public_key_group", name = "filename")]
+    public_key_jwk_path: Option<PathBuf>,
+
+    /// Multibase-encoded public key
+    #[clap(short = 'm', long, group = "public_key_group", name = "string")]
+    public_key_multibase: Option<String>,
+
+    /// Blockchain Account Id (CAIP-10)
+    #[clap(short = 'b', long, group = "public_key_group", name = "account")]
+    blockchain_account_id: Option<String>,
+}
+
+/// PublicKeyArg as an enum
+enum PublicKeyArgEnum {
+    PublicKeyJwk(JWK),
+    PublicKeyJwkPath(PathBuf),
+    PublicKeyMultibase(String),
+    BlockchainAccountId(String),
+}
+
+/// PublicKeyArgEnum after file reading.
+/// Suitable for use a verification method map.
+enum PublicKeyProperty {
+    JWK(JWK),
+    Multibase(String),
+    Account(String),
+}
+
+/// Convert from struct with options, to enum,
+/// until https://github.com/clap-rs/clap/issues/2621
+impl TryFrom<PublicKeyArg> for PublicKeyArgEnum {
+    type Error = AError;
+    fn try_from(pka: PublicKeyArg) -> AResult<PublicKeyArgEnum> {
+        Ok(match pka {
+            PublicKeyArg {
+                public_key_jwk_path: Some(path),
+                public_key_jwk: None,
+                public_key_multibase: None,
+                blockchain_account_id: None,
+            } => PublicKeyArgEnum::PublicKeyJwkPath(path),
+            PublicKeyArg {
+                public_key_jwk_path: None,
+                public_key_jwk: Some(jwk),
+                public_key_multibase: None,
+                blockchain_account_id: None,
+            } => PublicKeyArgEnum::PublicKeyJwk(jwk),
+            PublicKeyArg {
+                public_key_jwk_path: None,
+                public_key_jwk: None,
+                public_key_multibase: Some(mb),
+                blockchain_account_id: None,
+            } => PublicKeyArgEnum::PublicKeyMultibase(mb),
+            PublicKeyArg {
+                public_key_jwk_path: None,
+                public_key_jwk: None,
+                public_key_multibase: None,
+                blockchain_account_id: Some(account),
+            } => PublicKeyArgEnum::BlockchainAccountId(account),
+            PublicKeyArg {
+                public_key_jwk_path: None,
+                public_key_jwk: None,
+                public_key_multibase: None,
+                blockchain_account_id: None,
+            } => bail!("Missing public key option"),
+            _ => bail!("Only one public key option may be used"),
+        })
+    }
+}
+
+/// Convert public key option to a property for a verification method
+impl TryFrom<PublicKeyArgEnum> for PublicKeyProperty {
+    type Error = AError;
+    fn try_from(pka: PublicKeyArgEnum) -> AResult<PublicKeyProperty> {
+        Ok(match pka {
+            PublicKeyArgEnum::PublicKeyJwkPath(path) => {
+                let key_file = File::open(path).context("Open JWK file")?;
+                let key_reader = BufReader::new(key_file);
+                let jwk: JWK = serde_json::from_reader(key_reader).context("Read JWK file")?;
+                PublicKeyProperty::JWK(jwk.to_public())
+            }
+            PublicKeyArgEnum::PublicKeyJwk(jwk) => PublicKeyProperty::JWK(jwk.to_public()),
+            PublicKeyArgEnum::PublicKeyMultibase(mb) => PublicKeyProperty::Multibase(mb),
+            PublicKeyArgEnum::BlockchainAccountId(account) => PublicKeyProperty::Account(account),
+        })
+    }
 }
 
 fn read_jwk_file_opt(pathbuf_opt: &Option<PathBuf>) -> AResult<Option<JWK>> {
@@ -720,6 +973,117 @@ fn main() -> AResult<()> {
                     options,
                 })
                 .context("DID Create failed")?;
+            let stdout_writer = BufWriter::new(stdout());
+            serde_json::to_writer_pretty(stdout_writer, &tx).unwrap();
+            println!("");
+        }
+
+        DIDKit::DIDUpdate {
+            new_update_key,
+            update_key,
+            options,
+            cmd,
+        } => {
+            let new_update_key =
+                read_jwk_file_opt(&new_update_key).context("Read new update key for DID update")?;
+            let update_key =
+                read_jwk_file_opt(&update_key).context("Read update key for DID update")?;
+            let options =
+                metadata_properties_to_value(options).context("Parse options for DID update")?;
+            let options = serde_json::from_value(options).context("Unable to convert options")?;
+
+            let (did, method, operation) = match cmd {
+                DIDUpdateCmd::SetVerificationMethod {
+                    id_and_did,
+                    type_,
+                    controller,
+                    public_key,
+                    verification_relationships,
+                } => {
+                    let (method, did, id) = id_and_did
+                        .parse()
+                        .context("Parse id/DID for set-verification-method subcommand")?;
+                    let pk_enum =
+                        PublicKeyArgEnum::try_from(public_key).context("Read public key option")?;
+                    let public_key =
+                        PublicKeyProperty::try_from(pk_enum).context("Read public key property")?;
+                    let purposes = verification_relationships.into();
+                    let controller = controller.unwrap_or_else(|| did.clone());
+                    let mut vmm = ssi::did::VerificationMethodMap {
+                        id: id.to_string(),
+                        type_,
+                        controller,
+                        ..Default::default()
+                    };
+                    match public_key {
+                        PublicKeyProperty::JWK(jwk) => vmm.public_key_jwk = Some(jwk),
+                        PublicKeyProperty::Multibase(mb) => {
+                            let mut ps = std::collections::BTreeMap::<String, Value>::default();
+                            ps.insert("publicKeyMultibase".to_string(), Value::String(mb));
+                            vmm.property_set = Some(ps);
+                        }
+                        PublicKeyProperty::Account(account) => {
+                            vmm.blockchain_account_id = Some(account);
+                        }
+                    }
+                    let op = DIDDocumentOperation::SetVerificationMethod { vmm, purposes };
+                    (did, method, op)
+                }
+                DIDUpdateCmd::RemoveVerificationMethod(id_and_did) => {
+                    let (method, did, id) = id_and_did.parse().context(
+                        "Unable to parse id/DID for remove-verification-method subcommand",
+                    )?;
+                    let op = DIDDocumentOperation::RemoveVerificationMethod(id);
+                    (did, method, op)
+                }
+                DIDUpdateCmd::SetService {
+                    id_and_did,
+                    endpoint,
+                    r#type,
+                } => {
+                    let (method, did, id) = id_and_did
+                        .parse()
+                        .context("Parse id/DID for set-verification-method subcommand")?;
+                    let service_endpoint = match endpoint.len() {
+                        0 => None,
+                        1 => endpoint.into_iter().next().map(OneOrMany::One),
+                        _ => Some(OneOrMany::Many(endpoint)),
+                    };
+                    let type_ = match r#type.len() {
+                        1 => r#type
+                            .into_iter()
+                            .next()
+                            .map(OneOrMany::One)
+                            .ok_or(anyhow!("Missing service type"))?,
+
+                        _ => OneOrMany::Many(r#type),
+                    };
+                    let service = Service {
+                        id: id.to_string(),
+                        type_,
+                        service_endpoint,
+                        property_set: None,
+                    };
+                    let op = DIDDocumentOperation::SetService(service);
+                    (did, method, op)
+                }
+                DIDUpdateCmd::RemoveService(id_and_did) => {
+                    let (method, did, id) = id_and_did
+                        .parse()
+                        .context("Parse id/DID for set-verification-method subcommand")?;
+                    let op = DIDDocumentOperation::RemoveService(id);
+                    (did, method, op)
+                }
+            };
+            let tx = method
+                .update(DIDUpdate {
+                    did: did.clone(),
+                    update_key,
+                    new_update_key,
+                    operation,
+                    options,
+                })
+                .context("DID Update failed")?;
             let stdout_writer = BufWriter::new(stdout());
             serde_json::to_writer_pretty(stdout_writer, &tx).unwrap();
             println!("");
