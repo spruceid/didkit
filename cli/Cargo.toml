@@ -26,7 +26,7 @@ tokio = { version = "1.0", features = ["macros", "rt-multi-thread"] }
 didkit = { version = "0.3", path = "../lib", features = ["http-did"] }
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
-structopt = "0.3"
+clap = { version = "3.0", features = ["derive", "env"] }
 did-method-key = { version = "0.1", path = "../../ssi/did-key" }
 ssi = { version = "0.3", path = "../../ssi", default-features = false }
 thiserror = "1.0"

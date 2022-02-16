@@ -4,10 +4,10 @@ use std::path::PathBuf;
 use std::str::FromStr;
 
 use chrono::prelude::*;
+use clap::{AppSettings, ArgGroup, Parser, StructOpt};
 use serde::Serialize;
 use serde_json::Value;
 use sshkeys::PublicKey;
-use structopt::{clap::AppSettings, clap::ArgGroup, StructOpt};
 
 use did_method_key::DIDKey;
 use didkit::generate_proof;
@@ -22,11 +22,15 @@ use didkit_cli::opts::ResolverOptions;
 #[derive(StructOpt, Debug)]
 pub enum DIDKit {
     /// Generate and output a Ed25519 keypair in JWK format
+    #[clap(setting(clap::AppSettings::Hidden))]
     GenerateEd25519Key,
+    /// Subcommand for keypair operations
+    #[clap(subcommand)]
+    Key(KeyCmd),
     /// Output a did:key DID for a JWK. Deprecated in favor of key-to-did.
-    #[structopt(setting = AppSettings::Hidden)]
+    #[clap(setting = AppSettings::Hidden)]
     KeyToDIDKey {
-        #[structopt(flatten)]
+        #[clap(flatten)]
         key: KeyArg,
     },
     /// Output a DID for a given JWK according to the provided DID method name or pattern
@@ -42,21 +46,21 @@ pub enum DIDKit {
     /// begins with `did:pkh:tz`.
     KeyToDID {
         /// DID method name or pattern. e.g. `key`, `tz`, or `pkh:tz`
-        #[structopt(default_value = "key")]
+        #[clap(default_value = "key")]
         method_pattern: String,
-        #[structopt(flatten)]
+        #[clap(flatten)]
         key: KeyArg,
     },
     /// Output a verificationMethod DID URL for a JWK and DID method name/pattern
     KeyToVerificationMethod {
         /// DID method id or pattern. e.g. `key`, `tz`, or `pkh:tz`
         method_pattern: Option<String>,
-        #[structopt(flatten)]
+        #[clap(flatten)]
         key: KeyArg,
     },
     /// Convert a SSH public key to a JWK
     SshPkToJwk {
-        #[structopt(parse(try_from_str=PublicKey::from_string))]
+        #[clap(parse(try_from_str=PublicKey::from_string))]
         /// SSH Public Key
         ssh_pk: PublicKey,
     },
@@ -69,36 +73,36 @@ pub enum DIDKit {
     /// Resolve a DID to a DID Document.
     DIDResolve {
         did: String,
-        #[structopt(short = "m", long)]
+        #[clap(short = 'm', long)]
         /// Return resolution result with metadata
         with_metadata: bool,
-        #[structopt(short = "i", name = "name=value")]
+        #[clap(short = 'i', name = "name=value")]
         /// DID resolution input metadata
         input_metadata: Vec<MetadataProperty>,
-        #[structopt(flatten)]
+        #[clap(flatten)]
         resolver_options: ResolverOptions,
     },
     /// Dereference a DID URL to a resource.
     DIDDereference {
         did_url: String,
-        #[structopt(short = "m", long)]
+        #[clap(short = 'm', long)]
         /// Return resolution result with metadata
         with_metadata: bool,
-        #[structopt(short = "i", name = "name=value")]
+        #[clap(short = 'i', name = "name=value")]
         /// DID dereferencing input metadata
         input_metadata: Vec<MetadataProperty>,
-        #[structopt(flatten)]
+        #[clap(flatten)]
         resolver_options: ResolverOptions,
     },
     /// Authenticate with a DID.
     DIDAuth {
-        #[structopt(flatten)]
+        #[clap(flatten)]
         key: KeyArg,
-        #[structopt(short = "h", long)]
+        #[clap(short = 'H', long)]
         holder: String,
-        #[structopt(flatten)]
+        #[clap(flatten)]
         proof_options: ProofOptions,
-        #[structopt(flatten)]
+        #[clap(flatten)]
         resolver_options: ResolverOptions,
     },
     /*
@@ -114,46 +118,46 @@ pub enum DIDKit {
     // VC Functionality
     /// Issue Credential
     VCIssueCredential {
-        #[structopt(flatten)]
+        #[clap(flatten)]
         key: KeyArg,
-        #[structopt(flatten)]
+        #[clap(flatten)]
         proof_options: ProofOptions,
-        #[structopt(flatten)]
+        #[clap(flatten)]
         resolver_options: ResolverOptions,
     },
     /// Verify Credential
     VCVerifyCredential {
-        #[structopt(flatten)]
+        #[clap(flatten)]
         proof_options: ProofOptions,
-        #[structopt(flatten)]
+        #[clap(flatten)]
         resolver_options: ResolverOptions,
     },
     /// Issue Presentation
     VCIssuePresentation {
-        #[structopt(flatten)]
+        #[clap(flatten)]
         key: KeyArg,
-        #[structopt(flatten)]
+        #[clap(flatten)]
         proof_options: ProofOptions,
-        #[structopt(flatten)]
+        #[clap(flatten)]
         resolver_options: ResolverOptions,
     },
     /// Verify Presentation
     VCVerifyPresentation {
-        #[structopt(flatten)]
+        #[clap(flatten)]
         resolver_options: ResolverOptions,
-        #[structopt(flatten)]
+        #[clap(flatten)]
         proof_options: ProofOptions,
     },
     /// Convert JSON-LD to URDNA2015-canonicalized RDF N-Quads
     ToRdfURDNA2015 {
         /// Base IRI
-        #[structopt(short = "b", long)]
+        #[clap(short = 'b', long)]
         base: Option<String>,
         /// IRI for expandContext option
-        #[structopt(short = "c", long)]
+        #[clap(short = 'c', long)]
         expand_context: Option<String>,
         /// Additional values for JSON-LD @context property.
-        #[structopt(short = "C", long)]
+        #[clap(short = 'C', long)]
         more_context_json: Option<String>,
     },
     /*
@@ -176,42 +180,42 @@ pub enum DIDKit {
 #[non_exhaustive]
 pub struct ProofOptions {
     // Options as in vc-api (vc-http-api)
-    #[structopt(env, short, long)]
+    #[clap(env, short, long)]
     pub type_: Option<String>,
-    #[structopt(env, short, long)]
+    #[clap(env, short, long)]
     pub verification_method: Option<URI>,
-    #[structopt(env, short, long)]
+    #[clap(env, short, long)]
     pub proof_purpose: Option<ProofPurpose>,
-    #[structopt(env, short, long)]
+    #[clap(env, short, long)]
     pub created: Option<DateTime<Utc>>,
-    #[structopt(env, short = "C", long)]
+    #[clap(env, short = 'C', long)]
     pub challenge: Option<String>,
-    #[structopt(env, short, long)]
+    #[clap(env, short, long)]
     pub domain: Option<String>,
 
     // Non-standard options
-    #[structopt(env, default_value, short = "f", long)]
+    #[clap(env, default_value_t, short = 'f', long)]
     pub proof_format: ProofFormat,
 }
 
 #[derive(StructOpt, Debug)]
-#[structopt(group = ArgGroup::with_name("key_group").multiple(true).required(true))]
+#[clap(group = ArgGroup::new("key_group").multiple(true).required(true))]
 pub struct KeyArg {
-    #[structopt(env, short, long, parse(from_os_str), group = "key_group")]
+    #[clap(env, short, long, parse(from_os_str), group = "key_group")]
     key_path: Option<PathBuf>,
-    #[structopt(
+    #[clap(
         env,
         short,
         long,
         parse(try_from_str = serde_json::from_str),
         hide_env_values = true,
-        conflicts_with = "key_path",
+        conflicts_with = "key-path",
         group = "key_group",
         help = "WARNING: you should not use this through the CLI in a production environment, prefer its environment variable."
     )]
     jwk: Option<JWK>,
     /// Request signature using SSH Agent
-    #[structopt(short = "S", long, group = "key_group")]
+    #[clap(short = 'S', long, group = "key_group")]
     ssh_agent: bool,
 }
 
@@ -245,6 +249,23 @@ impl From<ProofOptions> for LinkedDataProofOptions {
             ..Default::default()
         }
     }
+}
+
+#[derive(StructOpt, Debug)]
+pub enum KeyCmd {
+    /// Generate and output a keypair in JWK format
+    #[clap(subcommand)]
+    Generate(KeyGenerateCmd),
+}
+
+#[derive(StructOpt, Debug)]
+pub enum KeyGenerateCmd {
+    /// Generate and output a Ed25519 keypair in JWK format
+    Ed25519,
+    /// Generate and output a K-256 keypair in JWK format
+    Secp256k1,
+    /// Generate and output a P-256 keypair in JWK format
+    Secp256r1,
 }
 
 #[derive(Debug, Serialize)]
@@ -328,6 +349,12 @@ mod tests {
         let meta = metadata_properties_to_value(props).unwrap();
         assert_eq!(meta, json!({"name": ["value1", "value2"]}));
     }
+
+    #[test]
+    fn verify_app() {
+        use clap::IntoApp;
+        DIDKit::into_app().debug_assert()
+    }
 }
 
 fn get_ssh_agent_sock() -> String {
@@ -349,7 +376,7 @@ set. For more info, see the manual for ssh-agent(1) and ssh-add(1).
 
 fn main() {
     let rt = runtime::get().unwrap();
-    let opt = DIDKit::from_args();
+    let opt = DIDKit::parse();
     let ssh_agent_sock;
 
     match opt {
@@ -358,6 +385,26 @@ fn main() {
             let jwk_str = serde_json::to_string(&jwk).unwrap();
             println!("{}", jwk_str);
         }
+
+        DIDKit::Key(cmd) => match cmd {
+            KeyCmd::Generate(cmd_generate) => {
+                let jwk_str = match cmd_generate {
+                    KeyGenerateCmd::Ed25519 => {
+                        let jwk = JWK::generate_ed25519().unwrap();
+                        serde_json::to_string(&jwk).unwrap()
+                    }
+                    KeyGenerateCmd::Secp256k1 => {
+                        let jwk = JWK::generate_secp256k1().unwrap();
+                        serde_json::to_string(&jwk).unwrap()
+                    }
+                    KeyGenerateCmd::Secp256r1 => {
+                        let jwk = JWK::generate_p256().unwrap();
+                        serde_json::to_string(&jwk).unwrap()
+                    }
+                };
+                println!("{}", jwk_str);
+            }
+        },
 
         DIDKit::KeyToDIDKey { key } => {
             // Deprecated in favor of KeyToDID
