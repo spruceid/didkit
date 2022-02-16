@@ -97,7 +97,7 @@ pub enum DIDKit {
     DIDAuth {
         #[clap(flatten)]
         key: KeyArg,
-        #[clap(long)]
+        #[clap(short = 'H', long)]
         holder: String,
         #[clap(flatten)]
         proof_options: ProofOptions,
