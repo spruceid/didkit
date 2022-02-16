@@ -35,7 +35,7 @@ did-ethr = { version = "0.1", path = "../../ssi/did-ethr" }
 did-pkh = { version = "0.1", path = "../../ssi/did-pkh" }
 #did-sol = { version = "0.0.1", path = "../../ssi/did-sol" }
 did-web = { version = "^0.1.1", path = "../../ssi/did-web" }
-did-webkey = { version = "0.1", path = "../../ssi/did-webkey" }
+did-webkey = { version = "0.1", path = "../../ssi/did-webkey", default-features = false }
 did-onion = { version = "^0.1.1", path = "../../ssi/did-onion" }
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
