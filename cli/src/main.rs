@@ -24,6 +24,7 @@ pub enum DIDKit {
     /// Generate and output a Ed25519 keypair in JWK format
     #[clap(setting(clap::AppSettings::Hidden))]
     GenerateEd25519Key,
+    /// Subcommand for keypair operations
     #[clap(subcommand)]
     Key(KeyCmd),
     /// Output a did:key DID for a JWK. Deprecated in favor of key-to-did.
@@ -252,14 +253,18 @@ impl From<ProofOptions> for LinkedDataProofOptions {
 
 #[derive(StructOpt, Debug)]
 pub enum KeyCmd {
+    /// Generate and output a keypair in JWK format
     #[clap(subcommand)]
     Generate(KeyGenerateCmd),
 }
 
 #[derive(StructOpt, Debug)]
 pub enum KeyGenerateCmd {
+    /// Generate and output a Ed25519 keypair in JWK format
     Ed25519,
+    /// Generate and output a K-256 keypair in JWK format
     Secp256k1,
+    /// Generate and output a P-256 keypair in JWK format
     Secp256r1,
 }
 
