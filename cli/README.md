@@ -195,6 +195,12 @@ If the `-m` option is used, a JSON array is returned containing the following th
 
 Exit status is zero on success and nonzero on error. On error, if `-m` is used, the error message is returned in the `error` property of the DID dereferencing metadata object on standard output; if `-m` is not used, the error is printed on standard error.
 
+## Concepts
+
+### DID method transaction
+
+DIDKit's DID method operation commands do not fully perform the respective operation; instead, they return a data structure representing the partially applied operation, called a **DID method transaction**. The transaction is a verifiable message created by a DID controller to perform a [DID method operation][method-operations]. The transaction can be submitted, published, and/or fully performed, per the DID method.
+
 ## Examples
 
 See the included [shell script](tests/example.sh).
@@ -234,3 +240,4 @@ See the included [shell script](tests/example.sh).
 [did-url-dereferencing-metadata]: https://w3c.github.io/did-core/#did-url-dereferencing-metadata-properties
 [did-url-dereferencing-input-metadata]: https://w3c.github.io/did-core/#did-url-dereferencing-input-metadata-properties
 [did-resolution-https-binding]: https://w3c-ccg.github.io/did-resolution/#bindings-https
+[method-operations]: https://www.w3.org/TR/did-core/#method-operations
