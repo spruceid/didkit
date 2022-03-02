@@ -20,7 +20,7 @@ version = "0.4"
 path = "../../../ssi"
 
 [dependencies.didkit]
-version = "0.3"
+version = "0.4"
 default-features = false
 path = "../"
 

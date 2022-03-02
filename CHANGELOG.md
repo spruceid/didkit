@@ -5,6 +5,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+
+## [0.4.0] - 2022-03-03
 ### Added
 - DID Resolution function added to didkit-node ([#237](https://github.com/spruceid/didkit/pull/237)).
 - Add key generation subcommands: `didkit key generate ...` ([#259](https://github.com/spruceid/didkit/pull/259)).
@@ -144,7 +146,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [wasm-pack]: https://rustwasm.github.io/wasm-pack/
 [zcap-ld]: https://w3c-ccg.github.io/zcap-ld/
 
-[Unreleased]: https://github.com/spruceid/didkit/compare/v0.3.0...HEAD
+[Unreleased]: https://github.com/spruceid/didkit/compare/v0.4.0...HEAD
+[0.4.0]: https://github.com/spruceid/didkit/releases/tag/v0.4.0
 [0.3.0]: https://github.com/spruceid/didkit/releases/tag/v0.3.0
 [0.2.1]: https://github.com/spruceid/didkit/releases/tag/v0.2.1
 [0.2.0]: https://github.com/spruceid/didkit/releases/tag/v0.2.0
