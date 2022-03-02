@@ -16,7 +16,7 @@ serde = "1.0"
 serde_json = "1.0"
 
 [dependencies.ssi]
-version = "0.3"
+version = "0.4"
 path = "../../../ssi"
 
 [dependencies.didkit]
