@@ -327,6 +327,65 @@ pub fn issuePresentation(presentation: String, proof_options: String, key: Strin
     map_async_jsvalue(issue_presentation(presentation, proof_options, key))
 }
 
+async fn prepare_issue_presentation(
+    presentation: String,
+    linked_data_proof_options: String,
+    public_key: String,
+) -> Result<String, Error> {
+    let public_key: JWK = serde_json::from_str(&public_key)?;
+    let presentation = VerifiablePresentation::from_json_unsigned(&presentation)?;
+    let options: LinkedDataProofOptions = serde_json::from_str(&linked_data_proof_options)?;
+    let resolver = DID_METHODS.to_resolver();
+    let preparation = presentation
+        .prepare_proof(&public_key, &options, resolver)
+        .await?;
+    let preparation_json = serde_json::to_string(&preparation)?;
+    Ok(preparation_json)
+}
+
+#[wasm_bindgen]
+#[allow(non_snake_case)]
+#[cfg(feature = "issue")]
+pub fn prepareIssuePresentation(
+    presentation: String,
+    linked_data_proof_options: String,
+    public_key: String,
+) -> Promise {
+    map_async_jsvalue(prepare_issue_presentation(
+        presentation,
+        linked_data_proof_options,
+        public_key,
+    ))
+}
+
+async fn complete_issue_presentation(
+    presentation: String,
+    preparation: String,
+    signature: String,
+) -> Result<String, Error> {
+    let mut presentation = VerifiablePresentation::from_json_unsigned(&presentation)?;
+    let preparation: ProofPreparation = serde_json::from_str(&preparation)?;
+    let proof = preparation.complete(&signature).await?;
+    presentation.add_proof(proof);
+    let vc_json = serde_json::to_string(&presentation)?;
+    Ok(vc_json)
+}
+
+#[wasm_bindgen]
+#[allow(non_snake_case)]
+#[cfg(feature = "issue")]
+pub fn completeIssuePresentation(
+    presentation: String,
+    preparation: String,
+    signature: String,
+) -> Promise {
+    map_async_jsvalue(complete_issue_presentation(
+        presentation,
+        preparation,
+        signature,
+    ))
+}
+
 #[cfg(any(
     all(feature = "verify", feature = "presentation"),
     all(feature = "verify", not(feature = "credential")),
