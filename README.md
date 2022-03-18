@@ -15,7 +15,7 @@ core functionality.
 
 ![DIDKit core components](https://user-images.githubusercontent.com/37127325/132885609-a5ca8019-e072-47ca-8088-1e278df7b3fe.png)
 
-## Audits
+## Security Audits
 DIDKit has undergone the following security reviews:
 - [March 14th, 2022 - Trail of Bits](https://github.com/trailofbits/publications/blob/master/reviews/SpruceID.pdf) | [Summary of Findings](https://blog.spruceid.com/spruce-completes-first-security-audit-from-trail-of-bits/)
 
