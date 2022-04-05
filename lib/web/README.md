@@ -1,4 +1,4 @@
-[![](https://img.shields.io/npm/v/@spruceid/didkit-wasm?label=%40spruceid%2Fdidkit-wasm&logo=npm)](https://www.npmjs.com/package/@spruceid/didkit-wasm) [![](https://img.shields.io/npm/v/@spruceid/didkit-wasm-node?label=%40spruceid%2Fdidkit-wasm-node&logo=npm)](https://www.npmjs.com/package/@spruceid/didkit-wasm-node)
+[![](https://img.shields.io/npm/v/@spruceid/didkit-wasm?label=%40spruceid%2Fdidkit-wasm&logo=npm)](https://www.npmjs.com/package/@spruceid/didkit-wasm)
 <!-- Might want those badge in the main README. -->
 
 # DIDKit WASM
@@ -18,29 +18,19 @@ $ cargo install wasm-pack
 
 ## Installation and Usage
 
-### Node
+### Web Frameworks (Bundled) and Node.js
 
-WASM can be used in Node.js (any recent version):
-```bash
-$ npm i @spruceid/didkit-wasm-node
-```
-
-Or build it from source:
-```bash
-$ wasm-pack build --target nodejs
-```
-
-### Web Frameworks (Bundled)
-
-WASM can be used with web frameworks and bundlers like Webpack:
+WASM can be used with web frameworks and bundlers like Webpack 5 or in Node.js
+(any recent version):
 ```bash
 $ npm i @spruceid/didkit-wasm
 ```
 
 Or build it from source:
 ```bash
-$ wasm-pack build
+$ ./fat_bundle.sh
 ```
+You will find the package under `./fat_pkg/`.
 
 > If Webpack doesn't work with the default configuration, you can have a look at
 > our configuration for
