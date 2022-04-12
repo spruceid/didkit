@@ -26,12 +26,17 @@ features = ["ed25519-dalek", "sha2", "rsa", "rand", "libsecp256k1", "p256"]
 
 [dependencies.did-method-key]
 path = "../../../ssi/did-key"
+default-features = false
 features = ["secp256k1", "p256"]
 
 [dependencies.did-tz]
 path = "../../../ssi/did-tezos"
 default-features = false
 features = ["secp256k1", "dalek", "p256"]
+
+[dependencies.did-webkey]
+path = "../../../ssi/did-webkey"
+default-features = false
 
 [dev-dependencies]
 wasm-bindgen-test = "0.2"

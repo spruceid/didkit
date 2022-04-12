@@ -48,5 +48,7 @@ register_module!(mut m, {
 
     m.export_function("jwkFromTezosKey", didkit::jwk_from_tezos_key)?;
 
+    m.export_function("didResolve", didkit::did_resolve)?;
+
     Ok(())
 });

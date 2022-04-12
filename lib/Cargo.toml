@@ -1,6 +1,6 @@
 [package]
 name = "didkit"
-version = "0.3.0"
+version = "0.4.0"
 authors = ["Spruce Systems, Inc."]
 edition = "2018"
 description = "Library for Verifiable Credentials and Decentralized Identifiers."
@@ -28,15 +28,16 @@ secp256k1 = ["ssi/libsecp256k1", "did-tz/secp256k1", "did-method-key/secp256k1"]
 p256 = ["ssi/secp256r1", "did-tz/p256", "did-webkey/p256", "did-method-key/secp256r1"]
 
 [dependencies]
-ssi = { version = "0.3", path = "../../ssi", default-features = false }
-did-method-key = { version = "^0.1.2", path = "../../ssi/did-key" }
+ssi = { version = "0.4", path = "../../ssi", default-features = false }
+did-method-key = { version = "^0.1.2", path = "../../ssi/did-key", default-features = false }
 did-tz = { version = "^0.1.1", path = "../../ssi/did-tezos", default-features = false }
-did-ethr = { version = "0.1", path = "../../ssi/did-ethr" }
-did-pkh = { version = "0.1", path = "../../ssi/did-pkh" }
+did-ethr = { version = "0.1", path = "../../ssi/did-ethr", default-features = false }
+did-pkh = { version = "0.1", path = "../../ssi/did-pkh", default-features = false }
 #did-sol = { version = "0.0.1", path = "../../ssi/did-sol" }
-did-web = { version = "^0.1.1", path = "../../ssi/did-web" }
-did-webkey = { version = "0.1", path = "../../ssi/did-webkey" }
-did-onion = { version = "^0.1.1", path = "../../ssi/did-onion" }
+did-web = { version = "^0.1.1", path = "../../ssi/did-web", default-features = false }
+did-webkey = { version = "0.1", path = "../../ssi/did-webkey", default-features = false }
+did-onion = { version = "^0.1.1", path = "../../ssi/did-onion", default-features = false }
+did-ion = { version = "^0.1.0", path = "../../ssi/did-ion", default-features = false }
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
 # TODO feature-gate JNI, or extract it in another crate like we do for Python (and probably WASM as well)

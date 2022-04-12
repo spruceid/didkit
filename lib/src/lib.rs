@@ -14,7 +14,10 @@ extern crate lazy_static;
 
 pub use crate::did_methods::DID_METHODS;
 pub use crate::error::Error;
-pub use ssi::did::{DIDMethod, Document, Source};
+pub use ssi::did::{
+    DIDCreate, DIDDeactivate, DIDDocumentOperation, DIDMethod, DIDRecover, DIDUpdate, Document,
+    Source, DIDURL,
+};
 #[cfg(feature = "http-did")]
 pub use ssi::did_resolve::HTTPDIDResolver;
 pub use ssi::did_resolve::{

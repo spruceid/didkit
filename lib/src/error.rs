@@ -7,6 +7,7 @@ use std::ptr;
 
 use serde_json::Error as JSONError;
 use ssi::error::Error as SSIError;
+use std::error::Error as StdError;
 use std::io::Error as IOError;
 use std::str::Utf8Error;
 
@@ -53,6 +54,8 @@ impl Error {
         }
     }
 }
+
+impl StdError for Error {}
 
 #[no_mangle]
 /// Retrieve a human-readable description of the most recent error encountered by a DIDKit C
