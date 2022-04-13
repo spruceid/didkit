@@ -12,7 +12,7 @@ Please refer to the [CLI docs][] for more information about the functions.
 
 ```js
 // Import the module
-const DIDKit = require('didkit');
+const DIDKit = require('@spruceid/didkit');
 
 console.log(DIDKit.getVersion());
 
