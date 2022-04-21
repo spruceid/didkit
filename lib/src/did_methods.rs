@@ -12,7 +12,20 @@ use std::env::VarError;
 
 lazy_static! {
     static ref DIDTZ: DIDTz = DIDTz::default();
-    static ref DIDONION: DIDOnion = DIDOnion::default();
+    static ref DIDONION: DIDOnion = {
+        let mut onion = DIDOnion::default();
+        if let Some(url) = match std::env::var("DID_ONION_PROXY_URL") {
+            Ok(url) => Some(url),
+            Err(VarError::NotPresent) => None,
+            Err(VarError::NotUnicode(err)) => {
+                eprintln!("Unable to parse DID_ONION_PROXY_URL: {:?}", err);
+                None
+            }
+        } {
+            onion.proxy_url = url;
+        }
+        onion
+    };
     static ref ION: DIDION = DIDION::new(
         match std::env::var("DID_ION_API_URL") {
             Ok(string) => Some(string),
