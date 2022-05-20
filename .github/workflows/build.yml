@@ -11,7 +11,7 @@ on:
 
 env:
   CARGO_TERM_COLOR: always
-  SSI_REF: 4a2b53a602727601727a7f6d7b30c3fe00a4198d
+  SSI_REF: 8dc91a17fc43ee55aa67ec6bdb9a49a7734ebf4e
 
 defaults:
   run:

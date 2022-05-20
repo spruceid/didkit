@@ -1,6 +1,7 @@
 use crate::DIDResolver;
 use crate::LinkedDataProofOptions;
 use sshkeys::PublicKey;
+use ssi::jsonld::ContextLoader;
 use ssi::jwk::{Algorithm, JWK};
 use ssi::ldp::LinkedDataProofs;
 use std::convert::TryFrom;
@@ -305,11 +306,13 @@ pub async fn generate_proof(
     document: &(dyn ssi::ldp::LinkedDataDocument + Sync),
     options: LinkedDataProofOptions,
     resolver: &dyn DIDResolver,
+    context_loader: &mut ContextLoader,
     jwk_opt: Option<&JWK>,
 ) -> Result<ssi::vc::Proof, SignError> {
     let keys = list_keys(ssh_agent_sock).await?;
     let (jwk, pk) = select_key(keys, jwk_opt)?;
-    let prep = LinkedDataProofs::prepare(document, &options, resolver, &jwk, None).await?;
+    let prep =
+        LinkedDataProofs::prepare(document, &options, resolver, context_loader, &jwk, None).await?;
     let signing_input_bytes = match prep.signing_input {
         ssi::ldp::SigningInput::Bytes(ref bytes) => bytes.0.to_vec(),
         _ => Err(SignError::UnsupportedSigningInputFormat)?,

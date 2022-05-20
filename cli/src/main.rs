@@ -804,6 +804,7 @@ fn main() -> AResult<()> {
             proof_options,
         } => {
             let resolver = resolver_options.to_resolver();
+            let mut context_loader = ssi::jsonld::ContextLoader::default();
             let credential_reader = BufReader::new(stdin());
             let mut credential: VerifiableCredential =
                 serde_json::from_reader(credential_reader).unwrap();
@@ -833,6 +834,7 @@ fn main() -> AResult<()> {
                             jwk_opt.as_ref(),
                             options,
                             &resolver,
+                            &mut context_loader,
                             ssh_agent_sock_opt,
                         ))
                         .unwrap();
@@ -851,6 +853,7 @@ fn main() -> AResult<()> {
             resolver_options,
         } => {
             let resolver = resolver_options.to_resolver();
+            let mut context_loader = ssi::jsonld::ContextLoader::default();
             let mut credential_reader = BufReader::new(stdin());
             let proof_format = proof_options.proof_format.clone();
             let options = LinkedDataProofOptions::from(proof_options);
@@ -862,13 +865,14 @@ fn main() -> AResult<()> {
                         &jwt,
                         Some(options),
                         &resolver,
+                        &mut context_loader,
                     ))
                 }
                 ProofFormat::LDP => {
                     let credential: VerifiableCredential =
                         serde_json::from_reader(credential_reader).unwrap();
                     credential.validate_unsigned().unwrap();
-                    rt.block_on(credential.verify(Some(options), &resolver))
+                    rt.block_on(credential.verify(Some(options), &resolver, &mut context_loader))
                 }
                 _ => {
                     panic!("Unknown proof format: {:?}", proof_format);
@@ -888,6 +892,7 @@ fn main() -> AResult<()> {
             proof_options,
         } => {
             let resolver = resolver_options.to_resolver();
+            let mut context_loader = ssi::jsonld::ContextLoader::default();
             let presentation_reader = BufReader::new(stdin());
             let mut presentation: VerifiablePresentation =
                 serde_json::from_reader(presentation_reader).unwrap();
@@ -918,6 +923,7 @@ fn main() -> AResult<()> {
                             jwk_opt.as_ref(),
                             options,
                             &resolver,
+                            &mut context_loader,
                             ssh_agent_sock_opt,
                         ))
                         .unwrap();
@@ -936,6 +942,7 @@ fn main() -> AResult<()> {
             resolver_options,
         } => {
             let resolver = resolver_options.to_resolver();
+            let mut context_loader = ssi::jsonld::ContextLoader::default();
             let mut presentation_reader = BufReader::new(stdin());
             let proof_format = proof_options.proof_format.clone();
             let options = LinkedDataProofOptions::from(proof_options);
@@ -947,13 +954,14 @@ fn main() -> AResult<()> {
                         &jwt,
                         Some(options),
                         &resolver,
+                        &mut context_loader,
                     ))
                 }
                 ProofFormat::LDP => {
                     let presentation: VerifiablePresentation =
                         serde_json::from_reader(presentation_reader).unwrap();
                     presentation.validate_unsigned().unwrap();
-                    rt.block_on(presentation.verify(Some(options), &resolver))
+                    rt.block_on(presentation.verify(Some(options), &resolver, &mut context_loader))
                 }
                 _ => {
                     panic!("Unexpected proof format: {:?}", proof_format);
@@ -1297,6 +1305,7 @@ fn main() -> AResult<()> {
             resolver_options,
         } => {
             let resolver = resolver_options.to_resolver();
+            let mut context_loader = ssi::jsonld::ContextLoader::default();
             let mut presentation = VerifiablePresentation::default();
             presentation.holder = Some(ssi::vc::URI::String(holder));
             let proof_format = proof_options.proof_format.clone();
@@ -1325,6 +1334,7 @@ fn main() -> AResult<()> {
                             jwk_opt.as_ref(),
                             options,
                             &resolver,
+                            &mut context_loader,
                             ssh_agent_sock_opt,
                         ))
                         .unwrap();

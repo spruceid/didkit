@@ -74,6 +74,7 @@ pub fn issue_credential(mut cx: FunctionContext) -> JsResult<JsValue> {
     let key = arg!(cx, 2, JWK);
     let proof_format = options.proof_format.unwrap_or_default();
     let resolver = DID_METHODS.to_resolver();
+    let mut context_loader = ssi::jsonld::ContextLoader::default();
 
     let rt = throws!(cx, runtime::get())?;
     let vc = match proof_format {
@@ -87,7 +88,12 @@ pub fn issue_credential(mut cx: FunctionContext) -> JsResult<JsValue> {
         ProofFormat::LDP => {
             let proof = throws!(
                 cx,
-                rt.block_on(credential.generate_proof(&key, &options.ldp_options, resolver))
+                rt.block_on(credential.generate_proof(
+                    &key,
+                    &options.ldp_options,
+                    resolver,
+                    &mut context_loader
+                ))
             )?;
             credential.add_proof(proof);
             throws!(cx, neon_serde::to_value(&mut cx, &credential))?
@@ -105,7 +111,9 @@ pub fn verify_credential(mut cx: FunctionContext) -> JsResult<JsValue> {
     let options = arg!(cx, 1, LinkedDataProofOptions);
 
     let rt = throws!(cx, runtime::get())?;
-    let result = rt.block_on(vc.verify(Some(options), DID_METHODS.to_resolver()));
+    let resolver = DID_METHODS.to_resolver();
+    let mut context_loader = ssi::jsonld::ContextLoader::default();
+    let result = rt.block_on(vc.verify(Some(options), resolver, &mut context_loader));
     let result = throws!(cx, neon_serde::to_value(&mut cx, &result))?;
     Ok(result)
 }
@@ -115,11 +123,12 @@ pub fn issue_presentation(mut cx: FunctionContext) -> JsResult<JsValue> {
     let options = arg!(cx, 1, LinkedDataProofOptions);
     let key = arg!(cx, 2, JWK);
     let resolver = DID_METHODS.to_resolver();
+    let mut context_loader = ssi::jsonld::ContextLoader::default();
 
     let rt = throws!(cx, runtime::get())?;
     let proof = throws!(
         cx,
-        rt.block_on(presentation.generate_proof(&key, &options, resolver))
+        rt.block_on(presentation.generate_proof(&key, &options, resolver, &mut context_loader))
     )?;
     presentation.add_proof(proof);
 
@@ -132,6 +141,7 @@ pub fn did_auth(mut cx: FunctionContext) -> JsResult<JsValue> {
     let options = arg!(cx, 1, LinkedDataProofOptions);
     let key = arg!(cx, 2, JWK);
     let resolver = DID_METHODS.to_resolver();
+    let mut context_loader = ssi::jsonld::ContextLoader::default();
 
     let mut presentation = VerifiablePresentation::default();
     presentation.holder = Some(ssi::vc::URI::String(holder));
@@ -139,7 +149,7 @@ pub fn did_auth(mut cx: FunctionContext) -> JsResult<JsValue> {
     let rt = throws!(cx, runtime::get())?;
     let proof = throws!(
         cx,
-        rt.block_on(presentation.generate_proof(&key, &options, resolver))
+        rt.block_on(presentation.generate_proof(&key, &options, resolver, &mut context_loader))
     )?;
     presentation.add_proof(proof);
 
@@ -150,9 +160,11 @@ pub fn did_auth(mut cx: FunctionContext) -> JsResult<JsValue> {
 pub fn verify_presentation(mut cx: FunctionContext) -> JsResult<JsValue> {
     let vp = arg!(cx, 0, VerifiablePresentation);
     let options = arg!(cx, 1, LinkedDataProofOptions);
+    let resolver = DID_METHODS.to_resolver();
+    let mut context_loader = ssi::jsonld::ContextLoader::default();
 
     let rt = throws!(cx, runtime::get())?;
-    let result = rt.block_on(vp.verify(Some(options), DID_METHODS.to_resolver()));
+    let result = rt.block_on(vp.verify(Some(options), resolver, &mut context_loader));
     let result = throws!(cx, neon_serde::to_value(&mut cx, &result))?;
     Ok(result)
 }
@@ -162,6 +174,8 @@ pub fn delegate_capability(mut cx: FunctionContext) -> JsResult<JsValue> {
     let options = arg!(cx, 1, LinkedDataProofOptions);
     let parents = arg!(cx, 2, Vec<String>);
     let key = arg!(cx, 3, JWK);
+    let resolver = DID_METHODS.to_resolver();
+    let mut context_loader = ssi::jsonld::ContextLoader::default();
 
     let rt = throws!(cx, runtime::get())?;
     let proof = throws!(
@@ -169,7 +183,8 @@ pub fn delegate_capability(mut cx: FunctionContext) -> JsResult<JsValue> {
         rt.block_on(del.generate_proof(
             &key,
             &options,
-            DID_METHODS.to_resolver(),
+            resolver,
+            &mut context_loader,
             &parents.iter().map(|p| p.as_ref()).collect::<Vec<&str>>(),
         ))
     )?;
@@ -182,6 +197,8 @@ pub fn prepare_delegate_capability(mut cx: FunctionContext) -> JsResult<JsValue>
     let options = arg!(cx, 1, LinkedDataProofOptions);
     let parents = arg!(cx, 2, Vec<String>);
     let key = arg!(cx, 3, JWK);
+    let resolver = DID_METHODS.to_resolver();
+    let mut context_loader = ssi::jsonld::ContextLoader::default();
 
     let rt = throws!(cx, runtime::get())?;
     let prep = throws!(
@@ -189,7 +206,8 @@ pub fn prepare_delegate_capability(mut cx: FunctionContext) -> JsResult<JsValue>
         rt.block_on(del.prepare_proof(
             &key,
             &options,
-            DID_METHODS.to_resolver(),
+            resolver,
+            &mut context_loader,
             &parents.iter().map(|p| p.as_ref()).collect::<Vec<&str>>(),
         ))
     )?;
@@ -211,9 +229,11 @@ pub fn complete_delegate_capability(mut cx: FunctionContext) -> JsResult<JsValue
 pub fn verify_delegation(mut cx: FunctionContext) -> JsResult<JsValue> {
     let del = arg!(cx, 0, GenericDelegation);
     let options = arg!(cx, 1, LinkedDataProofOptions);
+    let resolver = DID_METHODS.to_resolver();
+    let mut context_loader = ssi::jsonld::ContextLoader::default();
 
     let rt = throws!(cx, runtime::get())?;
-    let res = rt.block_on(del.verify(Some(options), DID_METHODS.to_resolver()));
+    let res = rt.block_on(del.verify(Some(options), resolver, &mut context_loader));
     let result = throws!(cx, neon_serde::to_value(&mut cx, &res))?;
     Ok(result)
 }
@@ -223,11 +243,13 @@ pub fn invoke_capability(mut cx: FunctionContext) -> JsResult<JsValue> {
     let target = arg!(cx, 1, URI);
     let options = arg!(cx, 2, LinkedDataProofOptions);
     let key = arg!(cx, 3, JWK);
+    let resolver = DID_METHODS.to_resolver();
+    let mut context_loader = ssi::jsonld::ContextLoader::default();
 
     let rt = throws!(cx, runtime::get())?;
     let proof = throws!(
         cx,
-        rt.block_on(inv.generate_proof(&key, &options, DID_METHODS.to_resolver(), &target))
+        rt.block_on(inv.generate_proof(&key, &options, resolver, &mut context_loader, &target))
     )?;
     let result = throws!(cx, neon_serde::to_value(&mut cx, &inv.set_proof(proof)))?;
     Ok(result)
@@ -238,11 +260,13 @@ pub fn prepare_invoke_capability(mut cx: FunctionContext) -> JsResult<JsValue> {
     let target = arg!(cx, 1, URI);
     let options = arg!(cx, 2, LinkedDataProofOptions);
     let key = arg!(cx, 3, JWK);
+    let resolver = DID_METHODS.to_resolver();
+    let mut context_loader = ssi::jsonld::ContextLoader::default();
 
     let rt = throws!(cx, runtime::get())?;
     let prep = throws!(
         cx,
-        rt.block_on(inv.prepare_proof(&key, &options, DID_METHODS.to_resolver(), &target))
+        rt.block_on(inv.prepare_proof(&key, &options, resolver, &mut context_loader, &target))
     )?;
     let result = throws!(cx, neon_serde::to_value(&mut cx, &prep))?;
     Ok(result)
@@ -263,9 +287,11 @@ pub fn verify_invocation(mut cx: FunctionContext) -> JsResult<JsValue> {
     let inv = arg!(cx, 0, GenericInvocation);
     let del = arg!(cx, 1, GenericDelegation);
     let options = arg!(cx, 2, LinkedDataProofOptions);
+    let resolver = DID_METHODS.to_resolver();
+    let mut context_loader = ssi::jsonld::ContextLoader::default();
 
     let rt = throws!(cx, runtime::get())?;
-    let res = rt.block_on(inv.verify(Some(options), DID_METHODS.to_resolver(), &del));
+    let res = rt.block_on(inv.verify(Some(options), resolver, &mut context_loader, &del));
     let result = throws!(cx, neon_serde::to_value(&mut cx, &res))?;
     Ok(result)
 }
@@ -273,9 +299,11 @@ pub fn verify_invocation(mut cx: FunctionContext) -> JsResult<JsValue> {
 pub fn verify_invocation_signature(mut cx: FunctionContext) -> JsResult<JsValue> {
     let inv = arg!(cx, 0, GenericInvocation);
     let options = arg!(cx, 1, LinkedDataProofOptions);
+    let resolver = DID_METHODS.to_resolver();
+    let mut context_loader = ssi::jsonld::ContextLoader::default();
 
     let rt = throws!(cx, runtime::get())?;
-    let res = rt.block_on(inv.verify_signature(Some(options), DID_METHODS.to_resolver()));
+    let res = rt.block_on(inv.verify_signature(Some(options), resolver, &mut context_loader));
     let result = throws!(cx, neon_serde::to_value(&mut cx, &res))?;
     Ok(result)
 }

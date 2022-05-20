@@ -139,6 +139,7 @@ async fn issue_credential(
     let options: JWTOrLDPOptions = serde_json::from_str(&proof_options)?;
     let proof_format = options.proof_format.unwrap_or_default();
     let resolver = DID_METHODS.to_resolver();
+    let mut context_loader = ssi::jsonld::ContextLoader::default();
     let vc_string = match proof_format {
         ProofFormat::JWT => {
             let vc_jwt = credential
@@ -148,7 +149,7 @@ async fn issue_credential(
         }
         ProofFormat::LDP => {
             let proof = credential
-                .generate_proof(&key, &options.ldp_options, resolver)
+                .generate_proof(&key, &options.ldp_options, resolver, &mut context_loader)
                 .await?;
             credential.add_proof(proof);
             let vc_json = serde_json::to_string(&credential)?;
@@ -183,8 +184,9 @@ async fn prepare_issue_credential(
     let credential = VerifiableCredential::from_json_unsigned(&credential)?;
     let options: LinkedDataProofOptions = serde_json::from_str(&linked_data_proof_options)?;
     let resolver = DID_METHODS.to_resolver();
+    let mut context_loader = ssi::jsonld::ContextLoader::default();
     let preparation = credential
-        .prepare_proof(&public_key, &options, resolver)
+        .prepare_proof(&public_key, &options, resolver, &mut context_loader)
         .await?;
     let preparation_json = serde_json::to_string(&preparation)?;
     Ok(preparation_json)
@@ -246,13 +248,21 @@ async fn verify_credential(vc_string: String, proof_options: String) -> Result<S
     let options: JWTOrLDPOptions = serde_json::from_str(&proof_options)?;
     let proof_format = options.proof_format.unwrap_or_default();
     let resolver = DID_METHODS.to_resolver();
+    let mut context_loader = ssi::jsonld::ContextLoader::default();
     let result = match proof_format {
         ProofFormat::JWT => {
-            VerifiableCredential::verify_jwt(&vc_string, Some(options.ldp_options), resolver).await
+            VerifiableCredential::verify_jwt(
+                &vc_string,
+                Some(options.ldp_options),
+                resolver,
+                &mut context_loader,
+            )
+            .await
         }
         ProofFormat::LDP => {
             let vc = VerifiableCredential::from_json_unsigned(&vc_string)?;
-            vc.verify(Some(options.ldp_options), resolver).await
+            vc.verify(Some(options.ldp_options), resolver, &mut context_loader)
+                .await
         }
         _ => Err(Error::UnknownProofFormat(proof_format.to_string()))?,
     };
@@ -294,6 +304,7 @@ async fn issue_presentation(
     let options: JWTOrLDPOptions = serde_json::from_str(&proof_options)?;
     let proof_format = options.proof_format.unwrap_or_default();
     let resolver = DID_METHODS.to_resolver();
+    let mut context_loader = ssi::jsonld::ContextLoader::default();
     let vp_string = match proof_format {
         ProofFormat::JWT => {
             presentation
@@ -302,7 +313,7 @@ async fn issue_presentation(
         }
         ProofFormat::LDP => {
             let proof = presentation
-                .generate_proof(&key, &options.ldp_options, resolver)
+                .generate_proof(&key, &options.ldp_options, resolver, &mut context_loader)
                 .await?;
             presentation.add_proof(proof);
             serde_json::to_string(&presentation)?
@@ -336,8 +347,9 @@ async fn prepare_issue_presentation(
     let presentation = VerifiablePresentation::from_json_unsigned(&presentation)?;
     let options: LinkedDataProofOptions = serde_json::from_str(&linked_data_proof_options)?;
     let resolver = DID_METHODS.to_resolver();
+    let mut context_loader = ssi::jsonld::ContextLoader::default();
     let preparation = presentation
-        .prepare_proof(&public_key, &options, resolver)
+        .prepare_proof(&public_key, &options, resolver, &mut context_loader)
         .await?;
     let preparation_json = serde_json::to_string(&preparation)?;
     Ok(preparation_json)
@@ -399,14 +411,21 @@ async fn verify_presentation(vp_string: String, proof_options: String) -> Result
     let options: JWTOrLDPOptions = serde_json::from_str(&proof_options)?;
     let proof_format = options.proof_format.unwrap_or_default();
     let resolver = DID_METHODS.to_resolver();
+    let mut context_loader = ssi::jsonld::ContextLoader::default();
     let result = match proof_format {
         ProofFormat::JWT => {
-            VerifiablePresentation::verify_jwt(&vp_string, Some(options.ldp_options), resolver)
-                .await
+            VerifiablePresentation::verify_jwt(
+                &vp_string,
+                Some(options.ldp_options),
+                resolver,
+                &mut context_loader,
+            )
+            .await
         }
         ProofFormat::LDP => {
             let vp = VerifiablePresentation::from_json_unsigned(&vp_string)?;
-            vp.verify(Some(options.ldp_options), resolver).await
+            vp.verify(Some(options.ldp_options), resolver, &mut context_loader)
+                .await
         }
         _ => Err(Error::UnknownProofFormat(proof_format.to_string()))?,
     };
@@ -445,6 +464,7 @@ async fn did_auth(holder: String, proof_options: String, key: String) -> Result<
     let options: JWTOrLDPOptions = serde_json::from_str(&proof_options)?;
     let proof_format = options.proof_format.unwrap_or_default();
     let resolver = DID_METHODS.to_resolver();
+    let mut context_loader = ssi::jsonld::ContextLoader::default();
     let vp_string = match proof_format {
         ProofFormat::JWT => {
             presentation
@@ -453,7 +473,7 @@ async fn did_auth(holder: String, proof_options: String, key: String) -> Result<
         }
         ProofFormat::LDP => {
             let proof = presentation
-                .generate_proof(&key, &options.ldp_options, resolver)
+                .generate_proof(&key, &options.ldp_options, resolver, &mut context_loader)
                 .await?;
             presentation.add_proof(proof);
             serde_json::to_string(&presentation)?
@@ -500,12 +520,15 @@ async fn delegate_capability(
     let delegation: Delegation<Value, Value> = serde_json::from_str(&capability)?;
     let key: JWK = serde_json::from_str(&key)?;
     let options: LinkedDataProofOptions = serde_json::from_str(&linked_data_proof_options)?;
+    let resolver = DID_METHODS.to_resolver();
+    let mut context_loader = ssi::jsonld::ContextLoader::default();
     let parents: Vec<String> = serde_json::from_str(&parent_caps)?;
     let proof = delegation
         .generate_proof(
             &key,
             &options,
-            DID_METHODS.to_resolver(),
+            resolver,
+            &mut context_loader,
             &parents.iter().map(|p| p.as_ref()).collect::<Vec<&str>>(),
         )
         .await?;
@@ -540,11 +563,14 @@ async fn prepare_delegate_capability(
     let capability: Delegation<Value, Value> = serde_json::from_str(&capability)?;
     let options: LinkedDataProofOptions = serde_json::from_str(&linked_data_proof_options)?;
     let parents: Vec<String> = serde_json::from_str(&parent_caps)?;
+    let resolver = DID_METHODS.to_resolver();
+    let mut context_loader = ssi::jsonld::ContextLoader::default();
     let preparation = capability
         .prepare_proof(
             &public_key,
             &options,
-            DID_METHODS.to_resolver(),
+            resolver,
+            &mut context_loader,
             &parents.iter().map(|p| p.as_ref()).collect::<Vec<&str>>(),
         )
         .await?;
@@ -599,7 +625,9 @@ pub fn completeDelegateCapability(
 #[cfg(any(feature = "delegate", feature = "zcap", feature = "invoke"))]
 async fn verify_delegation(delegation: String) -> Result<String, Error> {
     let delegation: Delegation<Value, Value> = serde_json::from_str(&delegation)?;
-    let result = delegation.verify(None, DID_METHODS.to_resolver()).await;
+    let resolver = DID_METHODS.to_resolver();
+    let mut context_loader = ssi::jsonld::ContextLoader::default();
+    let result = delegation.verify(None, resolver, &mut context_loader).await;
     let result_json = serde_json::to_string(&result)?;
     Ok(result_json)
 }
@@ -621,11 +649,14 @@ async fn invoke_capability(
     let invocation: Invocation<Value> = serde_json::from_str(&invocation)?;
     let key: JWK = serde_json::from_str(&key)?;
     let options: LinkedDataProofOptions = serde_json::from_str(&linked_data_proof_options)?;
+    let resolver = DID_METHODS.to_resolver();
+    let mut context_loader = ssi::jsonld::ContextLoader::default();
     let proof = invocation
         .generate_proof(
             &key,
             &options,
-            DID_METHODS.to_resolver(),
+            resolver,
+            &mut context_loader,
             &URI::String(target_id),
         )
         .await?;
@@ -659,11 +690,14 @@ async fn prepare_invoke_capability(
     let public_key: JWK = serde_json::from_str(&public_key)?;
     let invocation: Invocation<Value> = serde_json::from_str(&invocation)?;
     let options: LinkedDataProofOptions = serde_json::from_str(&linked_data_proof_options)?;
+    let resolver = DID_METHODS.to_resolver();
+    let mut context_loader = ssi::jsonld::ContextLoader::default();
     let preparation = invocation
         .prepare_proof(
             &public_key,
             &options,
-            DID_METHODS.to_resolver(),
+            resolver,
+            &mut context_loader,
             &URI::String(target_id),
         )
         .await?;
@@ -718,8 +752,10 @@ pub fn completeInvokeCapability(
 #[cfg(any(feature = "invoke", feature = "zcap"))]
 async fn verify_invocation_signature(invocation: String) -> Result<String, Error> {
     let invocation: Invocation<Value> = serde_json::from_str(&invocation)?;
+    let resolver = DID_METHODS.to_resolver();
+    let mut context_loader = ssi::jsonld::ContextLoader::default();
     let result = invocation
-        .verify_signature(None, DID_METHODS.to_resolver())
+        .verify_signature(None, resolver, &mut context_loader)
         .await;
     let result_json = serde_json::to_string(&result)?;
     Ok(result_json)
@@ -736,8 +772,10 @@ pub fn verifyInvocationSignature(invocation: String) -> Promise {
 async fn verify_invocation(invocation: String, delegation: String) -> Result<String, Error> {
     let invocation: Invocation<Value> = serde_json::from_str(&invocation)?;
     let delegation: Delegation<Value, Value> = serde_json::from_str(&delegation)?;
+    let resolver = DID_METHODS.to_resolver();
+    let mut context_loader = ssi::jsonld::ContextLoader::default();
     let result = invocation
-        .verify(None, DID_METHODS.to_resolver(), &delegation)
+        .verify(None, resolver, &mut context_loader, &delegation)
         .await;
     let result_json = serde_json::to_string(&result)?;
     Ok(result_json)
