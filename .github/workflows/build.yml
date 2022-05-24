@@ -115,7 +115,7 @@ jobs:
       with:
         repository: w3c-ccg/vc-api-test-suite
         path: didkit/http/tests/vc-api/vc-api-test-suite
-        ref: e57ebd99770eccf021118aef761627603c3bb36d
+        ref: 4923f0d627a223cd20a4ceb112336477ded445ca
 
     - name: Run VC API Test Suite
       working-directory: didkit/http/tests/vc-api
