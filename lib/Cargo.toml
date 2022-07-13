@@ -28,15 +28,15 @@ secp256k1 = ["ssi/libsecp256k1", "did-tz/secp256k1", "did-method-key/secp256k1"]
 p256 = ["ssi/secp256r1", "did-tz/p256", "did-webkey/p256", "did-method-key/secp256r1"]
 
 [dependencies]
-ssi = { default-features = false, git = "https://github.com/spruceid/ssi", branch = "feat/ucan-0.9" }
-did-method-key = { default-features = false, git = "https://github.com/spruceid/ssi", branch = "feat/ucan-0.9" }
-did-tz = { default-features = false, git = "https://github.com/spruceid/ssi", branch = "feat/ucan-0.9" }
-did-ethr = { default-features = false, git = "https://github.com/spruceid/ssi", branch = "feat/ucan-0.9" }
-did-pkh = { default-features = false, git = "https://github.com/spruceid/ssi", branch = "feat/ucan-0.9" }
-did-web = { default-features = false, git = "https://github.com/spruceid/ssi", branch = "feat/ucan-0.9" }
-did-webkey = { default-features = false, git = "https://github.com/spruceid/ssi", branch = "feat/ucan-0.9" }
-did-onion = { default-features = false, git = "https://github.com/spruceid/ssi", branch = "feat/ucan-0.9" }
-did-ion = { default-features = false, git = "https://github.com/spruceid/ssi", branch = "feat/ucan-0.9" }
+ssi = { default-features = false, git = "https://github.com/spruceid/ssi", branch = "main" }
+did-method-key = { default-features = false, git = "https://github.com/spruceid/ssi", branch = "main" }
+did-tz = { default-features = false, git = "https://github.com/spruceid/ssi", branch = "main" }
+did-ethr = { default-features = false, git = "https://github.com/spruceid/ssi", branch = "main" }
+did-pkh = { default-features = false, git = "https://github.com/spruceid/ssi", branch = "main" }
+did-web = { default-features = false, git = "https://github.com/spruceid/ssi", branch = "main" }
+did-webkey = { default-features = false, git = "https://github.com/spruceid/ssi", branch = "main" }
+did-onion = { default-features = false, git = "https://github.com/spruceid/ssi", branch = "main" }
+did-ion = { default-features = false, git = "https://github.com/spruceid/ssi", branch = "main" }
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
 # TODO feature-gate JNI, or extract it in another crate like we do for Python (and probably WASM as well)
