@@ -30,6 +30,7 @@ pub use ssi::jwk::JWK;
 pub use ssi::ldp::resolve_key;
 pub use ssi::ldp::ProofPreparation;
 pub use ssi::tzkey::jwk_from_tezos_key;
+pub use ssi::ucan::{Payload, Ucan};
 pub use ssi::vc::get_verification_method;
 pub use ssi::vc::Credential as VerifiableCredential;
 pub use ssi::vc::CredentialOrJWT;
