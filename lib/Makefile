@@ -18,7 +18,6 @@ test: $(TARGET)/test/c.stamp \
 	$(TARGET)/test/java.stamp \
 	$(TARGET)/test/android.stamp \
 	$(TARGET)/test/flutter.stamp \
-	$(TARGET)/test/node.stamp \
 	$(TARGET)/test/wasm.stamp
 
 ## Setup
@@ -133,15 +132,6 @@ $(TARGET)/%/release/libdidkit.a: $(RUST_SRC)
 $(TARGET)/test/flutter.stamp: flutter/lib/didkit.dart flutter/test/didkit_test.dart $(TARGET)/release/$(LIB_NAME) | $(TARGET)/test
 	cd flutter && LD_LIBRARY_PATH=$(shell pwd)/flutter \
 		flutter --suppress-analytics test
-	touch $@
-
-## Node
-
-NODE_SRC=node/package.json node/index.js node/Cargo.toml $(wildcard node/src/*.rs)
-
-$(TARGET)/test/node.stamp: $(NODE_SRC) | $(TARGET)/test
-	cd node && npm install
-	cd node && npm run test
 	touch $@
 
 ## WASM

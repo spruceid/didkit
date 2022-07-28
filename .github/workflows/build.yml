@@ -145,9 +145,6 @@ jobs:
     - name: Test C FFI
       run: make -C lib ../target/test/c.stamp
 
-    - name: Test Node.js (Neon) package
-      run: make -C lib ../target/test/node.stamp
-
     - name: Test WASM package
       run: make -C lib ../target/test/wasm.stamp
 
