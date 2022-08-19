@@ -123,9 +123,6 @@ jobs:
     #     npm install
     #     npm test
 
-    - name: Install Rust Android targets
-      run: make -C lib install-rustup-android
-
     # - name: Install wasm-pack
     #   run: make -C lib install-wasm-pack
 
@@ -154,8 +151,11 @@ jobs:
     # - name: Test Dart/Flutter plugin
     #   run: make -C lib ../target/test/flutter.stamp
 
-    # - name: Setup Android SDK
-    #   uses: android-actions/setup-android@v2
+    - name: Install Rust Android targets
+      run: make -C lib install-rustup-android
+
+    - name: Setup Android SDK
+      uses: android-actions/setup-android@v2
 
     - name: Build Android Archive
       run: TARGET_CC=$(which clang) make -C lib ../target/test/android.stamp
