@@ -123,8 +123,8 @@ jobs:
     #     npm install
     #     npm test
 
-    # - name: Install Rust Android targets
-    #   run: make -C lib install-rustup-android
+    - name: Install Rust Android targets
+      run: make -C lib install-rustup-android
 
     # - name: Install wasm-pack
     #   run: make -C lib install-wasm-pack
