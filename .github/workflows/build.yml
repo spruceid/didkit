@@ -153,8 +153,8 @@ jobs:
 
     - name: Install Rust Android target
       run: rustup target add i686-linux-android
-    # - name: Setup Android SDK
-    #   uses: android-actions/setup-android@v2
+    - name: Setup Android SDK
+      uses: android-actions/setup-android@v2
     # - name: Install NDK
     #   run: sdkmanager "build-tools;29.0.3"
     - name: Install gcc-multilib
