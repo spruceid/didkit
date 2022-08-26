@@ -151,14 +151,18 @@ jobs:
     # - name: Test Dart/Flutter plugin
     #   run: make -C lib ../target/test/flutter.stamp
 
-    - name: Install Rust Android targets
-      run: make -C lib install-rustup-android
-    - name: Setup Android SDK
-      uses: android-actions/setup-android@v2
-    - name: Install NDK
-      run: sdkmanager "build-tools;29.0.3"
+    - name: Install Rust Android target
+      run: rustup target add i686-linux-android
+    # - name: Setup Android SDK
+    #   uses: android-actions/setup-android@v2
+    # - name: Install NDK
+    #   run: sdkmanager "build-tools;29.0.3"
+    - name: Install gcc-multilib
+      run: |
+        sudo apt update
+        sudo apt install gcc-multilib -y
     - name: Build Android Archive
-      run: TARGET_CC=$(which clang) make -C lib ../target/test/android.stamp
+      run: TARGET_CC=$(which clang) cargo build --lib --target i686-linux-android
 
   build_ios:
     runs-on: macos-latest
