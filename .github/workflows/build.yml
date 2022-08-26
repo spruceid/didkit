@@ -156,11 +156,12 @@ jobs:
     - name: Setup Android SDK
       uses: android-actions/setup-android@v2
     - name: Install NDK
-      run: sdkmanager --install "build-tools;29.0.3" "ndk;22.0.7026061" "cmdline-tools;latest"
+      run: sdkmanager --install "system-images;android-29;google_apis;x86" "system-images;android-29;google_apis;x86_64" "platform-tools" "platforms;android-29" "build-tools;29.0.3" "ndk;22.0.7026061" "cmdline-tools;latest"
     - name: Install gcc-multilib
       run: |
         sudo apt update
         sudo apt install gcc-multilib -y
+    - run: ls -R $ANDROID_SDK_ROOT/ndk
     - name: Build Android Archive
       run: AR_i686_linux_android=$ANDROID_SDK_ROOT/ndk/toolchains/llvm/prebuilt/linux-x86_64/bin/i686-linux-android-ar TARGET_CC=$(which clang) cargo build --lib --target i686-linux-android
 
