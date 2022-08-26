@@ -155,8 +155,8 @@ jobs:
       run: rustup target add i686-linux-android
     - name: Setup Android SDK
       uses: android-actions/setup-android@v2
-    # - name: Install NDK
-    #   run: sdkmanager --install "system-images;android-29;google_apis;x86" "system-images;android-29;google_apis;x86_64" "platform-tools" "platforms;android-29" "build-tools;29.0.3" "ndk;22.0.7026061" "cmdline-tools;latest"
+    - name: Install NDK
+      run: sdkmanager --install "system-images;android-29;google_apis;x86" "system-images;android-29;google_apis;x86_64" "platform-tools" "platforms;android-29" "build-tools;29.0.3" "ndk;22.0.7026061" "cmdline-tools;latest"
     - name: Install gcc-multilib
       run: |
         sudo apt update
