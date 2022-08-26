@@ -52,116 +52,115 @@ jobs:
         profile: minimal
         default: true
 
-    # - name: Build
-    #   run: cargo build --verbose
+    - name: Build
+      run: cargo build --verbose
 
-    # - name: Test
-    #   run: cargo test --verbose
+    - name: Test
+      run: cargo test --verbose
 
-    # - name: Test CLI
-    #   run: cli/tests/example.sh
+    - name: Test CLI
+      run: cli/tests/example.sh
 
-    # - name: Test CLI with ssh-agent
-    #   run: cli/tests/ssh-agent.sh
+    - name: Test CLI with ssh-agent
+      run: cli/tests/ssh-agent.sh
 
-    # - name: Test HTTP server
-    #   run: http/tests/example.sh
+    - name: Test HTTP server
+      run: http/tests/example.sh
 
-    # - name: Test CLI (did:tz)
-    #   env:
-    #     DID_METHOD: tz
-    #   run: cli/tests/example.sh
+    - name: Test CLI (did:tz)
+      env:
+        DID_METHOD: tz
+      run: cli/tests/example.sh
 
-    # - name: Test HTTP server (did:tz)
-    #   env:
-    #     DID_METHOD: tz
-    #   run: http/tests/example.sh
+    - name: Test HTTP server (did:tz)
+      env:
+        DID_METHOD: tz
+      run: http/tests/example.sh
 
-    # - name: Test CLI (JWT)
-    #   env:
-    #     PROOF_FORMAT: jwt
-    #   run: cli/tests/example.sh
+    - name: Test CLI (JWT)
+      env:
+        PROOF_FORMAT: jwt
+      run: cli/tests/example.sh
 
-    # - name: Test CLI (JWT VC in LDP VP)
-    #   env:
-    #     VC_PROOF_FORMAT: jwt
-    #   run: cli/tests/example.sh
+    - name: Test CLI (JWT VC in LDP VP)
+      env:
+        VC_PROOF_FORMAT: jwt
+      run: cli/tests/example.sh
 
-    # - name: Test CLI (LDP VC in JWT VP)
-    #   env:
-    #     VP_PROOF_FORMAT: jwt
-    #   run: cli/tests/example.sh
+    - name: Test CLI (LDP VC in JWT VP)
+      env:
+        VP_PROOF_FORMAT: jwt
+      run: cli/tests/example.sh
 
-    # - name: Test HTTP server (JWT)
-    #   env:
-    #     PROOF_FORMAT: jwt
-    #   run: http/tests/example.sh
+    - name: Test HTTP server (JWT)
+      env:
+        PROOF_FORMAT: jwt
+      run: http/tests/example.sh
 
-    # - name: Test HTTP server (JWT VC in LDP VP)
-    #   env:
-    #     VC_PROOF_FORMAT: jwt
-    #   run: cli/tests/example.sh
+    - name: Test HTTP server (JWT VC in LDP VP)
+      env:
+        VC_PROOF_FORMAT: jwt
+      run: cli/tests/example.sh
 
-    # - name: Test HTTP server (LDP VC in JWT VP)
-    #   env:
-    #     VP_PROOF_FORMAT: jwt
-    #   run: cli/tests/example.sh
+    - name: Test HTTP server (LDP VC in JWT VP)
+      env:
+        VP_PROOF_FORMAT: jwt
+      run: cli/tests/example.sh
 
-    # - name: Test binary-signing verify example
-    #   run: examples/binary-signing/index.sh verify examples/binary-signing/hello.txt examples/binary-signing/hello-vc.jsonld
+    - name: Test binary-signing verify example
+      run: examples/binary-signing/index.sh verify examples/binary-signing/hello.txt examples/binary-signing/hello-vc.jsonld
 
-    # - name: Checkout VC API Test Suite
-    #   uses: actions/checkout@v3
-    #   with:
-    #     repository: w3c-ccg/vc-api-test-suite
-    #     path: didkit/http/tests/vc-api/vc-api-test-suite
-    #     ref: 4923f0d627a223cd20a4ceb112336477ded445ca
+    - name: Checkout VC API Test Suite
+      uses: actions/checkout@v3
+      with:
+        repository: w3c-ccg/vc-api-test-suite
+        path: didkit/http/tests/vc-api/vc-api-test-suite
+        ref: 4923f0d627a223cd20a4ceb112336477ded445ca
 
-    # - name: Run VC API Test Suite
-    #   working-directory: didkit/http/tests/vc-api
-    #   run: |
-    #     npm install
-    #     npm test
+    - name: Run VC API Test Suite
+      working-directory: didkit/http/tests/vc-api
+      run: |
+        npm install
+        npm test
 
-    # - name: Install wasm-pack
-    #   run: make -C lib install-wasm-pack
+    - name: Install wasm-pack
+      run: make -C lib install-wasm-pack
 
-    # - name: Use system JDK
-    #   run: echo "$JAVA_HOME/bin" >> $GITHUB_PATH
+    - name: Use system JDK
+      run: echo "$JAVA_HOME/bin" >> $GITHUB_PATH
 
-    # - name: Install Flutter
-    #   uses: subosito/flutter-action@v1
-    #   with:
-    #     channel: 'dev'
+    - name: Install Flutter
+      uses: subosito/flutter-action@v1
+      with:
+        channel: 'dev'
 
-    # - name: Opt out of Dart/Flutter analytics
-    #   run: |
-    #     dart --disable-analytics
-    #     flutter --suppress-analytics config --no-analytics
+    - name: Opt out of Dart/Flutter analytics
+      run: |
+        dart --disable-analytics
+        flutter --suppress-analytics config --no-analytics
 
-    # - name: Test C FFI
-    #   run: make -C lib ../target/test/c.stamp
+    - name: Test C FFI
+      run: make -C lib ../target/test/c.stamp
 
-    # - name: Test WASM package
-    #   run: make -C lib ../target/test/wasm.stamp
+    - name: Test WASM package
+      run: make -C lib ../target/test/wasm.stamp
 
-    # - name: Test JNI
-    #   run: make -C lib ../target/test/java.stamp
+    - name: Test JNI
+      run: make -C lib ../target/test/java.stamp
 
-    # - name: Test Dart/Flutter plugin
-    #   run: make -C lib ../target/test/flutter.stamp
+    - name: Test Dart/Flutter plugin
+      run: make -C lib ../target/test/flutter.stamp
 
     - name: Install Rust Android target
       run: rustup target add i686-linux-android
     - name: Setup Android SDK
       uses: android-actions/setup-android@v2
     - name: Install NDK
-      run: sdkmanager --install "system-images;android-29;google_apis;x86" "system-images;android-29;google_apis;x86_64" "platform-tools" "platforms;android-29" "build-tools;29.0.3" "ndk;22.0.7026061" "cmdline-tools;latest"
+      run: sdkmanager --install "build-tools;29.0.3" "ndk;22.0.7026061" "cmdline-tools;latest"
     - name: Install gcc-multilib
       run: |
         sudo apt update
         sudo apt install gcc-multilib -y
-    - run: ls -R $ANDROID_SDK_ROOT/ndk
     - name: Build Android Archive
       run: AR_i686_linux_android=$ANDROID_SDK_ROOT/ndk/22.0.7026061/toolchains/llvm/prebuilt/linux-x86_64/i686-linux-android/bin/ar TARGET_CC=$(which clang) cargo build --lib --target i686-linux-android
 
