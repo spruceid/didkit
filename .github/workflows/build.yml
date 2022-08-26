@@ -163,7 +163,7 @@ jobs:
         sudo apt install gcc-multilib -y
     - run: ls -R $ANDROID_SDK_ROOT
     - name: Build Android Archive
-      run: AR_i686_linux_android=$ANDROID_SDK_ROOT/ndk-bundle/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-ar TARGET_CC=$(which clang) cargo build --lib --target i686-linux-android
+      run: PATH=$ANDROID_SDK_ROOT/ndk/toolchains/llvm/prebuilt/linux-x86_64/bin:$PATH TARGET_CC=$(which clang) cargo build --lib --target i686-linux-android
 
   build_ios:
     runs-on: macos-latest
