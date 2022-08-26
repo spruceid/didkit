@@ -153,11 +153,10 @@ jobs:
 
     - name: Install Rust Android targets
       run: make -C lib install-rustup-android
-
     - name: Setup Android SDK
       uses: android-actions/setup-android@v2
     - name: Install NDK
-      run: sdkmanager "ndk;22.0.7026061"
+      run: sdkmanager "build-tools;29.0.3"
     - name: Build Android Archive
       run: TARGET_CC=$(which clang) make -C lib ../target/test/android.stamp
 
