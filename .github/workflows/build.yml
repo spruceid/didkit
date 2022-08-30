@@ -11,7 +11,7 @@ on:
 
 env:
   CARGO_TERM_COLOR: always
-  SSI_REF: 8dc91a17fc43ee55aa67ec6bdb9a49a7734ebf4e
+  SSI_REF: e865520085dc1b88f0a26fa94380b7590cbf6725
 
 defaults:
   run:
@@ -48,7 +48,7 @@ jobs:
     - name: Install Rust old stable with incremental compilation
       uses: actions-rs/toolchain@v1
       with:
-        toolchain: 1.58.0
+        toolchain: 1.60.0
         profile: minimal
         default: true
 
@@ -123,9 +123,6 @@ jobs:
         npm install
         npm test
 
-    - name: Install Rust Android targets
-      run: make -C lib install-rustup-android
-
     - name: Install wasm-pack
       run: make -C lib install-wasm-pack
 
@@ -154,8 +151,18 @@ jobs:
     - name: Test Dart/Flutter plugin
       run: make -C lib ../target/test/flutter.stamp
 
+    - name: Install Rust Android target
+      run: rustup target add i686-linux-android
+    - name: Setup Android SDK
+      uses: android-actions/setup-android@v2
+    - name: Install NDK
+      run: sdkmanager --install "build-tools;29.0.3" "ndk;22.0.7026061" "cmdline-tools;latest"
+    - name: Install gcc-multilib
+      run: |
+        sudo apt update
+        sudo apt install gcc-multilib -y
     - name: Build Android Archive
-      run: make -C lib ../target/test/android.stamp
+      run: AR_i686_linux_android=$ANDROID_SDK_ROOT/ndk/22.0.7026061/toolchains/llvm/prebuilt/linux-x86_64/i686-linux-android/bin/ar PATH=$ANDROID_SDK_ROOT/ndk/22.0.7026061/toolchains/llvm/prebuilt/linux-x86_64/bin:$PATH TARGET_CC=$(which clang) cargo build --lib --target i686-linux-android
 
   build_ios:
     runs-on: macos-latest
