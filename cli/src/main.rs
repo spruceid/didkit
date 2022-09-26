@@ -16,12 +16,12 @@ use didkit::generate_proof;
 use didkit::{
     dereference, get_verification_method, runtime, DIDCreate, DIDDeactivate, DIDDocumentOperation,
     DIDMethod, DIDRecover, DIDResolver, DIDUpdate, DereferencingInputMetadata, Error,
-    LinkedDataProofOptions, Metadata, ProofFormat, ProofPurpose, ResolutionInputMetadata,
-    ResolutionResult, Source, VerifiableCredential, VerifiablePresentation, DIDURL, DID_METHODS,
-    JWK, URI,
+    LinkedDataProofOptions, Metadata, ProofFormat, ResolutionInputMetadata, ResolutionResult,
+    Source, VerifiableCredential, VerifiablePresentation, VerificationRelationship, DIDURL,
+    DID_METHODS, JWK, URI,
 };
 use didkit_cli::opts::ResolverOptions;
-use ssi::did::{DIDMethodTransaction, Service, ServiceEndpoint, VerificationRelationship};
+use ssi::did::{DIDMethodTransaction, Service, ServiceEndpoint};
 use ssi::one_or_many::OneOrMany;
 
 #[derive(StructOpt, Debug)]
@@ -415,7 +415,7 @@ pub struct ProofOptions {
     #[clap(env, short, long)]
     pub verification_method: Option<URI>,
     #[clap(env, short, long)]
-    pub proof_purpose: Option<ProofPurpose>,
+    pub proof_purpose: Option<VerificationRelationship>,
     #[clap(env, short, long)]
     pub created: Option<DateTime<Utc>>,
     #[clap(env, short = 'C', long)]

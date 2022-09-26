@@ -16,23 +16,23 @@ chrono = { version = "0.4", features = ["wasmbind"] }
 [dependencies.didkit]
 path = "../"
 default-features = false
-features = ["wasm"]
+features = ["wasm", "w3c"]
 
 # TODO remove dependency on ssi
 [dependencies.ssi]
 path = "../../../ssi"
 default-features = false
-features = ["ed25519-dalek", "sha2", "rsa", "rand", "libsecp256k1", "p256"]
+features = ["w3c"]
 
 [dependencies.did-method-key]
 path = "../../../ssi/did-key"
 default-features = false
-features = ["secp256k1", "p256"]
+features = ["secp256k1", "secp256r1"]
 
 [dependencies.did-tz]
 path = "../../../ssi/did-tezos"
 default-features = false
-features = ["secp256k1", "dalek", "p256"]
+features = ["secp256k1", "ed25519", "secp256r1"]
 
 [dependencies.did-webkey]
 path = "../../../ssi/did-webkey"
