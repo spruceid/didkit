@@ -15,6 +15,8 @@ pub enum Error {
     #[error(transparent)]
     VC(#[from] ssi::vc::Error),
     #[error(transparent)]
+    Zcap(#[from] ssi::zcap::Error),
+    #[error(transparent)]
     JWK(#[from] ssi::jwk::Error),
     #[error(transparent)]
     Null(#[from] std::ffi::NulError),
@@ -55,6 +57,7 @@ impl Error {
             Error::Null(_) => 2,
             Error::Utf8(_) => 3,
             Error::JWK(_) => 4,
+            Error::Zcap(_) => 5,
             _ => -1,
         }
     }

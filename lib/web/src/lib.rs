@@ -28,7 +28,9 @@ fn map_jsvalue(result: Result<String, Error>) -> Result<String, JsValue> {
     }
 }
 
-fn map_async_jsvalue(future: impl Future<Output = Result<String, Error>> + 'static) -> Promise {
+fn map_async_jsvalue<E: std::error::Error>(
+    future: impl Future<Output = Result<String, E>> + 'static,
+) -> Promise {
     future_to_promise(async {
         match future.await {
             Ok(string) => Ok(string.into()),
@@ -498,7 +500,15 @@ pub fn DIDAuth(holder: String, linked_data_proof_options: String, key: String) -
     map_async_jsvalue(did_auth(holder, linked_data_proof_options, key))
 }
 
-async fn jwk_from_tezos(tz_pk: String) -> Result<String, Error> {
+#[derive(thiserror::Error, Debug)]
+pub enum TezosJwkError {
+    #[error(transparent)]
+    TzKey(#[from] ssi::tzkey::Error),
+    #[error(transparent)]
+    Json(#[from] serde_json::Error),
+}
+
+async fn jwk_from_tezos(tz_pk: String) -> Result<String, TezosJwkError> {
     let jwk = ssi::tzkey::jwk_from_tezos_key(&tz_pk)?;
     let jwk_json = serde_json::to_string(&jwk)?;
     Ok(jwk_json)
