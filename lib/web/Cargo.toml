@@ -17,13 +17,13 @@ chrono = { version = "0.4", features = ["wasmbind"] }
 [dependencies.didkit]
 path = "../"
 default-features = false
-features = ["wasm", "w3c", "tezos"]
+features = ["wasm", "w3c", "tezos", "eip"]
 
 # TODO remove dependency on ssi
 [dependencies.ssi]
 path = "../../../ssi"
 default-features = false
-features = ["w3c"]
+features = ["w3c", "tezos", "eip"]
 
 [dependencies.did-method-key]
 path = "../../../ssi/did-key"
