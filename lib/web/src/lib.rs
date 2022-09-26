@@ -503,7 +503,7 @@ pub fn DIDAuth(holder: String, linked_data_proof_options: String, key: String) -
 #[derive(thiserror::Error, Debug)]
 pub enum TezosJwkError {
     #[error(transparent)]
-    TzKey(#[from] ssi::tzkey::Error),
+    TzKey(#[from] ssi::tzkey::DecodeTezosPkError),
     #[error(transparent)]
     Json(#[from] serde_json::Error),
 }
