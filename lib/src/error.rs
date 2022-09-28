@@ -1,15 +1,7 @@
-use std::cell::BorrowError;
 use std::ffi::CString;
-use std::ffi::NulError;
 use std::fmt;
 use std::os::raw::{c_char, c_int};
 use std::ptr;
-
-use serde_json::Error as JSONError;
-use ssi::error::Error as SSIError;
-use std::error::Error as StdError;
-use std::io::Error as IOError;
-use std::str::Utf8Error;
 
 static UNKNOWN_ERROR: &str = "Unable to create error string\0";
 
@@ -18,19 +10,33 @@ thread_local! {
     pub static LAST_ERROR: RefCell<Option<(i32, CString)>> = RefCell::new(None);
 }
 
-#[derive(Debug)]
+#[derive(thiserror::Error, Debug)]
 pub enum Error {
-    SSI(ssi::error::Error),
-    Null(NulError),
-    Utf8(Utf8Error),
-    Borrow(BorrowError),
-    IO(IOError),
+    #[error(transparent)]
+    VC(#[from] ssi::vc::Error),
+    #[error(transparent)]
+    Zcap(#[from] ssi::zcap::Error),
+    #[error(transparent)]
+    JWK(#[from] ssi::jwk::Error),
+    #[error(transparent)]
+    Null(#[from] std::ffi::NulError),
+    #[error(transparent)]
+    Utf8(#[from] std::str::Utf8Error),
+    #[error(transparent)]
+    Borrow(#[from] std::cell::BorrowError),
+    #[error(transparent)]
+    IO(#[from] std::io::Error),
+    #[error("Unable to generate DID")]
     UnableToGenerateDID,
+    #[error("Unknown DID method")]
     UnknownDIDMethod,
+    #[error("Unable to get verification method")]
     UnableToGetVerificationMethod,
+    #[error("Unknown proof format: {0}")]
     UnknownProofFormat(String),
 
     #[doc(hidden)]
+    #[error("")]
     __Nonexhaustive,
 }
 
@@ -47,15 +53,15 @@ impl Error {
     fn get_code(&self) -> c_int {
         // TODO: try to give each individual error its own number
         match self {
-            Error::SSI(_) => 1,
+            Error::VC(_) => 1,
             Error::Null(_) => 2,
             Error::Utf8(_) => 3,
+            Error::JWK(_) => 4,
+            Error::Zcap(_) => 5,
             _ => -1,
         }
     }
 }
-
-impl StdError for Error {}
 
 #[no_mangle]
 /// Retrieve a human-readable description of the most recent error encountered by a DIDKit C
@@ -84,54 +90,15 @@ pub extern "C" fn didkit_error_code() -> c_int {
     })
 }
 
-impl fmt::Display for Error {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match self {
-            Error::SSI(e) => e.fmt(f),
-            Error::Null(e) => e.fmt(f),
-            Error::Utf8(e) => e.fmt(f),
-            Error::UnableToGenerateDID => write!(f, "Unable to generate DID"),
-            Error::UnknownDIDMethod => write!(f, "Unknown DID method"),
-            Error::UnableToGetVerificationMethod => write!(f, "Unable to get verification method"),
-            Error::UnknownProofFormat(format) => write!(f, "Unknown proof format: {}", format),
-            _ => unreachable!(),
-        }
+impl From<serde_json::Error> for Error {
+    fn from(err: serde_json::Error) -> Error {
+        Error::VC(ssi::vc::Error::from(err))
     }
 }
 
-impl From<SSIError> for Error {
-    fn from(err: SSIError) -> Error {
-        Error::SSI(err)
-    }
-}
-
-impl From<JSONError> for Error {
-    fn from(err: JSONError) -> Error {
-        Error::SSI(SSIError::from(err))
-    }
-}
-
-impl From<NulError> for Error {
-    fn from(err: NulError) -> Error {
-        Error::Null(err)
-    }
-}
-
-impl From<Utf8Error> for Error {
-    fn from(err: Utf8Error) -> Error {
-        Error::Utf8(err)
-    }
-}
-
-impl From<IOError> for Error {
-    fn from(err: IOError) -> Error {
-        Error::IO(err)
-    }
-}
-
-impl From<BorrowError> for Error {
-    fn from(err: BorrowError) -> Error {
-        Error::Borrow(err)
+impl From<ssi::ldp::Error> for Error {
+    fn from(e: ssi::ldp::Error) -> Error {
+        ssi::vc::Error::from(e).into()
     }
 }
 

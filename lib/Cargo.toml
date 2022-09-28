@@ -19,13 +19,24 @@ include = [
 ]
 
 [features]
-default = ["ring", "secp256k1", "p256"]
-ring = ["ssi/ring"]
-no-ring = ["ssi/ed25519-dalek", "ssi/sha2", "ssi/rsa", "ssi/rand"]
-wasm = []
+default = ["w3c", "eip"]
+
+w3c = ["ssi/w3c", "secp256k1", "secp256r1", "ed25519", "rsa"]
+secp256k1 = ["ssi/secp256k1", "did-tz/secp256k1", "did-method-key/secp256k1", "did-ion/secp256k1"]
+secp256r1 = ["ssi/secp256r1", "did-tz/secp256r1", "did-webkey/secp256r1", "did-method-key/secp256r1", "did-ion/secp256r1"]
+ed25519 = ["ssi/ed25519", "did-tz/ed25519", "did-ion/ed25519"]
+rsa = ["ssi/rsa", "did-ion/rsa"]
+
+aleo = ["ssi/aleo"]
+eip = ["ssi/eip"]
+tezos = ["ssi/tezos"]
+solana = ["ssi/solana"]
+
 http-did = ["ssi/http-did"]
-secp256k1 = ["ssi/libsecp256k1", "did-tz/secp256k1", "did-method-key/secp256k1"]
-p256 = ["ssi/secp256r1", "did-tz/p256", "did-webkey/p256", "did-method-key/secp256r1"]
+
+wasm = []
+ring = ["ssi/ring"]
+openssl = ["ssi/openssl"]
 
 [dependencies]
 ssi = { version = "0.4", path = "../../ssi", default-features = false }

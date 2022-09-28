@@ -62,7 +62,7 @@ pub enum SignError {
     #[error("Unable to calculate JWK thumbprint: {0}")]
     JWKThumbprint(String),
     #[error("Unable to prepare proof: {0}")]
-    Prep(#[from] ssi::error::Error),
+    Prep(#[from] ssi::ldp::Error),
     #[error("RSA key must be at least 2048 bits")]
     RSAKeyTooSmall,
 }
@@ -308,7 +308,7 @@ pub async fn generate_proof(
     resolver: &dyn DIDResolver,
     context_loader: &mut ContextLoader,
     jwk_opt: Option<&JWK>,
-) -> Result<ssi::vc::Proof, SignError> {
+) -> Result<ssi::ldp::Proof, SignError> {
     let keys = list_keys(ssh_agent_sock).await?;
     let (jwk, pk) = select_key(keys, jwk_opt)?;
     let prep =
