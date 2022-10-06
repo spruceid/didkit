@@ -1,8 +1,9 @@
-# DIDKit
 
 [![](https://img.shields.io/github/workflow/status/spruceid/didkit/ci)](https://github.com/spruceid/didkit/actions?query=workflow%3Aci+branch%3Amain) [![](https://img.shields.io/badge/Docker-19.03.x-blue)](https://www.docker.com/) [![](https://img.shields.io/badge/Rust-v1.51.0-orange)](https://www.rust-lang.org/) [![](https://img.shields.io/badge/ssi-v0.1-green)](https://www.github.com/spruceid/ssi) [![](https://img.shields.io/badge/License-Apache--2.0-green)](https://github.com/spruceid/didkit/blob/main/LICENSE) [![](https://img.shields.io/twitter/follow/spruceid?label=Follow&style=social)](https://twitter.com/spruceid)
 
-Check out the DIDKit documentation [here](https://spruceid.dev/docs/didkit/).
+Check out the DIDKit documentation [here](https://spruceid.dev/didkit/didkit/).
+
+# DIDKit
 
 DIDKit provides Verifiable Credential and Decentralized Identifier
 functionality across different platforms. It was written primarily in Rust due
