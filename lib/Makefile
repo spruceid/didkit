@@ -18,7 +18,6 @@ test: $(TARGET)/test/c.stamp \
 	$(TARGET)/test/java.stamp \
 	$(TARGET)/test/android.stamp \
 	$(TARGET)/test/flutter.stamp \
-	$(TARGET)/test/node.stamp \
 	$(TARGET)/test/wasm.stamp
 
 ## Setup
@@ -44,7 +43,7 @@ $(TARGET)/test/c.stamp: $(TARGET)/cabi-test $(TARGET)/release/$(LIB_NAME) | $(TA
 	LD_LIBRARY_PATH=$(TARGET)/release $(TARGET)/cabi-test
 	touch $@
 
-$(TARGET)/cabi-test: c/test.c $(TARGET)/release/libdidkit.so $(TARGET)/didkit.h
+$(TARGET)/cabi-test: c/test.c $(TARGET)/release/$(LIB_NAME) $(TARGET)/didkit.h
 	$(CC) -I$(TARGET) -L$(TARGET)/release $< -ldl -ldidkit -o $@
 
 ## Java
@@ -116,7 +115,7 @@ IOS_LIBS=\
 $(TARGET)/test/ios.stamp: $(TARGET)/universal/release/libdidkit.a $(TARGET)/didkit.h | $(TARGET)/test
 	cd ios && \
 		xcodebuild test \
-			-destination platform="iOS Simulator,name=iPhone 12 Pro,OS=14.4" \
+			-destination platform="iOS Simulator,name=iPhone 12 Pro" \
 			-scheme DIDKitSwift
 	touch $@
 
@@ -133,15 +132,6 @@ $(TARGET)/%/release/libdidkit.a: $(RUST_SRC)
 $(TARGET)/test/flutter.stamp: flutter/lib/didkit.dart flutter/test/didkit_test.dart $(TARGET)/release/$(LIB_NAME) | $(TARGET)/test
 	cd flutter && LD_LIBRARY_PATH=$(shell pwd)/flutter \
 		flutter --suppress-analytics test
-	touch $@
-
-## Node
-
-NODE_SRC=node/package.json node/index.js node/Cargo.toml $(wildcard node/src/*.rs)
-
-$(TARGET)/test/node.stamp: $(NODE_SRC) | $(TARGET)/test
-	cd node && npm install
-	cd node && npm run test
 	touch $@
 
 ## WASM

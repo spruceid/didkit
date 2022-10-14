@@ -245,6 +245,7 @@ impl DIDKitHTTPSvc {
             let options = issue_req.options.unwrap_or_default();
             let proof_format = options.proof_format.unwrap_or_default();
             let resolver = resolver_options.to_resolver();
+            let mut context_loader = ssi::jsonld::ContextLoader::default();
             let key = match pick_key(&keys, &options.ldp_options, &resolver).await {
                 Some(key) => key,
                 None => return Self::missing_key().await,
@@ -265,7 +266,7 @@ impl DIDKitHTTPSvc {
                 }
                 ProofFormat::LDP => {
                     let proof = match credential
-                        .generate_proof(key, &options.ldp_options, &resolver)
+                        .generate_proof(key, &options.ldp_options, &resolver, &mut context_loader)
                         .await
                     {
                         Ok(reader) => reader,
@@ -321,16 +322,24 @@ impl DIDKitHTTPSvc {
                 }
             };
             let resolver = resolver_options.to_resolver();
+            let mut context_loader = ssi::jsonld::ContextLoader::default();
             let options = verify_req.options.unwrap_or_default();
             let ldp_options = options.ldp_options;
             let result = match (options.proof_format, verify_req.verifiable_credential) {
                 (Some(ProofFormat::LDP), CredentialOrJWT::Credential(vc))
                 | (None, CredentialOrJWT::Credential(vc)) => {
-                    vc.verify(Some(ldp_options), &resolver).await
+                    vc.verify(Some(ldp_options), &resolver, &mut context_loader)
+                        .await
                 }
                 (Some(ProofFormat::JWT), CredentialOrJWT::JWT(vc_jwt))
                 | (None, CredentialOrJWT::JWT(vc_jwt)) => {
-                    VerifiableCredential::verify_jwt(&vc_jwt, Some(ldp_options), &resolver).await
+                    VerifiableCredential::verify_jwt(
+                        &vc_jwt,
+                        Some(ldp_options),
+                        &resolver,
+                        &mut context_loader,
+                    )
+                    .await
                 }
                 (Some(proof_format), vc) => {
                     let err_msg = format!(
@@ -388,6 +397,7 @@ impl DIDKitHTTPSvc {
             let proof_format = options.proof_format.unwrap_or_default();
             let ldp_options = options.ldp_options;
             let resolver = resolver_options.to_resolver();
+            let mut context_loader = ssi::jsonld::ContextLoader::default();
             let key = match pick_key(&keys, &ldp_options, &resolver).await {
                 Some(key) => key,
                 None => return Self::missing_key().await,
@@ -407,7 +417,7 @@ impl DIDKitHTTPSvc {
                 }
                 ProofFormat::LDP => {
                     let proof = match presentation
-                        .generate_proof(key, &ldp_options, &resolver)
+                        .generate_proof(key, &ldp_options, &resolver, &mut context_loader)
                         .await
                     {
                         Ok(reader) => reader,
@@ -462,6 +472,7 @@ impl DIDKitHTTPSvc {
                 }
             };
             let resolver = resolver_options.to_resolver();
+            let mut context_loader = ssi::jsonld::ContextLoader::default();
             let options = verify_req
                 .options
                 .unwrap_or_else(JWTOrLDPOptions::default_for_vp);
@@ -469,11 +480,18 @@ impl DIDKitHTTPSvc {
             let result = match (options.proof_format, verify_req.verifiable_presentation) {
                 (Some(ProofFormat::LDP), PresentationOrJWT::VP(vp))
                 | (None, PresentationOrJWT::VP(vp)) => {
-                    vp.verify(Some(ldp_options), &resolver).await
+                    vp.verify(Some(ldp_options), &resolver, &mut context_loader)
+                        .await
                 }
                 (Some(ProofFormat::JWT), PresentationOrJWT::JWT(vp_jwt))
                 | (None, PresentationOrJWT::JWT(vp_jwt)) => {
-                    VerifiablePresentation::verify_jwt(&vp_jwt, Some(ldp_options), &resolver).await
+                    VerifiablePresentation::verify_jwt(
+                        &vp_jwt,
+                        Some(ldp_options),
+                        &resolver,
+                        &mut context_loader,
+                    )
+                    .await
                 }
                 (Some(proof_format), vp) => {
                     let err_msg = format!(

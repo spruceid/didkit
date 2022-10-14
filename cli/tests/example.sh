@@ -200,7 +200,7 @@ fi
 # the -v and -p options.
 if ! didkit did-auth \
 	-k key.jwk \
-	-h "$did" \
+	-H "$did" \
 	-C "$challenge" \
 	-f "$vp_proof_format" \
 	> auth

@@ -8,6 +8,7 @@ edition = "2018"
 wasm-bindgen = "0.2"
 wasm-bindgen-futures = "0.4"
 serde_json = "1.0"
+thiserror = "1.0"
 js-sys = "0.3"
 getrandom = { version = "0.2", features = ["js"] }
 rand = { version = "0.7", features = ["wasm-bindgen"] }
@@ -16,22 +17,27 @@ chrono = { version = "0.4", features = ["wasmbind"] }
 [dependencies.didkit]
 path = "../"
 default-features = false
-features = ["wasm"]
+features = ["wasm", "w3c", "tezos", "eip"]
 
 # TODO remove dependency on ssi
 [dependencies.ssi]
 path = "../../../ssi"
 default-features = false
-features = ["ed25519-dalek", "sha2", "rsa", "rand", "libsecp256k1", "p256"]
+features = ["w3c", "tezos", "eip"]
 
 [dependencies.did-method-key]
 path = "../../../ssi/did-key"
-features = ["secp256k1", "p256"]
+default-features = false
+features = ["secp256k1", "secp256r1"]
 
 [dependencies.did-tz]
 path = "../../../ssi/did-tezos"
 default-features = false
-features = ["secp256k1", "dalek", "p256"]
+features = ["secp256k1", "ed25519", "secp256r1"]
+
+[dependencies.did-webkey]
+path = "../../../ssi/did-webkey"
+default-features = false
 
 [dev-dependencies]
 wasm-bindgen-test = "0.2"

@@ -7,10 +7,11 @@ on:
   push:
     branches:
       - main
+  workflow_dispatch:
 
 env:
   CARGO_TERM_COLOR: always
-  SSI_REF: c66972290377c6b4bf9b63b2dfdc047dbdcfd989
+  SSI_REF: main
 
 defaults:
   run:
@@ -21,12 +22,12 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - name: Checkout DIDKit repository
-      uses: actions/checkout@v2
+      uses: actions/checkout@v3
       with:
         path: didkit
 
     - name: Checkout SSI library
-      uses: actions/checkout@v2
+      uses: actions/checkout@v3
       with:
         repository: spruceid/ssi
         path: ssi
@@ -34,7 +35,7 @@ jobs:
         submodules: true
 
     - name: Cache Cargo registry and build artifacts
-      uses: actions/cache@v2
+      uses: actions/cache@v3.0.11
       with:
         path: |
           ~/.cargo/registry
@@ -43,6 +44,13 @@ jobs:
         key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.toml', 'lib/Makefile', '**.rs') }}
         restore-keys: |
           ${{ runner.os }}-cargo-
+
+    - name: Install Rust old stable with incremental compilation
+      uses: actions-rs/toolchain@v1
+      with:
+        toolchain: 1.60.0
+        profile: minimal
+        default: true
 
     - name: Build
       run: cargo build --verbose
@@ -103,20 +111,17 @@ jobs:
       run: examples/binary-signing/index.sh verify examples/binary-signing/hello.txt examples/binary-signing/hello-vc.jsonld
 
     - name: Checkout VC API Test Suite
-      uses: actions/checkout@v2
+      uses: actions/checkout@v3
       with:
         repository: w3c-ccg/vc-api-test-suite
         path: didkit/http/tests/vc-api/vc-api-test-suite
-        ref: a74c63d2d015efcb1c5d22a5d283536026faf5ec
+        ref: 4923f0d627a223cd20a4ceb112336477ded445ca
 
     - name: Run VC API Test Suite
       working-directory: didkit/http/tests/vc-api
       run: |
         npm install
         npm test
-
-    - name: Install Rust Android targets
-      run: make -C lib install-rustup-android
 
     - name: Install wasm-pack
       run: make -C lib install-wasm-pack
@@ -125,7 +130,7 @@ jobs:
       run: echo "$JAVA_HOME/bin" >> $GITHUB_PATH
 
     - name: Install Flutter
-      uses: subosito/flutter-action@v1
+      uses: subosito/flutter-action@v2
       with:
         channel: 'dev'
 
@@ -137,9 +142,6 @@ jobs:
     - name: Test C FFI
       run: make -C lib ../target/test/c.stamp
 
-    - name: Test Node.js (Neon) package
-      run: make -C lib ../target/test/node.stamp
-
     - name: Test WASM package
       run: make -C lib ../target/test/wasm.stamp
 
@@ -149,19 +151,29 @@ jobs:
     - name: Test Dart/Flutter plugin
       run: make -C lib ../target/test/flutter.stamp
 
+    - name: Install Rust Android target
+      run: rustup target add i686-linux-android
+    - name: Setup Android SDK
+      uses: android-actions/setup-android@v2
+    - name: Install NDK
+      run: sdkmanager --install "build-tools;29.0.3" "ndk;22.0.7026061" "cmdline-tools;latest"
+    - name: Install gcc-multilib
+      run: |
+        sudo apt update
+        sudo apt install gcc-multilib -y
     - name: Build Android Archive
-      run: make -C lib ../target/test/android.stamp
+      run: AR_i686_linux_android=$ANDROID_SDK_ROOT/ndk/22.0.7026061/toolchains/llvm/prebuilt/linux-x86_64/i686-linux-android/bin/ar PATH=$ANDROID_SDK_ROOT/ndk/22.0.7026061/toolchains/llvm/prebuilt/linux-x86_64/bin:$PATH TARGET_CC=$(which clang) cargo build --lib --target i686-linux-android
 
   build_ios:
     runs-on: macos-latest
     steps:
     - name: Checkout DIDKit repository
-      uses: actions/checkout@v2
+      uses: actions/checkout@v3
       with:
         path: didkit
 
     - name: Checkout SSI library
-      uses: actions/checkout@v2
+      uses: actions/checkout@v3
       with:
         repository: spruceid/ssi
         path: ssi
@@ -169,7 +181,7 @@ jobs:
         submodules: true
 
     - name: Cache Cargo registry and build artifacts
-      uses: actions/cache@v2
+      uses: actions/cache@v3.0.11
       with:
         path: |
           ~/.cargo/registry
@@ -189,12 +201,12 @@ jobs:
     runs-on: windows-latest
     steps:
     - name: Checkout DIDKit repository
-      uses: actions/checkout@v2
+      uses: actions/checkout@v3
       with:
         path: didkit
 
     - name: Checkout SSI library
-      uses: actions/checkout@v2
+      uses: actions/checkout@v3
       with:
         repository: spruceid/ssi
         path: ssi
@@ -202,7 +214,7 @@ jobs:
         submodules: true
 
     - name: Cache Cargo registry and build artifacts
-      uses: actions/cache@v2
+      uses: actions/cache@v3.0.11
       with:
         path: |
           ~/.cargo/registry

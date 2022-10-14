@@ -189,7 +189,7 @@ fn didkit_cli() {
             "did-auth",
             "-k",
             "tests/ed25519-key.jwk",
-            "-h",
+            "--holder",
             &did.to_string(),
             "-v",
             &verification_method.trim(),

@@ -6,6 +6,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.0] - 2022-03-03
+### Added
+- DID Resolution function added to didkit-node ([#237](https://github.com/spruceid/didkit/pull/237)).
+- Add key generation subcommands: `didkit key generate ...` ([#259](https://github.com/spruceid/didkit/pull/259)).
+- Added CLI subcommands: did-create, did-update, did-recover, did-deactivate, did-from-tx, did-submit-tx ([#255](https://github.com/spruceid/didkit/pull/255)).
+- Enable `did:ion` ([#255](https://github.com/spruceid/didkit/pull/255)).
+- Add CLI proof type option ([#230](https://github.com/spruceid/didkit/pull/230)).
+
+### Changed
+- didkit-node package renamed from "didkit" to "@spruceid/didkit" ([#237](https://github.com/spruceid/didkit/pull/237)).
+- Default key-to-did subcommand to use `did:key` ([#238](https://github.com/spruceid/didkit/pull/238)).
+- Limit HTTP request body sizes ([#229](https://github.com/spruceid/didkit/pull/229)).
+
+### Deprecated
+- CLI subcommand `generate-ed25519-key` is deprecated in favor of `key generate ed25519` ([#259](https://github.com/spruceid/didkit/pull/259)).
+
+### Removed
+- Python bindings removed to separate repo ([#226](https://github.com/spruceid/didkit/pull/226)).
+
+### Fixed
+- Fixed various compilation issues.
+
 ## [0.3.0] - 2021-09-17
 ### Added
 - Issue and verify JWT [VCs][vc-data-model] and [VPs][Verifiable Presentations].
@@ -124,7 +146,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [wasm-pack]: https://rustwasm.github.io/wasm-pack/
 [zcap-ld]: https://w3c-ccg.github.io/zcap-ld/
 
-[Unreleased]: https://github.com/spruceid/didkit/compare/v0.3.0...HEAD
+[Unreleased]: https://github.com/spruceid/didkit/compare/v0.4.0...HEAD
+[0.4.0]: https://github.com/spruceid/didkit/releases/tag/v0.4.0
 [0.3.0]: https://github.com/spruceid/didkit/releases/tag/v0.3.0
 [0.2.1]: https://github.com/spruceid/didkit/releases/tag/v0.2.1
 [0.2.0]: https://github.com/spruceid/didkit/releases/tag/v0.2.0
