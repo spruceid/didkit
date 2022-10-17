@@ -106,10 +106,12 @@ $(TARGET)/%/release/libdidkit.so: $(RUST_SRC)
 install-rustup-ios:
 	rustup target add \
 		aarch64-apple-ios \
-		x86_64-apple-ios
+		x86_64-apple-ios \
+		aarch64-apple-ios-sim
 
 IOS_LIBS=\
 	$(TARGET)/aarch64-apple-ios/release/libdidkit.a \
+	$(TARGET)/aarch64-apple-ios-sim/release/libdidkit.a \
 	$(TARGET)/x86_64-apple-ios/release/libdidkit.a
 
 $(TARGET)/test/ios.stamp: $(TARGET)/universal/release/libdidkit.a $(TARGET)/didkit.h | $(TARGET)/test
