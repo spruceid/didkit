@@ -78,8 +78,6 @@ EOF
 # output, which we save to a file.
 didkit vc-issue-credential \
 	-k key.jwk \
-	-v "$verification_method" \
-	-p assertionMethod \
 	-f "$vc_proof_format" \
 	< credential-unsigned.jsonld \
 	> credential-signed
@@ -140,8 +138,6 @@ EOF
 # the resulting newly created verifiable presentation to a file.
 didkit vc-issue-presentation \
 	-k key.jwk \
-	-v "$verification_method" \
-	-p authentication \
 	-f "$vp_proof_format" \
 	< presentation-unsigned.jsonld \
 	> presentation-signed
@@ -219,7 +215,6 @@ echo
 
 # Verify DID auth
 if ! didkit vc-verify-presentation \
-	-p authentication \
 	-C "$challenge" \
 	-f "$vp_proof_format" \
 	< auth \
