@@ -78,8 +78,6 @@ EOF
 # output, which we save to a file.
 didkit vc-issue-credential \
 	-k key.jwk \
-	-v "$verification_method" \
-	-p assertionMethod \
 	-f "$vc_proof_format" \
 	< credential-unsigned.jsonld \
 	> credential-signed
@@ -140,8 +138,6 @@ EOF
 # the resulting newly created verifiable presentation to a file.
 didkit vc-issue-presentation \
 	-k key.jwk \
-	-v "$verification_method" \
-	-p authentication \
 	-f "$vp_proof_format" \
 	< presentation-unsigned.jsonld \
 	> presentation-signed
@@ -195,12 +191,13 @@ then
 	echo 'Unable to create challenge.'
 	exit 1
 fi
+# Create a DID Auth VP (Verifiable Presentation for DID Authentication).
+# Use a default verification method and proof purpose instead of passing
+# the -v and -p options.
 if ! didkit did-auth \
 	-k key.jwk \
-	--holder "$did" \
-	-p authentication \
+	-H "$did" \
 	-C "$challenge" \
-	-v "$verification_method" \
 	-f "$vp_proof_format" \
 	> auth
 then
@@ -218,7 +215,6 @@ echo
 
 # Verify DID auth
 if ! didkit vc-verify-presentation \
-	-p authentication \
 	-C "$challenge" \
 	-f "$vp_proof_format" \
 	< auth \
