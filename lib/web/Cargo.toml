@@ -16,26 +16,6 @@ chrono = { version = "0.4", features = ["wasmbind"] }
 
 [dependencies.didkit]
 path = "../"
-default-features = false
-features = ["wasm", "w3c", "tezos", "eip"]
-
-# TODO remove dependency on ssi
-[dependencies.ssi]
-path = "../../../ssi"
-default-features = false
-features = ["w3c", "tezos", "eip"]
-
-[dependencies.did-method-key]
-path = "../../../ssi/did-key"
-default-features = false
-features = ["secp256k1", "secp256r1"]
-
-[dependencies.did-tz]
-path = "../../../ssi/did-tezos"
-
-[dependencies.did-webkey]
-path = "../../../ssi/did-webkey"
-default-features = false
 
 [dev-dependencies]
 wasm-bindgen-test = "0.2"

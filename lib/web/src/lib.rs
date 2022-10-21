@@ -9,6 +9,7 @@ use didkit::error::Error;
 #[cfg(doc)]
 use didkit::error::{didkit_error_code, didkit_error_message};
 use didkit::get_verification_method;
+use didkit::ssi;
 use didkit::LinkedDataProofOptions;
 use didkit::ProofPreparation;
 use didkit::Source;

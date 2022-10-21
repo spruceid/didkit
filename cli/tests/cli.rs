@@ -2,6 +2,8 @@ use serde_json::Value;
 use std::io::Write;
 use std::process::{Command, Stdio};
 
+use didkit::ssi;
+
 static BIN: &str = env!("CARGO_BIN_EXE_didkit");
 
 const DID_KEY_K256: &'static str = "did:key:zQ3shokFTS3brHcDQrn82RUDfCZESWL1ZdCEJwekUDPQiYBme";

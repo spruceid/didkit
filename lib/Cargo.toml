@@ -19,13 +19,14 @@ include = [
 ]
 
 [features]
-default = ["w3c", "eip"]
+default = ["w3c", "ed25519", "rsa", "ripemd-160", "eip", "tezos"]
 
-w3c = ["ssi/w3c", "secp256k1", "secp256r1", "ed25519", "rsa"]
-secp256k1 = ["ssi/secp256k1", "did-method-key/secp256k1", "did-ion/secp256k1"]
-secp256r1 = ["ssi/secp256r1", "did-webkey/secp256r1", "did-method-key/secp256r1", "did-ion/secp256r1"]
-ed25519 = ["ssi/ed25519", "did-ion/ed25519"]
-rsa = ["ssi/rsa", "did-ion/rsa"]
+w3c = ["ssi/w3c"]
+secp256k1 = ["ssi/secp256k1"]
+secp256r1 = ["ssi/secp256r1"]
+ed25519 = ["ssi/ed25519"]
+rsa = ["ssi/rsa"]
+ripemd-160 = ["ssi/ripemd-160"]
 
 aleo = ["ssi/aleo"]
 eip = ["ssi/eip"]
@@ -34,7 +35,6 @@ solana = ["ssi/solana"]
 
 http-did = ["ssi/http-did"]
 
-wasm = []
 ring = ["ssi/ring"]
 openssl = ["ssi/openssl"]
 
