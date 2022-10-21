@@ -22,9 +22,9 @@ include = [
 default = ["w3c", "eip"]
 
 w3c = ["ssi/w3c", "secp256k1", "secp256r1", "ed25519", "rsa"]
-secp256k1 = ["ssi/secp256k1", "did-tz/secp256k1", "did-method-key/secp256k1", "did-ion/secp256k1"]
-secp256r1 = ["ssi/secp256r1", "did-tz/secp256r1", "did-webkey/secp256r1", "did-method-key/secp256r1", "did-ion/secp256r1"]
-ed25519 = ["ssi/ed25519", "did-tz/ed25519", "did-ion/ed25519"]
+secp256k1 = ["ssi/secp256k1", "did-method-key/secp256k1", "did-ion/secp256k1"]
+secp256r1 = ["ssi/secp256r1", "did-webkey/secp256r1", "did-method-key/secp256r1", "did-ion/secp256r1"]
+ed25519 = ["ssi/ed25519", "did-ion/ed25519"]
 rsa = ["ssi/rsa", "did-ion/rsa"]
 
 aleo = ["ssi/aleo"]
@@ -41,7 +41,7 @@ openssl = ["ssi/openssl"]
 [dependencies]
 ssi = { version = "0.4", path = "../../ssi", default-features = false }
 did-method-key = { version = "^0.1.2", path = "../../ssi/did-key", default-features = false }
-did-tz = { version = "^0.1.1", path = "../../ssi/did-tezos", default-features = false }
+did-tz = { version = "^0.1.1", path = "../../ssi/did-tezos" }
 did-ethr = { version = "0.1", path = "../../ssi/did-ethr", default-features = false }
 did-pkh = { version = "0.1", path = "../../ssi/did-pkh", default-features = false }
 #did-sol = { version = "0.0.1", path = "../../ssi/did-sol" }

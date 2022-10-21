@@ -32,8 +32,6 @@ features = ["secp256k1", "secp256r1"]
 
 [dependencies.did-tz]
 path = "../../../ssi/did-tezos"
-default-features = false
-features = ["secp256k1", "ed25519", "secp256r1"]
 
 [dependencies.did-webkey]
 path = "../../../ssi/did-webkey"
