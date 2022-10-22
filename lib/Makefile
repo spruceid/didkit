@@ -111,10 +111,11 @@ install-rustup-ios:
 
 IOS_LIBS=\
 	$(TARGET)/aarch64-apple-ios/release/libdidkit.a \
-	$(TARGET)/aarch64-apple-ios-sim/release/libdidkit.a \
 	$(TARGET)/x86_64-apple-ios/release/libdidkit.a
 
-$(TARGET)/test/ios.stamp: $(TARGET)/universal/release/libdidkit.a $(TARGET)/didkit.h | $(TARGET)/test
+IOS_SIM_LIB = $(TARGET)/aarch64-apple-ios-sim/release/libdidkit.a
+
+$(TARGET)/test/ios.stamp: $(TARGET)/universal/release/libdidkit.a $(IOS_SIM_LIB) $(TARGET)/didkit.h | $(TARGET)/test
 	cd ios && \
 		xcodebuild test \
 			-destination platform="iOS Simulator,name=iPhone 12 Pro" \
