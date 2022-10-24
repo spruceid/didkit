@@ -111,7 +111,7 @@ impl FromStr for ProofFormat {
 
 #[derive(thiserror::Error, Debug)]
 pub enum GenerateProofError {
-    #[cfg(not(any(feature = "wasm", target_os = "windows")))]
+    #[cfg(not(any(target_arch = "wasm32", target_os = "windows")))]
     #[error("Unable to sign: {0}")]
     Sign(#[from] crate::ssh_agent::SignError),
     #[error("SSI Linked Data Proof: {0}")]
@@ -134,15 +134,15 @@ pub async fn generate_proof(
 ) -> Result<ssi::ldp::Proof, GenerateProofError> {
     use ssi::ldp::LinkedDataProofs;
     let proof = match ssh_agent_sock_path_opt {
-        #[cfg(feature = "wasm")]
-        Some(sock_path) => {
+        #[cfg(target_arch = "wasm32")]
+        Some(_) => {
             return Err(GenerateProofError::NoWASM);
         }
         #[cfg(target_os = "windows")]
-        Some(sock_path) => {
+        Some(_) => {
             return Err(GenerateProofError::NoWindows);
         }
-        #[cfg(not(any(feature = "wasm", target_os = "windows")))]
+        #[cfg(not(any(target_arch = "wasm32", target_os = "windows")))]
         Some(sock_path) => {
             use tokio::net::UnixStream;
             let mut ssh_agent_sock = UnixStream::connect(sock_path).await?;
