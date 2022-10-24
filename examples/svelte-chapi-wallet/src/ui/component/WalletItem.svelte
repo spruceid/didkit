@@ -6,11 +6,9 @@
   export let remove = undefined;
   export let buttons = ["copy", "share"];
 
-  import {
-    UnknownItem,
-    VerifiableCredential,
-    VerifiablePresentation,
-  } from "../component";
+  import UnknownItem from "./UnknownItem.svelte";
+  import VerifiableCredential from "./VerifiableCredential.svelte";
+  import VerifiablePresentation from "./VerifiablePresentation.svelte";
 </script>
 
 <div

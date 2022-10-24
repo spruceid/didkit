@@ -1,8 +1,16 @@
 <script>
+  import { onMount } from 'svelte';
   import { Router } from "svelte-navigator";
 
   import { Body, Footer, Header } from "./ui/container";
   import { minimalState } from "./store.ts";
+
+  import init from "didkit-wasm";
+  let appInitialized = false;
+  onMount(async () => {
+      await init();
+      appInitialized = true
+      });
 
   let minimal;
   minimalState.subscribe((value) => {
@@ -11,18 +19,20 @@
 </script>
 
 <Router>
-  {#if minimal}
-    <main
-      class="flex flex-col w-full h-full justify-center items-center p-2 bg-white"
-    >
-      <Body />
-    </main>
-  {:else}
-    <Header />
-    <main class="h-full">
-      <Body />
-    </main>
-    <Footer />
+  {#if appInitialized}
+    {#if minimal}
+      <main
+        class="flex flex-col w-full h-full justify-center items-center p-2 bg-white"
+      >
+        <Body />
+      </main>
+    {:else}
+      <Header />
+      <main class="h-full">
+        <Body />
+      </main>
+      <Footer />
+    {/if}
   {/if}
 </Router>
 

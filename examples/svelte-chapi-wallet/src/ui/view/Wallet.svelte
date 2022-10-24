@@ -2,6 +2,7 @@
   import { walletState } from "../../store.ts";
   import { WalletItem } from "../component";
   import { copyToClipboard, enumerateItems } from "../../utils.ts";
+  import { keyToDID } from "didkit-wasm";
 
   let wstate;
   walletState.subscribe((value) => {
@@ -9,15 +10,11 @@
   });
 
   let counter = 0;
-  let didKey = "";
+  let didKey = keyToDID("key", JSON.stringify(wstate.storage.getItem("key")));
   let copyDID = (event) => {
     event.preventDefault();
     copyToClipboard(didKey);
   };
-
-  DIDKitLoader.loadDIDKit().then(({ keyToDID }) => {
-    didKey = keyToDID("key", JSON.stringify(wstate.storage.getItem("key")));
-  });
 
   const reload = () => (counter += 1);
 </script>

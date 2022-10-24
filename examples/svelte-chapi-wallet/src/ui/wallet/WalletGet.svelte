@@ -2,6 +2,7 @@
   import { navigate } from "svelte-navigator";
   import { receiveCredentialEvent } from "web-credential-handler";
   import { v4 as uuid } from "uuid";
+  import { keyToDID, keyToVerificationMethod, issuePresentation } from "didkit-wasm";
 
   import { WalletItem } from "../component";
 
@@ -31,7 +32,6 @@
       return;
     }
 
-    await DIDKitLoader.loadDIDKit();
     const event = await receiveCredentialEvent();
     origin = event.credentialRequestOrigin;
 
@@ -48,7 +48,6 @@
     reason = query.credentialQuery.reason;
 
     present = (data) => async () => {
-      const { keyToDID, keyToVerificationMethod, issuePresentation } = DIDKit;
       const key = wstate.storage.getItem("key");
       const keyStr = JSON.stringify(key);
       const didKey = keyToDID("key", keyStr);

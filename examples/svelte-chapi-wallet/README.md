@@ -12,7 +12,7 @@ need Node.js/NPM.
 
 ### `DIDKit`
 
-In short, you need to install the `wasm-unknown-unknown` Rust target and
+In short, you need to install the `wasm32-unknown-unknown` Rust target and
 `wasm-pack`, which can be done with the following command on the root of
 `DIDKit`:
 
@@ -25,7 +25,8 @@ $ make -C lib install-wasm-pack
 Then, you have to build the WASM target of `DIDKit`:
 
 ```bash
-$ make -C lib ../target/test/wasm.stamp
+$ cd lib/web
+$ wasm-pack build --target web --out-dir pkg-web
 ```
 
 If everything succeeds, you can proceed to the next step.
