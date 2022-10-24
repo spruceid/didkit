@@ -34,16 +34,7 @@ jobs:
         ref: ${{env.SSI_REF}}
         submodules: true
 
-    - name: Cache Cargo registry and build artifacts
-      uses: actions/cache@v3.0.11
-      with:
-        path: |
-          ~/.cargo/registry
-          ~/.cargo/git
-          target
-        key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.toml', 'lib/Makefile', '**.rs') }}
-        restore-keys: |
-          ${{ runner.os }}-cargo-
+    - uses: Swatinem/rust-cache@v2
 
     - name: Install Rust old stable with incremental compilation
       uses: actions-rs/toolchain@v1
@@ -53,10 +44,10 @@ jobs:
         default: true
 
     - name: Build
-      run: cargo build --verbose
+      run: cargo build
 
     - name: Test
-      run: cargo test --verbose
+      run: cargo test
 
     - name: Test CLI
       run: cli/tests/example.sh
@@ -180,16 +171,7 @@ jobs:
         ref: ${{env.SSI_REF}}
         submodules: true
 
-    - name: Cache Cargo registry and build artifacts
-      uses: actions/cache@v3.0.11
-      with:
-        path: |
-          ~/.cargo/registry
-          ~/.cargo/git
-          target
-        key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.toml', 'lib/Makefile', '**.rs') }}
-        restore-keys: |
-          ${{ runner.os }}-cargo-
+    - uses: Swatinem/rust-cache@v2
 
     - name: Install Rust iOS targets
       run: make -C lib install-rustup-ios
@@ -213,16 +195,7 @@ jobs:
         ref: ${{env.SSI_REF}}
         submodules: true
 
-    - name: Cache Cargo registry and build artifacts
-      uses: actions/cache@v3.0.11
-      with:
-        path: |
-          ~/.cargo/registry
-          ~/.cargo/git
-          target
-        key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.toml', 'lib/Makefile', '**.rs') }}
-        restore-keys: |
-          ${{ runner.os }}-cargo-
+    - uses: Swatinem/rust-cache@v2
 
     - name: Build
-      run: cargo build --verbose
+      run: cargo build
