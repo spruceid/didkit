@@ -114,31 +114,28 @@ jobs:
         npm install
         npm test
 
+    - name: Test C FFI
+      run: make -C lib ../target/test/c.stamp
+
     - name: Install wasm-pack
       run: make -C lib install-wasm-pack
+    - name: Compile WASM package
+      working-directory: didkit/lib/web
+      run: wasm-pack build --dev
 
     - name: Use system JDK
       run: echo "$JAVA_HOME/bin" >> $GITHUB_PATH
+    - name: Test JNI
+      run: make -C lib ../target/test/java.stamp
 
     - name: Install Flutter
       uses: subosito/flutter-action@v2
       with:
         channel: 'dev'
-
     - name: Opt out of Dart/Flutter analytics
       run: |
         dart --disable-analytics
         flutter --suppress-analytics config --no-analytics
-
-    - name: Test C FFI
-      run: make -C lib ../target/test/c.stamp
-
-    - name: Test WASM package
-      run: make -C lib ../target/test/wasm.stamp
-
-    - name: Test JNI
-      run: make -C lib ../target/test/java.stamp
-
     - name: Test Dart/Flutter plugin
       run: make -C lib ../target/test/flutter.stamp
 

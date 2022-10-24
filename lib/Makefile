@@ -148,13 +148,6 @@ WEB_SRC=web/Cargo.toml $(wildcard web/src/*.rs)
 install-wasm-pack:
 	 curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh
 
-$(TARGET)/test/wasm.stamp: $(WEB_SRC) | $(TARGET)/test
-	cd web && wasm-pack build --target web --out-dir pkg/web
-	echo "No test was run"
-	# TODO write automated tests for at least Node.js, and maybe for the bundled output format.
-	# The existing web app installation didn't really make sense as the (dependency) installation has changed.
-	touch $@
-
 ## Cleanup
 
 .PHONY: clean
