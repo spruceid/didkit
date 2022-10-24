@@ -25,6 +25,7 @@ jobs:
       uses: actions/checkout@v3
       with:
         path: didkit
+        submodules: true
 
     - name: Checkout SSI library
       uses: actions/checkout@v3
@@ -100,13 +101,6 @@ jobs:
 
     - name: Test binary-signing verify example
       run: examples/binary-signing/index.sh verify examples/binary-signing/hello.txt examples/binary-signing/hello-vc.jsonld
-
-    - name: Checkout VC API Test Suite
-      uses: actions/checkout@v3
-      with:
-        repository: w3c-ccg/vc-api-test-suite
-        path: didkit/http/tests/vc-api/vc-api-test-suite
-        ref: 4923f0d627a223cd20a4ceb112336477ded445ca
 
     - name: Run VC API Test Suite
       working-directory: didkit/http/tests/vc-api

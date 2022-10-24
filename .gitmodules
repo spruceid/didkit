@@ -1,0 +1,3 @@
+[submodule "http/tests/vc-api/vc-api-test-suite"]
+	path = http/tests/vc-api/vc-api-test-suite
+	url = https://github.com/clehner/vc-api-test-suite

@@ -8,14 +8,8 @@ Requirements: [git][], [Cargo][] and [Node.js][].
 
 `didkit` and `ssi` should be checked out:
 ```sh
-git clone https://github.com/spruceid/didkit
+git clone https://github.com/spruceid/didkit --recurse-submodules
 git clone https://github.com/spruceid/ssi --recurse-submodules
-```
-
-Checkout the `vc-api` test server:
-```sh
-cd didkit/http/tests/vc-api
-git clone https://github.com/w3c-ccg/vc-api-test-suite --depth 1
 ```
 
 Install `npm` dependencies:
