@@ -37,14 +37,17 @@ $(TARGET)/release/$(LIB_NAME): $(RUST_SRC)
 	cargo build --lib --release
 	strip $@ || true
 
+$(TARGET)/debug/$(LIB_NAME): $(RUST_SRC)
+	cargo build --lib
+
 ## C
 
-$(TARGET)/test/c.stamp: $(TARGET)/cabi-test $(TARGET)/release/$(LIB_NAME) | $(TARGET)/test
-	LD_LIBRARY_PATH=$(TARGET)/release $(TARGET)/cabi-test
+$(TARGET)/test/c.stamp: $(TARGET)/cabi-test $(TARGET)/debug/$(LIB_NAME) | $(TARGET)/test
+	LD_LIBRARY_PATH=$(TARGET)/debug $(TARGET)/cabi-test
 	touch $@
 
-$(TARGET)/cabi-test: c/test.c $(TARGET)/release/$(LIB_NAME) $(TARGET)/didkit.h
-	$(CC) -I$(TARGET) -L$(TARGET)/release $< -ldl -ldidkit -o $@
+$(TARGET)/cabi-test: c/test.c $(TARGET)/debug/$(LIB_NAME) $(TARGET)/didkit.h
+	$(CC) -I$(TARGET) -L$(TARGET)/debug $< -ldl -ldidkit -o $@
 
 ## Java
 
