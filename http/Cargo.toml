@@ -17,7 +17,6 @@ exclude = [
 ]
 
 [features]
-default = ["ring"]
 ring = ["ssi/ring"]
 
 [dependencies]

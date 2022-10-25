@@ -16,10 +16,6 @@ exclude = [
   "/tests"
 ]
 
-[features]
-default = ["ring"]
-ring = ["ssi/ring"]
-
 [dependencies]
 chrono = { version = "0.4", features = ["serde"] }
 tokio = { version = "1.0", features = ["macros", "rt-multi-thread"] }
@@ -27,11 +23,6 @@ didkit = { version = "0.4", path = "../lib", features = ["http-did"] }
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
 clap = { version = "3.0", features = ["derive", "env"] }
-did-method-key = { version = "0.1", path = "../../ssi/did-key" }
-ssi = { version = "0.4", path = "../../ssi", default-features = false }
-thiserror = "1.0"
-bytes = "1.0"
-base64 = "0.12"
 sshkeys = "0.3"
 anyhow = "1.0"
 

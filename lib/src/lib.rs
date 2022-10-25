@@ -1,12 +1,12 @@
-#[cfg(not(feature = "wasm"))]
+#[cfg(not(target_arch = "wasm32"))]
 pub mod c;
 mod did_methods;
 pub mod error;
-#[cfg(not(feature = "wasm"))]
+#[cfg(not(target_arch = "wasm32"))]
 pub mod jni;
-#[cfg(not(feature = "wasm"))]
+#[cfg(not(target_arch = "wasm32"))]
 pub mod runtime;
-#[cfg(not(any(feature = "wasm", target_os = "windows")))]
+#[cfg(not(any(target_arch = "wasm32", target_os = "windows")))]
 pub mod ssh_agent;
 
 #[macro_use]
@@ -14,10 +14,14 @@ extern crate lazy_static;
 
 pub use crate::did_methods::DID_METHODS;
 pub use crate::error::Error;
+
+pub use ssi;
+pub use ssi::did::VerificationRelationship;
 pub use ssi::did::{
     DIDCreate, DIDDeactivate, DIDDocumentOperation, DIDMethod, DIDRecover, DIDUpdate, Document,
     Source, DIDURL,
 };
+pub use ssi::did_resolve::resolve_key;
 #[cfg(feature = "http-did")]
 pub use ssi::did_resolve::HTTPDIDResolver;
 pub use ssi::did_resolve::{
@@ -27,7 +31,6 @@ pub use ssi::did_resolve::{
 };
 pub use ssi::jsonld::ContextLoader;
 pub use ssi::jwk::JWK;
-pub use ssi::did_resolve::resolve_key;
 pub use ssi::ldp::ProofPreparation;
 pub use ssi::tzkey::jwk_from_tezos_key;
 pub use ssi::vc::get_verification_method;
@@ -35,7 +38,6 @@ pub use ssi::vc::Credential as VerifiableCredential;
 pub use ssi::vc::CredentialOrJWT;
 pub use ssi::vc::LinkedDataProofOptions;
 pub use ssi::vc::Presentation as VerifiablePresentation;
-pub use ssi::did::VerificationRelationship;
 pub use ssi::vc::VerificationResult;
 pub use ssi::vc::URI;
 pub use ssi::zcap::{Delegation, Invocation};
@@ -109,7 +111,7 @@ impl FromStr for ProofFormat {
 
 #[derive(thiserror::Error, Debug)]
 pub enum GenerateProofError {
-    #[cfg(not(any(feature = "wasm", target_os = "windows")))]
+    #[cfg(not(any(target_arch = "wasm32", target_os = "windows")))]
     #[error("Unable to sign: {0}")]
     Sign(#[from] crate::ssh_agent::SignError),
     #[error("SSI Linked Data Proof: {0}")]
@@ -132,15 +134,15 @@ pub async fn generate_proof(
 ) -> Result<ssi::ldp::Proof, GenerateProofError> {
     use ssi::ldp::LinkedDataProofs;
     let proof = match ssh_agent_sock_path_opt {
-        #[cfg(feature = "wasm")]
-        Some(sock_path) => {
+        #[cfg(target_arch = "wasm32")]
+        Some(_) => {
             return Err(GenerateProofError::NoWASM);
         }
         #[cfg(target_os = "windows")]
-        Some(sock_path) => {
+        Some(_) => {
             return Err(GenerateProofError::NoWindows);
         }
-        #[cfg(not(any(feature = "wasm", target_os = "windows")))]
+        #[cfg(not(any(target_arch = "wasm32", target_os = "windows")))]
         Some(sock_path) => {
             use tokio::net::UnixStream;
             let mut ssh_agent_sock = UnixStream::connect(sock_path).await?;
