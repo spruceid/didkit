@@ -57,9 +57,9 @@ $(TARGET)/test/java.stamp: \
 	$(TARGET)/jvm/com/spruceid/DIDKit.class \
 	$(TARGET)/jvm/com/spruceid/DIDKitException.class \
 	$(TARGET)/jvm/com/spruceid/DIDKitTest.class \
-	$(TARGET)/release/$(LIB_NAME) | $(TARGET)/test
+	$(TARGET)/debug/$(LIB_NAME) | $(TARGET)/test
 	java -Djava.class.path=$(TARGET)/jvm \
-		-Djava.library.path=$(TARGET)/release \
+		-Djava.library.path=$(TARGET)/debug \
 		com.spruceid.DIDKitTest
 	touch $@
 
