@@ -4,6 +4,7 @@ use did_onion::DIDOnion;
 use did_pkh::DIDPKH;
 // use did_sol::DIDSol;
 use did_ion::DIDION;
+use did_jwk::DIDJWK;
 use did_tz::DIDTz;
 use did_web::DIDWeb;
 use did_webkey::DIDWebKey;
@@ -47,6 +48,7 @@ lazy_static! {
         methods.insert(Box::new(DIDPKH));
         methods.insert(Box::new(DIDONION.clone()));
         methods.insert(Box::new(ION.clone()));
+        methods.insert(Box::new(DIDJWK));
         methods
     };
 }
