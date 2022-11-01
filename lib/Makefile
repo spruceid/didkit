@@ -100,32 +100,6 @@ $(TARGET)/%/release/libdidkit.so: $(RUST_SRC)
 	cargo build --lib --release --target $*
 	$(TOOLCHAIN)/bin/llvm-strip $@
 
-## iOS
-
-.PHONY: install-rustup-ios
-install-rustup-ios:
-	rustup target add \
-		aarch64-apple-ios \
-		x86_64-apple-ios \
-		aarch64-apple-ios-sim
-
-IOS_LIBS=\
-	$(TARGET)/aarch64-apple-ios/release/libdidkit.a \
-	$(TARGET)/x86_64-apple-ios/release/libdidkit.a
-
-IOS_SIM_LIB = $(TARGET)/aarch64-apple-ios-sim/release/libdidkit.a
-
-$(TARGET)/test/ios.stamp: $(TARGET)/universal/release/libdidkit.a $(IOS_SIM_LIB) $(TARGET)/didkit.h | $(TARGET)/test
-	cd ios && \
-		xcodebuild test \
-			-destination platform="iOS Simulator,name=iPhone 12 Pro" \
-			-scheme DIDKitSwift
-	touch $@
-
-$(TARGET)/universal/release/libdidkit.a: $(IOS_LIBS)
-	mkdir -p $(TARGET)/universal/release
-	lipo -create $^ -output $@
-
 $(TARGET)/%/release/libdidkit.a: $(RUST_SRC)
 	cargo build --lib --release --target $*
 	#strip $@
