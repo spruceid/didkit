@@ -9,6 +9,8 @@ pub mod runtime;
 #[cfg(not(any(target_arch = "wasm32", target_os = "windows")))]
 pub mod ssh_agent;
 
+pub mod util;
+
 #[macro_use]
 extern crate lazy_static;
 

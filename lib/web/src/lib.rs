@@ -1,5 +1,7 @@
 use core::future::Future;
+use std::convert::TryFrom;
 
+use didkit::ssi::jwk::Params;
 use js_sys::Promise;
 use serde_json::Value;
 use wasm_bindgen::prelude::*;
@@ -9,6 +11,7 @@ use didkit::error::Error;
 #[cfg(doc)]
 use didkit::error::{didkit_error_code, didkit_error_message};
 use didkit::get_verification_method;
+use didkit::ssi::jwk::Algorithm;
 use didkit::ssi::{self, ldp::ProofSuite};
 use didkit::LinkedDataProofOptions;
 use didkit::ProofPreparation;
@@ -105,6 +108,24 @@ pub fn keyToDID(method_pattern: String, jwk: String) -> Result<String, JsValue> 
     map_jsvalue(key_to_did(method_pattern, jwk))
 }
 
+fn pubkey_to_did(method_pattern: String, pubkey_str: String) -> Result<String, Error> {
+    let pubkey_bytes = didkit::util::decode_hex(&pubkey_str)?;
+    let pubkey =
+        k256::PublicKey::from_sec1_bytes(&pubkey_bytes).map_err(|e| Error::JWK(e.into()))?;
+    let ec_params = ssi::jwk::ECParams::try_from(&pubkey).map_err(|e| Error::JWK(e))?;
+    let jwk = JWK::from(Params::EC(ec_params));
+    let did = DID_METHODS
+        .generate(&Source::KeyAndPattern(&jwk, &method_pattern))
+        .ok_or(Error::UnableToGenerateDID)?;
+    Ok(did)
+}
+
+#[wasm_bindgen]
+#[allow(non_snake_case)]
+pub fn pubkeyToDID(method_pattern: String, pubkey_hex: String) -> Result<String, JsValue> {
+    map_jsvalue(pubkey_to_did(method_pattern, pubkey_hex))
+}
+
 async fn key_to_verification_method(method_pattern: String, jwk: String) -> Result<String, Error> {
     let key: JWK = serde_json::from_str(&jwk)?;
     let did = DID_METHODS
@@ -119,8 +140,43 @@ async fn key_to_verification_method(method_pattern: String, jwk: String) -> Resu
 
 #[wasm_bindgen]
 #[allow(non_snake_case)]
+pub fn didToVerificationMethod(did: String) -> Promise {
+    map_async_jsvalue(did_to_verification_method(did))
+}
+
+async fn did_to_verification_method(did: String) -> Result<String, Error> {
+    let did_resolver = DID_METHODS.to_resolver();
+    let vm = get_verification_method(&did, did_resolver)
+        .await
+        .ok_or(Error::UnableToGetVerificationMethod)?;
+    Ok(vm)
+}
+
+#[wasm_bindgen]
+#[allow(non_snake_case)]
 pub fn keyToVerificationMethod(method_pattern: String, jwk: String) -> Promise {
     map_async_jsvalue(key_to_verification_method(method_pattern, jwk))
+}
+
+fn get_key_id(jwk: String, verification_method: Option<String>) -> Result<String, Error> {
+    let key: JWK = serde_json::from_str(&jwk)?;
+    // Ensure consistency between key ID and verification method URI.
+    match (key.key_id.clone(), verification_method) {
+        (Some(jwk_kid), None) => Ok(jwk_kid),
+        (None, Some(vm_id)) => Ok(vm_id.to_string()),
+        (None, None) => Ok("".to_string()),
+        (Some(jwk_kid), Some(vm_id)) if jwk_kid == vm_id.to_string() => Ok(vm_id.to_string()),
+        (Some(jwk_kid), Some(vm_id)) => Err(Error::VC(ssi::vc::Error::KeyIdVMMismatch(
+            vm_id.to_string(),
+            jwk_kid,
+        ))),
+    }
+}
+
+#[wasm_bindgen]
+#[allow(non_snake_case)]
+pub fn getKeyId(jwk: String, verification_method: Option<String>) -> Result<String, JsValue> {
+    map_jsvalue(get_key_id(jwk, verification_method))
 }
 
 #[cfg(any(
@@ -161,6 +217,100 @@ async fn issue_credential(
         _ => Err(Error::UnknownProofFormat(proof_format.to_string()))?,
     };
     Ok(vc_string)
+}
+
+#[cfg(any(
+    all(feature = "issue", feature = "credential"),
+    all(feature = "issue", not(feature = "presentation")),
+    all(
+        feature = "credential",
+        not(feature = "issue"),
+        not(feature = "verify")
+    )
+))]
+fn generate_credential_data_to_sign(
+    credential: String,
+    proof_options: String,
+    algorithm: String,
+    key_id: String,
+) -> Result<String, Error> {
+    let credential = VerifiableCredential::from_json_unsigned(&credential)?;
+    let options: JWTOrLDPOptions = serde_json::from_str(&proof_options)?;
+    let proof_format = options.proof_format.unwrap_or_default();
+    let algorithm = match algorithm.as_str() {
+        "ES256K" => Algorithm::ES256K,
+        _ => return Err(Error::JWK(ssi::jwk::Error::UnsupportedKeyType)),
+    };
+    let key_id = if key_id.is_empty() {
+        None
+    } else {
+        Some(key_id)
+    };
+    let vc_string = match proof_format {
+        ProofFormat::JWT => {
+            let vc_jwt =
+                credential.generate_jwt_sign_data(&options.ldp_options, algorithm, key_id)?;
+            vc_jwt
+        }
+        _ => Err(Error::UnknownProofFormat(proof_format.to_string()))?,
+    };
+    Ok(vc_string)
+}
+
+#[wasm_bindgen]
+#[allow(non_snake_case)]
+#[cfg(any(
+    all(feature = "issue", feature = "credential"),
+    all(feature = "issue", not(feature = "presentation")),
+    all(
+        feature = "credential",
+        not(feature = "issue"),
+        not(feature = "verify")
+    )
+))]
+pub fn generateCredentialDataToSign(
+    credential: String,
+    proof_options: String,
+    algorithm: String,
+    key_id: String,
+) -> Result<String, JsValue> {
+    map_jsvalue(generate_credential_data_to_sign(
+        credential,
+        proof_options,
+        algorithm,
+        key_id,
+    ))
+}
+
+#[wasm_bindgen]
+#[allow(non_snake_case)]
+#[cfg(any(
+    all(feature = "issue", feature = "credential"),
+    all(feature = "issue", not(feature = "presentation")),
+    all(
+        feature = "credential",
+        not(feature = "issue"),
+        not(feature = "verify")
+    )
+))]
+pub fn finalizeCredential(signing_input: String, signature: String) -> Result<String, JsValue> {
+    map_jsvalue(finalize_credential(signing_input, signature))
+}
+
+#[cfg(any(
+    all(feature = "issue", feature = "credential"),
+    all(feature = "issue", not(feature = "presentation")),
+    all(
+        feature = "credential",
+        not(feature = "issue"),
+        not(feature = "verify")
+    )
+))]
+fn finalize_credential(signing_input: String, signature: String) -> Result<String, Error> {
+    let sig_bytes = didkit::util::decode_hex(&signature)?;
+    let sig_b64 = base64::encode_config(sig_bytes, base64::URL_SAFE_NO_PAD);
+    let jws = signing_input.to_string() + "." + &sig_b64;
+    Ok(jws)
 }
 
 #[wasm_bindgen]
@@ -813,4 +963,117 @@ async fn verify_invocation(invocation: String, delegation: String) -> Result<Str
 #[cfg(any(feature = "invoke", feature = "zcap"))]
 pub fn verifyInvocation(invocation: String, delegation: String) -> Promise {
     map_async_jsvalue(verify_invocation(invocation, delegation))
+}
+
+#[cfg(test)]
+mod tests {
+    use didkit::{util::encode_hex, VerificationResult};
+
+    use super::*;
+    #[tokio::test]
+    async fn issue_credential_verify_test() {
+        let m_key = r#"{"kty":"EC","crv":"secp256k1","x":"xna2cOr1YoelW64E85cQQ1EzPxO2BSVIBl2Ub53C8FI","y":"levEBIFG6eTPIWzb7YQ30P0Ypp9yK-NRMnCaOKdWMME","d":"kQ5inxC_5p_HD8Y7e8bMLWudSvIvzSd2luB85MuTbmE"}"#.to_string();
+        let m_did = key_to_did("key".to_string(), m_key.clone()).unwrap();
+        let verification_method = key_to_verification_method("key".to_string(), m_key.clone())
+            .await
+            .unwrap();
+
+        let key = r#"{"kty":"EC","crv":"secp256k1","x":"X7ZzK9t8i6LZgi7lcKGXLMzeV9PLH2NIPNip_g_8eso","y":"cqZciccFbybaKHxKMm8em48rSH26Cm0peOvNwvelVgM","d":"NSf9zygkwE2UoJMlzs-nf0UnIYju_d_cVG2we1EKZOQ"}"#.to_string();
+        let did = key_to_did("key".to_string(), key.clone()).unwrap();
+        let proof_options = format!(
+            r#"{{
+            "proofPurpose": "assertionMethod",
+            "proofFormat": "jwt",
+            "verificationMethod": "{}"
+          }}"#,
+            verification_method
+        );
+        let credential = issue_credential(
+            format!(
+                r#"
+        {{
+            "@context": "https://www.w3.org/2018/credentials/v1",
+            "id": "http://example.org/credentials/3731",
+            "type": ["VerifiableCredential"],
+            "issuer": "{}",
+            "issuanceDate": "2020-08-19T21:41:50Z",
+            "credentialSubject": {{"id":"{}"}}
+        }}
+        "#,
+                m_did.clone(),
+                did
+            ),
+            proof_options.clone(),
+            m_key,
+        )
+        .await
+        .unwrap();
+        println!("{}", credential);
+
+        let res = verify_credential(credential, proof_options).await.unwrap();
+        println!("{}", res);
+    }
+
+    #[tokio::test]
+    async fn external_sign_verify_test() {
+        let m_key = r#"{"kty":"EC","crv":"secp256k1","x":"xna2cOr1YoelW64E85cQQ1EzPxO2BSVIBl2Ub53C8FI","y":"levEBIFG6eTPIWzb7YQ30P0Ypp9yK-NRMnCaOKdWMME","d":"kQ5inxC_5p_HD8Y7e8bMLWudSvIvzSd2luB85MuTbmE"}"#.to_string();
+        let m_did = key_to_did("key".to_string(), m_key.clone()).unwrap();
+        let verification_method = key_to_verification_method("key".to_string(), m_key.clone())
+            .await
+            .unwrap();
+
+        let key = r#"{"kty":"EC","crv":"secp256k1","x":"X7ZzK9t8i6LZgi7lcKGXLMzeV9PLH2NIPNip_g_8eso","y":"cqZciccFbybaKHxKMm8em48rSH26Cm0peOvNwvelVgM","d":"NSf9zygkwE2UoJMlzs-nf0UnIYju_d_cVG2we1EKZOQ"}"#.to_string();
+        let did = key_to_did("key".to_string(), key.clone()).unwrap();
+
+        let proof_options = format!(
+            r#"{{
+            "proofPurpose": "assertionMethod",
+            "proofFormat": "jwt",
+            "verificationMethod": "{}"
+          }}"#,
+            verification_method
+        );
+        let proof_options_verif = r#"{
+            "proofPurpose": "assertionMethod",
+            "proofFormat": "jwt"
+          }"#
+        .to_string();
+
+        let data_to_sign = generate_credential_data_to_sign(
+            format!(
+                r#"
+        {{
+            "@context": "https://www.w3.org/2018/credentials/v1",
+            "id": "http://example.org/credentials/3731",
+            "type": ["VerifiableCredential"],
+            "issuer": "{}",
+            "issuanceDate": "2020-08-19T21:41:50Z",
+            "credentialSubject": {{"id":"{}"}}
+        }}
+        "#,
+                m_did.clone(),
+                did
+            ),
+            proof_options.clone(),
+            "ES256K".to_string(),
+            verification_method,
+        )
+        .unwrap();
+
+        let signature = {
+            let key: JWK = serde_json::from_str(&m_key.clone()).unwrap();
+            ssi::jws::sign_bytes(Algorithm::ES256K, data_to_sign.as_bytes(), &key).unwrap()
+        };
+
+        let sig_string = didkit::util::encode_hex(&signature);
+
+        let credential = finalize_credential(data_to_sign, sig_string).unwrap();
+
+        let res = verify_credential(credential, proof_options_verif)
+            .await
+            .unwrap();
+        let verif_result: VerificationResult = serde_json::from_str(&res).unwrap();
+
+        assert!(verif_result.errors.is_empty());
+    }
 }

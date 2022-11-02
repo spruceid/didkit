@@ -13,11 +13,12 @@ js-sys = "0.3"
 getrandom = { version = "0.2", features = ["js"] }
 rand = { version = "0.7", features = ["wasm-bindgen"] }
 chrono = { version = "0.4", features = ["wasmbind"] }
-
-[dependencies.didkit]
-path = "../"
+base64 = "0.12"
+k256 = { version = "0.11", features = ["ecdsa"] }
+didkit = { path = "../", features = ["secp256k1"] }
 
 [dev-dependencies]
+tokio = { version = "*", features = ["macros"] }
 wasm-bindgen-test = "0.2"
 
 [lib]
