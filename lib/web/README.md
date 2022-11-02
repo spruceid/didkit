@@ -56,6 +56,15 @@ $ wasm-pack build --target web
 
 The manual tests in `test/` serve as an example on how to import DIDKit.
 
+## Demo
+
+From this directory run:
+```
+./scripts/build.sh
+```
+
+Then serve the content in the demo folder to run the demo script.
+
 ## Tests
 
 The `test/` directory contains manual tests to run in the browser. Instructions
