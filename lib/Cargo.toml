@@ -24,6 +24,7 @@ default = ["w3c", "ed25519", "rsa", "ripemd-160", "eip", "tezos"]
 w3c = ["ssi/w3c"]
 secp256k1 = ["ssi/secp256k1"]
 secp256r1 = ["ssi/secp256r1"]
+secp384r1 = ["ssi/secp384r1"]
 ed25519 = ["ssi/ed25519"]
 rsa = ["ssi/rsa"]
 ripemd-160 = ["ssi/ripemd-160"]
@@ -36,7 +37,6 @@ solana = ["ssi/solana"]
 http-did = ["ssi/http-did"]
 
 ring = ["ssi/ring"]
-openssl = ["ssi/openssl"]
 
 [dependencies]
 ssi = { version = "0.4", path = "../../ssi", default-features = false }
