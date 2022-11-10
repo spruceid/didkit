@@ -1,0 +1,25 @@
+[package]
+name = "didkit-macros"
+version = "0.1.0"
+authors = ["Spruce Systems, Inc."]
+edition = "2018"
+description = "Macros for DIDKit library implementation."
+license = "Apache-2.0"
+license-file = "LICENSE"
+homepage = "https://spruceid.dev/docs/didkit/"
+repository = "https://github.com/spruceid/didkit/"
+documentation = "https://docs.rs/didkit/"
+keywords = ["ssi", "did"]
+readme = "README.md"
+
+include = ["/src", "/README.md", "/LICENSE"]
+
+[dependencies]
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+proc-macro2 = "1.0"
+syn = { version = "1.0", features = ["full", "fold"] }
+quote = "1.0"
+
+[lib]
+proc-macro = true

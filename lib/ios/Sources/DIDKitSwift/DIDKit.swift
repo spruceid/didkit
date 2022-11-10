@@ -24,6 +24,30 @@ public enum DIDKit {
     return String(cString: keyPtr)
   }
 
+  public static func generateSecp256r1Key() throws -> String {
+    guard let keyPtr = didkit_vc_generate_secp256r1_key() else {
+      throw Error()
+    }
+    defer { didkit_free_string(keyPtr) }
+    return String(cString: keyPtr)
+  }
+
+  public static func generateSecp256k1Key() throws -> String {
+    guard let keyPtr = didkit_vc_generate_secp256k1_key() else {
+      throw Error()
+    }
+    defer { didkit_free_string(keyPtr) }
+    return String(cString: keyPtr)
+  }
+
+  public static func generateSecp384r1Key() throws -> String {
+    guard let keyPtr = didkit_vc_generate_secp384r1_key() else {
+      throw Error()
+    }
+    defer { didkit_free_string(keyPtr) }
+    return String(cString: keyPtr)
+  }
+
   public static func keyToDID(method: String, jwk: String) throws -> String {
     guard let didKeyPtr = didkit_key_to_did(method, jwk) else {
       throw Error()

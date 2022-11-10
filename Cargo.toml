@@ -1,18 +1,7 @@
 [workspace]
-members = [
-  "http",
-  "cli",
-  "lib",
-  "lib/cbindings",
-  "lib/web",
-]
+members = ["http", "cli", "lib", "lib/cbindings", "lib/web", "macros"]
 
-default-members = [
-  "http",
-  "cli",
-  "lib",
-  "lib/cbindings",
-]
+default-members = ["http", "cli", "lib", "lib/cbindings", "macros"]
 
 # $ cargo release
 [workspace.metadata.release]

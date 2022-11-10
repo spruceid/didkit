@@ -11,11 +11,7 @@ documentation = "https://docs.rs/didkit/"
 keywords = ["ssi", "did"]
 readme = "README.md"
 
-include = [
-  "/src",
-  "/README.md",
-  "/LICENSE"
-]
+include = ["/src", "/README.md", "/LICENSE"]
 
 [features]
 default = ["w3c", "ed25519", "rsa", "ripemd-160", "eip", "tezos"]
@@ -58,6 +54,7 @@ thiserror = "1.0"
 base64 = "0.12"
 sshkeys = "0.3"
 bytes = "1.0"
+didkit-macros = { path = "../macros" }
 
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
 tokio = { version = "1.0", features = ["rt-multi-thread"] }

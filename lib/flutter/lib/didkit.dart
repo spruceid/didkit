@@ -2,6 +2,7 @@ library didkit;
 
 import 'dart:ffi';
 import 'dart:io';
+
 import 'package:ffi/ffi.dart';
 
 // TODO: support Windows
@@ -24,7 +25,19 @@ final get_error_code =
 
 final generate_ed25519_key =
     lib.lookupFunction<Pointer<Utf8> Function(), Pointer<Utf8> Function()>(
-        'didkit_vc_generate_ed25519_key');
+        'didkit_generate_ed25519_key');
+
+final generate_secp256r1_key =
+    lib.lookupFunction<Pointer<Utf8> Function(), Pointer<Utf8> Function()>(
+        'didkit_generate_secp256r1_key');
+
+final generate_secp256k1_key =
+    lib.lookupFunction<Pointer<Utf8> Function(), Pointer<Utf8> Function()>(
+        'didkit_generate_secp256k1_key');
+
+final generate_secp384r1_key =
+    lib.lookupFunction<Pointer<Utf8> Function(), Pointer<Utf8> Function()>(
+        'didkit_generate_secp384r1_key');
 
 final key_to_did = lib.lookupFunction<
     Pointer<Utf8> Function(Pointer<Utf8>, Pointer<Utf8>),
@@ -57,17 +70,37 @@ final verify_presentation = lib.lookupFunction<
 
 final resolve_did = lib.lookupFunction<
     Pointer<Utf8> Function(Pointer<Utf8>, Pointer<Utf8>),
-    Pointer<Utf8> Function(Pointer<Utf8>, Pointer<Utf8>)>('didkit_did_resolve');
+    Pointer<Utf8> Function(Pointer<Utf8>, Pointer<Utf8>)>('didkit_resolve_did');
 
 final dereference_did_url = lib.lookupFunction<
     Pointer<Utf8> Function(Pointer<Utf8>, Pointer<Utf8>),
     Pointer<Utf8> Function(
-        Pointer<Utf8>, Pointer<Utf8>)>('didkit_did_url_dereference');
+        Pointer<Utf8>, Pointer<Utf8>)>('didkit_dereference_did_url');
 
 final did_auth = lib.lookupFunction<
     Pointer<Utf8> Function(Pointer<Utf8>, Pointer<Utf8>, Pointer<Utf8>),
     Pointer<Utf8> Function(
         Pointer<Utf8>, Pointer<Utf8>, Pointer<Utf8>)>('didkit_did_auth');
+
+final prepare_issue_credential = lib.lookupFunction<
+    Pointer<Utf8> Function(Pointer<Utf8>, Pointer<Utf8>, Pointer<Utf8>),
+    Pointer<Utf8> Function(Pointer<Utf8>, Pointer<Utf8>,
+        Pointer<Utf8>)>('didkit_vc_prepare_issue_credential');
+
+final complete_issue_credential = lib.lookupFunction<
+    Pointer<Utf8> Function(Pointer<Utf8>, Pointer<Utf8>, Pointer<Utf8>),
+    Pointer<Utf8> Function(Pointer<Utf8>, Pointer<Utf8>,
+        Pointer<Utf8>)>('didkit_vc_complete_issue_credential');
+
+final prepare_issue_presentation = lib.lookupFunction<
+    Pointer<Utf8> Function(Pointer<Utf8>, Pointer<Utf8>, Pointer<Utf8>),
+    Pointer<Utf8> Function(Pointer<Utf8>, Pointer<Utf8>,
+        Pointer<Utf8>)>('didkit_vc_prepare_issue_presentation');
+
+final complete_issue_presentation = lib.lookupFunction<
+    Pointer<Utf8> Function(Pointer<Utf8>, Pointer<Utf8>, Pointer<Utf8>),
+    Pointer<Utf8> Function(Pointer<Utf8>, Pointer<Utf8>,
+        Pointer<Utf8>)>('didkit_vc_complete_issue_presentation');
 
 final free_string = lib.lookupFunction<Void Function(Pointer<Utf8>),
     void Function(Pointer<Utf8>)>('didkit_free_string');
@@ -75,6 +108,7 @@ final free_string = lib.lookupFunction<Void Function(Pointer<Utf8>),
 class DIDKitException implements Exception {
   int code;
   String message;
+
   DIDKitException(this.code, this.message);
 
   @override
@@ -100,6 +134,30 @@ class DIDKit {
 
   static String generateEd25519Key() {
     final key = generate_ed25519_key();
+    if (key.address == nullptr.address) throw lastError();
+    final key_string = key.toDartString();
+    free_string(key);
+    return key_string;
+  }
+
+  static String generateSecp256r1Key() {
+    final key = generate_secp256r1_key();
+    if (key.address == nullptr.address) throw lastError();
+    final key_string = key.toDartString();
+    free_string(key);
+    return key_string;
+  }
+
+  static String generateSecp256k1Key() {
+    final key = generate_secp256k1_key();
+    if (key.address == nullptr.address) throw lastError();
+    final key_string = key.toDartString();
+    free_string(key);
+    return key_string;
+  }
+
+  static String generateSecp384r1Key() {
+    final key = generate_secp384r1_key();
     if (key.address == nullptr.address) throw lastError();
     final key_string = key.toDartString();
     free_string(key);
@@ -190,6 +248,70 @@ class DIDKit {
   static String DIDAuth(String did, String options, String key) {
     final vp = did_auth(
         did.toNativeUtf8(), options.toNativeUtf8(), key.toNativeUtf8());
+    if (vp.address == nullptr.address) throw lastError();
+    final vp_string = vp.toDartString();
+    free_string(vp);
+    return vp_string;
+  }
+
+  static String prepareIssueCredential(
+    String credential,
+    String options,
+    String key,
+  ) {
+    final prep = prepare_issue_credential(
+      credential.toNativeUtf8(),
+      options.toNativeUtf8(),
+      key.toNativeUtf8(),
+    );
+    if (prep.address == nullptr.address) throw lastError();
+    final prep_string = prep.toDartString();
+    free_string(prep);
+    return prep_string;
+  }
+
+  static String completeIssueCredential(
+    String credential,
+    String preparation,
+    String signature,
+  ) {
+    final vc = complete_issue_credential(
+      credential.toNativeUtf8(),
+      preparation.toNativeUtf8(),
+      signature.toNativeUtf8(),
+    );
+    if (vc.address == nullptr.address) throw lastError();
+    final vc_string = vc.toDartString();
+    free_string(vc);
+    return vc_string;
+  }
+
+  static String prepareIssuePresentation(
+    String presentation,
+    String options,
+    String key,
+  ) {
+    final prep = prepare_issue_presentation(
+      presentation.toNativeUtf8(),
+      options.toNativeUtf8(),
+      key.toNativeUtf8(),
+    );
+    if (prep.address == nullptr.address) throw lastError();
+    final prep_string = prep.toDartString();
+    free_string(prep);
+    return prep_string;
+  }
+
+  static String completeIssuePresentation(
+    String presentation,
+    String preparation,
+    String signature,
+  ) {
+    final vp = complete_issue_presentation(
+      presentation.toNativeUtf8(),
+      preparation.toNativeUtf8(),
+      signature.toNativeUtf8(),
+    );
     if (vp.address == nullptr.address) throw lastError();
     final vp_string = vp.toDartString();
     free_string(vp);

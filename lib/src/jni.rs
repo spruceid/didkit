@@ -38,21 +38,36 @@ fn jstring_or_error(env: &JNIEnv, result: Result<jstring, Error>) -> jstring {
     }
 }
 
-fn generate_ed25519_key(env: &JNIEnv) -> Result<jstring, Error> {
+#[didkit_macros::java_export(wrap = "jstring_or_error")]
+fn Java_com_spruceid_DIDKit_generateEd25519Key(env: &JNIEnv) -> Result<jstring, Error> {
     let jwk = JWK::generate_ed25519()?;
     let jwk_json = serde_json::to_string(&jwk)?;
     Ok(env.new_string(jwk_json).unwrap().into_inner())
 }
 
-#[no_mangle]
-pub extern "system" fn Java_com_spruceid_DIDKit_generateEd25519Key(
-    env: JNIEnv,
-    _class: JClass,
-) -> jstring {
-    jstring_or_error(&env, generate_ed25519_key(&env))
+#[didkit_macros::java_export(wrap = "jstring_or_error")]
+fn Java_com_spruceid_DIDKit_generateSecp256r1Key(env: &JNIEnv) -> Result<jstring, Error> {
+    let jwk = JWK::generate_p256()?;
+    let jwk_json = serde_json::to_string(&jwk)?;
+    Ok(env.new_string(jwk_json).unwrap().into_inner())
 }
 
-fn key_to_did(
+#[didkit_macros::java_export(wrap = "jstring_or_error")]
+fn Java_com_spruceid_DIDKit_generateSecp256k1Key(env: &JNIEnv) -> Result<jstring, Error> {
+    let jwk = JWK::generate_secp256k1()?;
+    let jwk_json = serde_json::to_string(&jwk)?;
+    Ok(env.new_string(jwk_json).unwrap().into_inner())
+}
+
+#[didkit_macros::java_export(wrap = "jstring_or_error")]
+fn Java_com_spruceid_DIDKit_generateSecp384r1Key(env: &JNIEnv) -> Result<jstring, Error> {
+    let jwk = JWK::generate_p384()?;
+    let jwk_json = serde_json::to_string(&jwk)?;
+    Ok(env.new_string(jwk_json).unwrap().into_inner())
+}
+
+#[didkit_macros::java_export(wrap = "jstring_or_error")]
+fn Java_com_spruceid_DIDKit_keyToDID(
     env: &JNIEnv,
     method_pattern_jstring: JString,
     key_jstring: JString,
@@ -66,17 +81,8 @@ fn key_to_did(
     Ok(env.new_string(did).unwrap().into_inner())
 }
 
-#[no_mangle]
-pub extern "system" fn Java_com_spruceid_DIDKit_keyToDID(
-    env: JNIEnv,
-    _class: JClass,
-    method_pattern: JString,
-    jwk: JString,
-) -> jstring {
-    jstring_or_error(&env, key_to_did(&env, method_pattern, jwk))
-}
-
-fn key_to_verification_method(
+#[didkit_macros::java_export(wrap = "jstring_or_error")]
+fn Java_com_spruceid_DIDKit_keyToVerificationMethod(
     env: &JNIEnv,
     method_pattern_jstring: JString,
     key_jstring: JString,
@@ -95,17 +101,8 @@ fn key_to_verification_method(
     Ok(env.new_string(verification_method).unwrap().into_inner())
 }
 
-#[no_mangle]
-pub extern "system" fn Java_com_spruceid_DIDKit_keyToVerificationMethod(
-    env: JNIEnv,
-    _class: JClass,
-    method_pattern: JString,
-    jwk: JString,
-) -> jstring {
-    jstring_or_error(&env, key_to_verification_method(&env, method_pattern, jwk))
-}
-
-fn issue_credential(
+#[didkit_macros::java_export(wrap = "jstring_or_error")]
+fn Java_com_spruceid_DIDKit_issueCredential(
     env: &JNIEnv,
     credential_jstring: JString,
     proof_options_jstring: JString,
@@ -139,18 +136,8 @@ fn issue_credential(
     Ok(env.new_string(vc_string).unwrap().into_inner())
 }
 
-#[no_mangle]
-pub extern "system" fn Java_com_spruceid_DIDKit_issueCredential(
-    env: JNIEnv,
-    _class: JClass,
-    credential: JString,
-    options: JString,
-    key: JString,
-) -> jstring {
-    jstring_or_error(&env, issue_credential(&env, credential, options, key))
-}
-
-fn verify_credential(
+#[didkit_macros::java_export(wrap = "jstring_or_error")]
+fn Java_com_spruceid_DIDKit_verifyCredential(
     env: &JNIEnv,
     vc_jstring: JString,
     proof_options_jstring: JString,
@@ -178,17 +165,8 @@ fn verify_credential(
     Ok(env.new_string(result_json).unwrap().into_inner())
 }
 
-#[no_mangle]
-pub extern "system" fn Java_com_spruceid_DIDKit_verifyCredential(
-    env: JNIEnv,
-    _class: JClass,
-    credential: JString,
-    options: JString,
-) -> jstring {
-    jstring_or_error(&env, verify_credential(&env, credential, options))
-}
-
-fn issue_presentation(
+#[didkit_macros::java_export(wrap = "jstring_or_error")]
+fn Java_com_spruceid_DIDKit_issuePresentation(
     env: &JNIEnv,
     presentation_jstring: JString,
     proof_options_jstring: JString,
@@ -222,18 +200,8 @@ fn issue_presentation(
     Ok(env.new_string(vp_string).unwrap().into_inner())
 }
 
-#[no_mangle]
-pub extern "system" fn Java_com_spruceid_DIDKit_issuePresentation(
-    env: JNIEnv,
-    _class: JClass,
-    presentation: JString,
-    options: JString,
-    key: JString,
-) -> jstring {
-    jstring_or_error(&env, issue_presentation(&env, presentation, options, key))
-}
-
-fn did_auth(
+#[didkit_macros::java_export(wrap = "jstring_or_error")]
+fn Java_com_spruceid_DIDKit_DIDAuth(
     env: &JNIEnv,
     holder_jstring: JString,
     proof_options_jstring: JString,
@@ -268,18 +236,8 @@ fn did_auth(
     Ok(env.new_string(vp_string).unwrap().into_inner())
 }
 
-#[no_mangle]
-pub extern "system" fn Java_com_spruceid_DIDKit_DIDAuth(
-    env: JNIEnv,
-    _class: JClass,
-    holder: JString,
-    options: JString,
-    key: JString,
-) -> jstring {
-    jstring_or_error(&env, did_auth(&env, holder, options, key))
-}
-
-fn verify_presentation(
+#[didkit_macros::java_export(wrap = "jstring_or_error")]
+fn Java_com_spruceid_DIDKit_verifyPresentation(
     env: &JNIEnv,
     vp_jstring: JString,
     proof_options_jstring: JString,
@@ -307,17 +265,8 @@ fn verify_presentation(
     Ok(env.new_string(result_json).unwrap().into_inner())
 }
 
-#[no_mangle]
-pub extern "system" fn Java_com_spruceid_DIDKit_verifyPresentation(
-    env: JNIEnv,
-    _class: JClass,
-    presentation: JString,
-    options: JString,
-) -> jstring {
-    jstring_or_error(&env, verify_presentation(&env, presentation, options))
-}
-
-fn resolve_did(
+#[didkit_macros::java_export(wrap = "jstring_or_error")]
+fn Java_com_spruceid_DIDKit_resolveDID(
     env: &JNIEnv,
     did_jstring: JString,
     input_metadata_jstring: JString,
@@ -342,17 +291,8 @@ fn resolve_did(
     Ok(env.new_string(result_json).unwrap().into_inner())
 }
 
-#[no_mangle]
-pub extern "system" fn Java_com_spruceid_DIDKit_resolveDID(
-    env: JNIEnv,
-    _class: JClass,
-    did: JString,
-    input_metadata: JString,
-) -> jstring {
-    jstring_or_error(&env, resolve_did(&env, did, input_metadata))
-}
-
-fn dereference_did_url(
+#[didkit_macros::java_export(wrap = "jstring_or_error")]
+fn Java_com_spruceid_DIDKit_dereferenceDIDURL(
     env: &JNIEnv,
     did_url_jstring: JString,
     input_metadata_jstring: JString,
@@ -369,14 +309,4 @@ fn dereference_did_url(
     let deref_result = rt.block_on(dereference(resolver, &did_url, &input_metadata));
     let result_json = serde_json::to_string(&deref_result)?;
     Ok(env.new_string(result_json).unwrap().into_inner())
-}
-
-#[no_mangle]
-pub extern "system" fn Java_com_spruceid_DIDKit_dereferenceDIDURL(
-    env: JNIEnv,
-    _class: JClass,
-    did_url: JString,
-    input_metadata: JString,
-) -> jstring {
-    jstring_or_error(&env, dereference_did_url(&env, did_url, input_metadata))
 }
