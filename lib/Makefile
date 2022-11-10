@@ -97,8 +97,9 @@ $(TARGET)/test/android.stamp: $(TARGET)/didkit.jar $(ANDROID_LIBS) | $(TARGET)/t
 
 $(TARGET)/%/release/libdidkit.so: $(RUST_SRC)
 	PATH=$(TOOLCHAIN)/bin:"$(PATH)" \
-	cargo build --lib --release --target $*
-	$(TOOLCHAIN)/bin/llvm-strip $@
+	cargo ndk --target $* build --lib --release
+	# cargo build --lib --release --target $*
+	# $(TOOLCHAIN)/bin/llvm-strip $@
 
 ## iOS
 

@@ -14,6 +14,21 @@ class DIDKitTests: XCTestCase {
     XCTAssertFalse(key.isEmpty)
   }
 
+  func test_generateSecp256r1Key() throws {
+    let key = try DIDKit.generateSecp256r1Key()
+    XCTAssertFalse(key.isEmpty)
+  }
+
+  func test_generateSecp256k1Key() throws {
+    let key = try DIDKit.generateSecp256k1Key()
+    XCTAssertFalse(key.isEmpty)
+  }
+
+  func test_generateSecp384r1Key() throws {
+    let key = try DIDKit.generateSecp384r1Key()
+    XCTAssertFalse(key.isEmpty)
+  }
+
   func test_keyToDID() throws {
     let key = try DIDKit.generateEd25519Key()
     let did = try DIDKit.keyToDID(method: "key", jwk: key)
