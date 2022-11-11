@@ -29,6 +29,9 @@ use didkit_cli::opts::ResolverOptions;
 
 #[derive(StructOpt, Debug)]
 pub enum DIDKit {
+    #[clap(setting(clap::AppSettings::Hidden))]
+    GenerateBls12381Key,
+
     /// Generate and output a Ed25519 keypair in JWK format
     #[clap(setting(clap::AppSettings::Hidden))]
     GenerateEd25519Key,
@@ -720,6 +723,11 @@ fn main() -> AResult<()> {
     let ssh_agent_sock;
 
     match opt {
+        DIDKit::GenerateBls12381Key => {
+            let output = JWK::generate_bls12381_2020().unwrap();
+            println!("{}", output);
+        }
+
         DIDKit::GenerateEd25519Key => {
             let jwk = JWK::generate_ed25519().unwrap();
             let jwk_str = serde_json::to_string(&jwk).unwrap();
