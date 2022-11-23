@@ -504,8 +504,9 @@ async fn main() -> AResult<()> {
     let opt = DIDKit::parse();
     match opt.command {
         DIDKit::GenerateBls12381Key => {
-            let output = JWK::generate_bls12381_2020().unwrap();
-            println!("{}", output);
+            let jwk = JWK::generate_bls12381_2020().unwrap();
+            let jwk_str = serde_json::to_string(&jwk).unwrap();
+            println!("{}", jwk_str);
         }
         DIDKitCmd::GenerateEd25519Key => key::generate(key::KeyGenerateCmd::Ed25519).await.unwrap(),
         DIDKitCmd::Key(cmd) => key::cli(cmd).await.unwrap(),
