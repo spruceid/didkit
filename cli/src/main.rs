@@ -724,8 +724,9 @@ fn main() -> AResult<()> {
 
     match opt {
         DIDKit::GenerateBls12381Key => {
-            let output = JWK::generate_bls12381_2020().unwrap();
-            println!("{}", output);
+            let jwk = JWK::generate_bls12381_2020().unwrap();
+            let jwk_str = serde_json::to_string(&jwk).unwrap();
+            println!("{}", jwk_str);
         }
 
         DIDKit::GenerateEd25519Key => {
