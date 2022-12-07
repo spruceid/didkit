@@ -17,6 +17,7 @@ endif
 test: $(TARGET)/test/c.stamp \
 	$(TARGET)/test/java.stamp \
 	$(TARGET)/test/android.stamp \
+	$(TARGET)/test/ios.stamp \
 	$(TARGET)/test/flutter.stamp \
 	$(TARGET)/test/wasm.stamp
 
