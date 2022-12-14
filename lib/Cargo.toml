@@ -11,7 +11,11 @@ documentation = "https://docs.rs/didkit/"
 keywords = ["ssi", "did"]
 readme = "README.md"
 
-include = ["/src", "/README.md", "/LICENSE"]
+include = [
+  "/src",
+  "/README.md",
+  "/LICENSE"
+]
 
 [features]
 default = ["w3c", "ed25519", "rsa", "ripemd-160", "eip", "tezos"]
