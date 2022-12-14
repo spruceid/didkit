@@ -1,13 +1,15 @@
 use std::convert::TryFrom;
 use std::fs::File;
 use std::io::{stdin, stdout, BufReader, BufWriter, Read, Write};
+use std::ops::Deref;
 use std::path::PathBuf;
 use std::str::FromStr;
 
 use anyhow::{anyhow, bail, Context, Error as AError, Result as AResult};
 use chrono::prelude::*;
 use clap::{AppSettings, ArgGroup, Parser, StructOpt};
-use serde::Serialize;
+use didkit::ssi::ldp::ProofSuiteType;
+use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use sshkeys::PublicKey;
 
@@ -294,7 +296,7 @@ impl IdAndDid {
         let method = DID_METHODS
             .get_method(&id.did)
             .map_err(|e| anyhow!("Unable to get DID method: {}", e))?;
-        Ok((*method, did.unwrap_or_else(|| id.did.clone()), id))
+        Ok((method.deref(), did.unwrap_or_else(|| id.did.clone()), id))
     }
 }
 
@@ -407,12 +409,12 @@ pub enum DIDUpdateCmd {
     RemoveVerificationMethod(IdAndDid),
 }
 
-#[derive(StructOpt, Debug)]
+#[derive(StructOpt, Debug, Deserialize)]
 #[non_exhaustive]
 pub struct ProofOptions {
     // Options as in vc-api (vc-http-api)
     #[clap(env, short, long)]
-    pub type_: Option<String>,
+    pub type_: Option<ProofSuiteType>,
     #[clap(env, short, long)]
     pub verification_method: Option<URI>,
     #[clap(env, short, long)]

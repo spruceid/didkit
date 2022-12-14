@@ -4,6 +4,7 @@ use sshkeys::PublicKey;
 use ssi::jsonld::ContextLoader;
 use ssi::jwk::{Algorithm, JWK};
 use ssi::ldp::LinkedDataProofs;
+use ssi::ldp::ProofSuite;
 use std::convert::TryFrom;
 use thiserror::Error;
 use tokio::io::AsyncReadExt;
@@ -323,6 +324,6 @@ pub async fn generate_proof(
     };
     let sig = sign(ssh_agent_sock, &pk, &signing_input_bytes, alg).await?;
     let sig_b64 = base64::encode_config(sig, base64::URL_SAFE_NO_PAD);
-    let proof = prep.complete(&sig_b64).await?;
+    let proof = prep.proof.type_.complete(&prep, &sig_b64).await?;
     Ok(proof)
 }
