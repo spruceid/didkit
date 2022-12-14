@@ -1,4 +1,17 @@
 [workspace]
-members = ["http", "cli", "lib", "lib/cbindings", "lib/web", "macros"]
+members = [
+  "http",
+  "cli",
+  "lib",
+  "lib/cbindings",
+  "lib/web",
+  "macros"
+]
 
-default-members = ["http", "cli", "lib", "lib/cbindings", "macros"]
+default-members = [
+  "http",
+  "cli",
+  "lib",
+  "lib/cbindings",
+  "macros"
+]
