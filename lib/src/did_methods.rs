@@ -7,7 +7,7 @@ use did_ion::DIDION;
 use did_tz::DIDTz;
 use did_web::DIDWeb;
 use did_webkey::DIDWebKey;
-use ssi::did::{DIDMethod, DIDMethods};
+use ssi::did::DIDMethods;
 use std::env::VarError;
 
 lazy_static! {
@@ -38,15 +38,15 @@ lazy_static! {
     );
     pub static ref DID_METHODS: DIDMethods<'static> = {
         let mut methods = DIDMethods::default();
-        methods.insert(&DIDKey);
-        methods.insert(&*DIDTZ);
-        methods.insert(&DIDEthr);
+        methods.insert(Box::new(DIDKey));
+        methods.insert(Box::new(DIDTZ.clone()));
+        methods.insert(Box::new(DIDEthr));
         // methods.insert(&DIDSol);
-        methods.insert(&DIDWeb);
-        methods.insert(&DIDWebKey);
-        methods.insert(&DIDPKH);
-        methods.insert(&*DIDONION);
-        methods.insert(&*ION);
+        methods.insert(Box::new(DIDWeb));
+        methods.insert(Box::new(DIDWebKey));
+        methods.insert(Box::new(DIDPKH));
+        methods.insert(Box::new(DIDONION.clone()));
+        methods.insert(Box::new(ION.clone()));
         methods
     };
 }
