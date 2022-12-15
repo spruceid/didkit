@@ -9,7 +9,7 @@ use didkit::error::Error;
 #[cfg(doc)]
 use didkit::error::{didkit_error_code, didkit_error_message};
 use didkit::get_verification_method;
-use didkit::ssi;
+use didkit::ssi::{self, ldp::ProofSuite};
 use didkit::LinkedDataProofOptions;
 use didkit::ProofPreparation;
 use didkit::Source;
@@ -217,7 +217,11 @@ async fn complete_issue_credential(
 ) -> Result<String, Error> {
     let mut credential = VerifiableCredential::from_json_unsigned(&credential)?;
     let preparation: ProofPreparation = serde_json::from_str(&preparation)?;
-    let proof = preparation.complete(&signature).await?;
+    let proof = preparation
+        .proof
+        .type_
+        .complete(&preparation, &signature)
+        .await?;
     credential.add_proof(proof);
     let vc_json = serde_json::to_string(&credential)?;
     Ok(vc_json)
@@ -380,7 +384,11 @@ async fn complete_issue_presentation(
 ) -> Result<String, Error> {
     let mut presentation = VerifiablePresentation::from_json_unsigned(&presentation)?;
     let preparation: ProofPreparation = serde_json::from_str(&preparation)?;
-    let proof = preparation.complete(&signature).await?;
+    let proof = preparation
+        .proof
+        .type_
+        .complete(&preparation, &signature)
+        .await?;
     presentation.add_proof(proof);
     let vc_json = serde_json::to_string(&presentation)?;
     Ok(vc_json)
@@ -613,7 +621,11 @@ async fn complete_delegate_capability(
 ) -> Result<String, Error> {
     let capability: Delegation<Value, Value> = serde_json::from_str(&capability)?;
     let preparation: ProofPreparation = serde_json::from_str(&preparation)?;
-    let proof = preparation.complete(&signature).await?;
+    let proof = preparation
+        .proof
+        .type_
+        .complete(&preparation, &signature)
+        .await?;
     let json = serde_json::to_string(&capability.set_proof(proof))?;
     Ok(json)
 }
@@ -740,7 +752,11 @@ async fn complete_invoke_capability(
 ) -> Result<String, Error> {
     let invocation: Invocation<Value> = serde_json::from_str(&invocation)?;
     let preparation: ProofPreparation = serde_json::from_str(&preparation)?;
-    let proof = preparation.complete(&signature).await?;
+    let proof = preparation
+        .proof
+        .type_
+        .complete(&preparation, &signature)
+        .await?;
     let json = serde_json::to_string(&invocation.set_proof(proof))?;
     Ok(json)
 }
