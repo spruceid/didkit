@@ -71,6 +71,8 @@ pub enum DIDKitCmd {
     #[clap(hide = true)]
     VCIssueCredential(CredentialIssueArgs),
     #[clap(hide = true)]
+    VCDeriveCredential,
+    #[clap(hide = true)]
     VCVerifyCredential(CredentialVerifyArgs),
     /// Subcommand for verifiable credential operations
     #[clap(subcommand)]
@@ -524,6 +526,7 @@ async fn main() -> AResult<()> {
         DIDKitCmd::KeyToVerificationMethod(args) => key::to_vm(args).await.unwrap(),
         DIDKitCmd::SshPkToJwk(args) => key::from_ssh(args).await.unwrap(),
         DIDKitCmd::VCIssueCredential(args) => credential::issue(args).await.unwrap(),
+        // Add VCDeriveCredential here
         DIDKitCmd::VCVerifyCredential(args) => credential::verify(args).await.unwrap(),
         DIDKitCmd::Credential(cmd) => credential::cli(cmd).await.unwrap(),
         DIDKitCmd::VCIssuePresentation(args) => presentation::issue(args).await.unwrap(),
