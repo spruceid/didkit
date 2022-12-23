@@ -164,3 +164,26 @@ pub async fn generate_proof(
 
     Ok(proof)
 }
+
+/*pub async fn derive_credential(
+        document: &(dyn ssi::ldp::LinkedDataDocument + Sync),
+        context_loader: &mut ContextLoader,
+        selectors: &Vec<&str>) {
+    let dataset = document.to_dataset_for_signing(None, context_loader).await.unwrap();
+    let statements = dataset.statements();
+
+    use crate::rdf::{Predicate};
+
+    for i in 0..statements.len() {
+        let predicate = &statements[i].predicate;
+        match predicate {
+            Predicate::IRIRef(iri_ref) => (),
+            _ => (),       
+        }
+        let s = String::from(&statements[i]);
+        /*for j in 0..selectors.len() {
+
+        }*/
+        println!("{}", &s);
+    }
+}*/
