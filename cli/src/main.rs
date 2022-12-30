@@ -225,7 +225,12 @@ pub enum DIDKit {
         resolver_options: ResolverOptions,
     },
 
-    VCDeriveCredential,
+    /// Create Derived Credential
+    VCDeriveCredential {
+        /// Nonce provided by the verifier
+        #[clap(short, long)]
+        proof_nonce: String,
+    },
 
     /// Verify Credential
     VCVerifyCredential {
@@ -262,6 +267,9 @@ pub enum DIDKit {
         #[clap(short = 'C', long)]
         more_context_json: Option<String>,
     },
+
+    /// Generate a proof nonce
+    GenerateProofNonce,
     /*
     /// Revoke Credential
     VCRevokeCredential {},
@@ -865,7 +873,15 @@ fn main() -> AResult<()> {
             }
         }
 
-        DIDKit::VCDeriveCredential => {
+        DIDKit::GenerateProofNonce => {
+            let nonce = ssi::jws::generate_proof_nonce();
+            println!("{}", nonce.as_str());
+        }
+
+        DIDKit::VCDeriveCredential {
+            proof_nonce,
+        } => {
+            eprintln!("proof nonce provided: {}", proof_nonce.as_str());
             //let f = File::open("/Users/darwinlo/spruce/workspace/test1-signed-vc.json")?;
             //let f = File::open("/Users/darwinlo/spruce/workspace/jane-doe-signed.bls12-381.json")?;
             //let f = File::open("/Users/darwinlo/spruce/workspace/signed-vc.bls12-381.json")?;
@@ -879,8 +895,9 @@ fn main() -> AResult<()> {
 
             let derived_credential = rt.block_on(ssi::vc::derive_credential(
                     &credential,
+                    &proof_nonce,
                     &selectors,
-                    did_resolver
+                    did_resolver,
             )).unwrap();
 
             let stdout_writer = BufWriter::new(stdout());
