@@ -101,6 +101,26 @@ pub async fn issue(args: CredentialIssueArgs) -> Result<()> {
 }
 
 pub async fn derive(args: CredentialDeriveArgs) -> Result<()> {
+    //let f = File::open("/Users/darwinlo/spruce/workspace/test1-signed-vc.json")?;
+    //let f = File::open("/Users/darwinlo/spruce/workspace/jane-doe-signed.bls12-381.json")?;
+    //let f = File::open("/Users/darwinlo/spruce/workspace/signed-vc.bls12-381.json")?;
+    //let credential_reader = BufReader::new(f);
+    let credential_reader = BufReader::new(stdin());
+    let mut credential: VerifiableCredential =
+        serde_json::from_reader(credential_reader).unwrap();
+
+    let selectors = vec!["familyName"];
+    let did_resolver = DID_METHODS.to_resolver();
+
+    let derived_credential = rt.block_on(ssi::vc::derive_credential(
+            &credential,
+            &proof_nonce,
+            selectors.as_slice(),
+            did_resolver
+    )).unwrap();
+
+    let stdout_writer = BufWriter::new(stdout());
+    serde_json::to_writer(stdout_writer, &derived_credential).unwrap();
     Ok(())
 }
 
