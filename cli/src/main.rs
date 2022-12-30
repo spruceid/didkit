@@ -881,7 +881,6 @@ fn main() -> AResult<()> {
         DIDKit::VCDeriveCredential {
             proof_nonce,
         } => {
-            eprintln!("proof nonce provided: {}", proof_nonce.as_str());
             //let f = File::open("/Users/darwinlo/spruce/workspace/test1-signed-vc.json")?;
             //let f = File::open("/Users/darwinlo/spruce/workspace/jane-doe-signed.bls12-381.json")?;
             //let f = File::open("/Users/darwinlo/spruce/workspace/signed-vc.bls12-381.json")?;
@@ -896,8 +895,8 @@ fn main() -> AResult<()> {
             let derived_credential = rt.block_on(ssi::vc::derive_credential(
                     &credential,
                     &proof_nonce,
-                    &selectors,
-                    did_resolver,
+                    selectors.as_slice(),
+                    did_resolver
             )).unwrap();
 
             let stdout_writer = BufWriter::new(stdout());
