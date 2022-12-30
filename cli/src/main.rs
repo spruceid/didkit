@@ -230,6 +230,9 @@ pub enum DIDKit {
         /// Nonce provided by the verifier
         #[clap(short, long)]
         proof_nonce: String,
+
+        #[clap(short, long)]
+        selectors: Vec<String>,
     },
 
     /// Verify Credential
@@ -880,16 +883,12 @@ fn main() -> AResult<()> {
 
         DIDKit::VCDeriveCredential {
             proof_nonce,
+            selectors
         } => {
-            //let f = File::open("/Users/darwinlo/spruce/workspace/test1-signed-vc.json")?;
-            //let f = File::open("/Users/darwinlo/spruce/workspace/jane-doe-signed.bls12-381.json")?;
-            //let f = File::open("/Users/darwinlo/spruce/workspace/signed-vc.bls12-381.json")?;
-            //let credential_reader = BufReader::new(f);
             let credential_reader = BufReader::new(stdin());
             let mut credential: VerifiableCredential =
                 serde_json::from_reader(credential_reader).unwrap();
 
-            let selectors = vec!["familyName"];
             let did_resolver = DID_METHODS.to_resolver();
 
             let derived_credential = rt.block_on(ssi::vc::derive_credential(
