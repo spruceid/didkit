@@ -3,7 +3,7 @@ use std::{convert::TryFrom, fs::File, io::BufReader, ops::Deref, path::PathBuf, 
 use anyhow::{anyhow, bail, Context, Error as AError, Result as AResult};
 use chrono::prelude::*;
 use clap::{ArgGroup, Args, Parser, Subcommand};
-use credential::{CredentialIssueArgs, CredentialVerifyArgs};
+use credential::{CredentialIssueArgs, CredentialDeriveArgs, CredentialVerifyArgs};
 use didkit::ssi::ldp::ProofSuiteType;
 use didkit::{
     ssi::did::ServiceEndpoint, DIDMethod, Error, LinkedDataProofOptions, Metadata, ProofFormat,
@@ -27,7 +27,7 @@ struct DIDKit {
 
 #[derive(Subcommand)]
 pub enum DIDKitCmd {
-    #[clap(setting(clap::AppSettings::Hidden))]
+    #[clap(hide = true)]
     GenerateBls12381Key,
 
     /// Generate and output a Ed25519 keypair in JWK format
@@ -70,8 +70,9 @@ pub enum DIDKitCmd {
     DIDDeactivate(did::DidDeactivateArgs),
     #[clap(hide = true)]
     VCIssueCredential(CredentialIssueArgs),
+    GenerateProofNonce,
     #[clap(hide = true)]
-    VCDeriveCredential,
+    VCDeriveCredential(CredentialDeriveArgs),
     #[clap(hide = true)]
     VCVerifyCredential(CredentialVerifyArgs),
     /// Subcommand for verifiable credential operations
@@ -505,11 +506,11 @@ async fn main() -> AResult<()> {
 
     let opt = DIDKit::parse();
     match opt.command {
-        DIDKit::GenerateBls12381Key => {
+        DIDKitCmd::GenerateBls12381Key => {
             let jwk = JWK::generate_bls12381_2020().unwrap();
             let jwk_str = serde_json::to_string(&jwk).unwrap();
             println!("{}", jwk_str);
-        }
+        },
         DIDKitCmd::GenerateEd25519Key => key::generate(key::KeyGenerateCmd::Ed25519).await.unwrap(),
         DIDKitCmd::Key(cmd) => key::cli(cmd).await.unwrap(),
         DIDKitCmd::KeyToDIDKey(key) => {
@@ -521,12 +522,16 @@ async fn main() -> AResult<()> {
             })
             .await
             .unwrap();
-        }
+        },
         DIDKitCmd::KeyToDID(args) => key::to_did(args).await.unwrap(),
         DIDKitCmd::KeyToVerificationMethod(args) => key::to_vm(args).await.unwrap(),
         DIDKitCmd::SshPkToJwk(args) => key::from_ssh(args).await.unwrap(),
         DIDKitCmd::VCIssueCredential(args) => credential::issue(args).await.unwrap(),
-        // Add VCDeriveCredential here
+        DIDKitCmd::GenerateProofNonce => {
+            let nonce = ssi::jws::generate_proof_nonce();
+            println!("{}", nonce.as_str());
+        },
+        DIDKitCmd::VCDeriveCredential(args) => credential::derive(args).await.unwrap(),
         DIDKitCmd::VCVerifyCredential(args) => credential::verify(args).await.unwrap(),
         DIDKitCmd::Credential(cmd) => credential::cli(cmd).await.unwrap(),
         DIDKitCmd::VCIssuePresentation(args) => presentation::issue(args).await.unwrap(),

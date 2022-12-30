@@ -28,6 +28,13 @@ pub struct CredentialIssueArgs {
 }
 
 #[derive(Args)]
+pub struct CredentialDeriveArgs {
+    /// Nonce provided by the verifier
+    #[clap(short, long)]
+    proof_nonce: String,
+}
+
+#[derive(Args)]
 pub struct CredentialVerifyArgs {
     #[clap(flatten)]
     proof_options: ProofOptions,
@@ -40,6 +47,10 @@ pub async fn cli(cmd: CredentialCmd) -> Result<()> {
         CredentialCmd::Issue(cmd_issue) => issue(*cmd_issue).await?,
         CredentialCmd::Verify(cmd_verify) => verify(cmd_verify).await?,
     };
+    Ok(())
+}
+
+pub async fn generate_proof_nonce() -> Result<()> {
     Ok(())
 }
 
@@ -86,6 +97,10 @@ pub async fn issue(args: CredentialIssueArgs) -> Result<()> {
             panic!("Unknown proof format: {:?}", proof_format);
         }
     }
+    Ok(())
+}
+
+pub async fn derive(args: CredentialDeriveArgs) -> Result<()> {
     Ok(())
 }
 
