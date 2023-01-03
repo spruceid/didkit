@@ -1050,6 +1050,7 @@ fn main() -> AResult<()> {
                     false,
                     Some(&options),
                     &mut loader,
+                    false
                 ))
                 .unwrap();
             let dataset_normalized = ssi::urdna2015::normalize(&dataset).unwrap();
