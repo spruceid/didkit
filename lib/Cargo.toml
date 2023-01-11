@@ -43,7 +43,7 @@ ssi = { version = "0.5", path = "../../ssi", default-features = false }
 did-method-key = { version = "0.2.0", path = "../../ssi/did-key", default-features = false }
 did-tz = { version = "0.2.0", path = "../../ssi/did-tezos" }
 did-ethr = { version = "0.2", path = "../../ssi/did-ethr", default-features = false }
-did-pkh = { version = "0.2", path = "../../ssi/did-pkh", default-features = false }
+did-pkh = { version = "0.2", path = "../../ssi/did-pkh" }
 #did-sol = { version = "0.0.1", path = "../../ssi/did-sol" }
 did-jwk = { version = "^0.1.0", path = "../../ssi/did-jwk", default-features = false }
 serde = { version = "1.0", features = ["derive"] }
