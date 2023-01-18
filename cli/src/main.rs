@@ -214,6 +214,8 @@ pub struct ProofOptions {
     pub challenge: Option<String>,
     #[clap(env, short, long)]
     pub domain: Option<String>,
+    #[clap(env, short, long)]
+    pub nonce: Option<String>,
 
     // Non-standard options
     #[clap(env, default_value_t, short = 'f', long)]
@@ -388,6 +390,7 @@ impl From<ProofOptions> for LinkedDataProofOptions {
             challenge: options.challenge,
             domain: options.domain,
             checks: None,
+            nonce: options.nonce,
             ..Default::default()
         }
     }
