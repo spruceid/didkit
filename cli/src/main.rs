@@ -442,6 +442,8 @@ pub struct ProofOptions {
     pub challenge: Option<String>,
     #[clap(env, short, long)]
     pub domain: Option<String>,
+    #[clap(env, short, long)]
+    pub nonce: Option<String>,
 
     // Non-standard options
     #[clap(env, default_value_t, short = 'f', long)]
@@ -603,6 +605,7 @@ impl From<ProofOptions> for LinkedDataProofOptions {
             challenge: options.challenge,
             domain: options.domain,
             checks: None,
+            nonce: options.nonce,
             ..Default::default()
         }
     }
@@ -831,9 +834,7 @@ fn main() -> AResult<()> {
         } => {
             let resolver = resolver_options.to_resolver();
             let mut context_loader = ssi::jsonld::ContextLoader::default();
-            let f = File::open("/Users/darwinlo/spruce/workspace/jane-doe-unsigned-vc.json")?;
-            let credential_reader = BufReader::new(f);
-            //let credential_reader = BufReader::new(stdin());
+            let credential_reader = BufReader::new(stdin());
             let mut credential: VerifiableCredential =
                 serde_json::from_reader(credential_reader).unwrap();
             let proof_format = proof_options.proof_format.clone();
