@@ -3,7 +3,7 @@ use std::ffi::CString;
 use std::os::raw::c_char;
 use std::ptr;
 
-use ssi::ldp::ProofPreparation;
+use ssi::ldp::{ProofPreparation, ProofSuite};
 use ssi::vc::LinkedDataProofOptions;
 
 use crate::error::Error;
@@ -408,7 +408,7 @@ fn didkit_vc_complete_issue_credential(
     let mut credential = VerifiableCredential::from_json_unsigned(&credential)?;
     let preparation: ProofPreparation = serde_json::from_str(&preparation)?;
     let rt = runtime::get()?;
-    let proof = rt.block_on(preparation.complete(&signature))?;
+    let proof = rt.block_on(preparation.proof.type_.complete(&preparation, &signature))?;
     credential.add_proof(proof);
     Ok(CString::new(serde_json::to_string(&credential)?)?.into_raw())
 }
@@ -450,7 +450,7 @@ fn didkit_vc_complete_issue_presentation(
     let mut presentation = VerifiablePresentation::from_json_unsigned(&presentation)?;
     let preparation: ProofPreparation = serde_json::from_str(&preparation)?;
     let rt = runtime::get()?;
-    let proof = rt.block_on(preparation.complete(&signature))?;
+    let proof = rt.block_on(preparation.proof.type_.complete(&preparation, &signature))?;
     presentation.add_proof(proof);
     Ok(CString::new(serde_json::to_string(&presentation)?)?.into_raw())
 }

@@ -18,7 +18,7 @@ include = [
 ]
 
 [features]
-default = ["w3c", "ed25519", "rsa", "ripemd-160", "eip", "tezos"]
+default = ["w3c", "ed25519", "rsa", "ripemd-160", "eip", "tezos", "secp256r1", "secp384r1"]
 
 w3c = ["ssi/w3c", "secp256r1", "secp256k1"]
 secp256k1 = ["ssi/secp256k1", "did-method-key/secp256k1"]
