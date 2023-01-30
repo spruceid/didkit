@@ -29,6 +29,9 @@ use didkit_cli::opts::ResolverOptions;
 
 #[derive(StructOpt, Debug)]
 pub enum DIDKit {
+    #[clap(setting(clap::AppSettings::Hidden))]
+    GenerateBls12381Key,
+
     /// Generate and output a Ed25519 keypair in JWK format
     #[clap(setting(clap::AppSettings::Hidden))]
     GenerateEd25519Key,
@@ -221,6 +224,17 @@ pub enum DIDKit {
         #[clap(flatten)]
         resolver_options: ResolverOptions,
     },
+
+    /// Create Derived Credential
+    VCDeriveCredential {
+        /// Nonce provided by the verifier
+        #[clap(short, long)]
+        proof_nonce: String,
+
+        #[clap(short, long)]
+        selectors: Vec<String>,
+    },
+
     /// Verify Credential
     VCVerifyCredential {
         #[clap(flatten)]
@@ -256,6 +270,9 @@ pub enum DIDKit {
         #[clap(short = 'C', long)]
         more_context_json: Option<String>,
     },
+
+    /// Generate a proof nonce
+    GenerateProofNonce,
     /*
     /// Revoke Credential
     VCRevokeCredential {},
@@ -425,6 +442,8 @@ pub struct ProofOptions {
     pub challenge: Option<String>,
     #[clap(env, short, long)]
     pub domain: Option<String>,
+    #[clap(env, short, long)]
+    pub nonce: Option<String>,
 
     // Non-standard options
     #[clap(env, default_value_t, short = 'f', long)]
@@ -586,6 +605,7 @@ impl From<ProofOptions> for LinkedDataProofOptions {
             challenge: options.challenge,
             domain: options.domain,
             checks: None,
+            nonce: options.nonce,
             ..Default::default()
         }
     }
@@ -720,6 +740,12 @@ fn main() -> AResult<()> {
     let ssh_agent_sock;
 
     match opt {
+        DIDKit::GenerateBls12381Key => {
+            let jwk = JWK::generate_bls12381_2020().unwrap();
+            let jwk_str = serde_json::to_string(&jwk).unwrap();
+            println!("{}", jwk_str);
+        }
+
         DIDKit::GenerateEd25519Key => {
             let jwk = JWK::generate_ed25519().unwrap();
             let jwk_str = serde_json::to_string(&jwk).unwrap();
@@ -849,6 +875,32 @@ fn main() -> AResult<()> {
                     panic!("Unknown proof format: {:?}", proof_format);
                 }
             }
+        }
+
+        DIDKit::GenerateProofNonce => {
+            let nonce = ssi::jws::generate_proof_nonce();
+            println!("{}", nonce.as_str());
+        }
+
+        DIDKit::VCDeriveCredential {
+            proof_nonce,
+            selectors
+        } => {
+            let credential_reader = BufReader::new(stdin());
+            let mut credential: VerifiableCredential =
+                serde_json::from_reader(credential_reader).unwrap();
+
+            let did_resolver = DID_METHODS.to_resolver();
+
+            let derived_credential = rt.block_on(ssi::vc::derive_credential(
+                    &credential,
+                    &proof_nonce,
+                    selectors.as_slice(),
+                    did_resolver
+            )).unwrap();
+
+            let stdout_writer = BufWriter::new(stdout());
+            serde_json::to_writer(stdout_writer, &derived_credential).unwrap();
         }
 
         DIDKit::VCVerifyCredential {
@@ -999,6 +1051,7 @@ fn main() -> AResult<()> {
                     false,
                     Some(&options),
                     &mut loader,
+                    false
                 ))
                 .unwrap();
             let dataset_normalized = ssi::urdna2015::normalize(&dataset).unwrap();
