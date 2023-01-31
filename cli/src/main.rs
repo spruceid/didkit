@@ -8,9 +8,14 @@ use std::str::FromStr;
 use anyhow::{anyhow, bail, Context, Error as AError, Result as AResult};
 use chrono::prelude::*;
 use clap::{AppSettings, ArgGroup, Parser, StructOpt};
+use didkit::ssi::jsonld::{self, parse_ld_context, RemoteContextReference, StaticLoader};
 use didkit::ssi::ldp::ProofSuiteType;
+use didkit::ssi::rdf;
+use didkit::ContextLoader;
+use iref::IriBuf;
+use json_ld::JsonLdProcessor;
 use serde::{Deserialize, Serialize};
-use serde_json::Value;
+use serde_json::{json, Value};
 use sshkeys::PublicKey;
 
 use didkit::{
@@ -982,27 +987,50 @@ fn main() -> AResult<()> {
             expand_context,
             more_context_json,
         } => {
-            use ssi::jsonld::{json_to_dataset, JsonLdOptions, StaticLoader};
             let mut loader = StaticLoader;
+            let expand_context = if let Some(m_c) = more_context_json {
+                if let Some(e_c) = expand_context {
+                    Some(
+                        serde_json::to_string(&json!([
+                            e_c,
+                            serde_json::from_str::<serde_json::Value>(&m_c).unwrap()
+                        ]))
+                        .unwrap(),
+                    )
+                } else {
+                    Some(m_c)
+                }
+            } else {
+                expand_context
+            };
             let mut reader = BufReader::new(stdin());
             let mut json = String::new();
             reader.read_to_string(&mut json).unwrap();
-            let options = JsonLdOptions {
-                base,
+            let json = jsonld::syntax::to_value_with(
+                serde_json::from_str::<serde_json::Value>(&json).unwrap(),
+                Default::default,
+            )
+            .unwrap();
+            let expand_context = expand_context.map(|c| parse_ld_context(&c).unwrap());
+            // Implementation of `ssi::jsonld::json_to_dataset`
+            let options = jsonld::Options {
+                base: base.map(|b| IriBuf::from_string(b).unwrap()),
                 expand_context,
                 ..Default::default()
             };
-            let dataset = rt
-                .block_on(json_to_dataset(
-                    &json,
-                    more_context_json.as_ref(),
-                    false,
-                    Some(&options),
-                    &mut loader,
-                ))
+            let doc = jsonld::RemoteDocument::new(None, None, json);
+            let mut generator = rdf_types::generator::Blank::new_with_prefix("b".to_string())
+                .with_default_metadata();
+            let mut to_rdf = rt
+                .block_on(doc.to_rdf_using(&mut generator, &mut loader, options))
+                .map_err(Box::new)
                 .unwrap();
-            let dataset_normalized = ssi::urdna2015::normalize(&dataset).unwrap();
-            let normalized = dataset_normalized.to_nquads().unwrap();
+            let dataset: rdf::DataSet = to_rdf
+                .cloned_quads()
+                .map(|q| q.map_predicate(|p| p.into_iri().unwrap()))
+                .collect();
+            let dataset_normalized = ssi::urdna2015::normalize(dataset.quads().map(Into::into));
+            let normalized = dataset_normalized.into_nquads();
             stdout().write_all(normalized.as_bytes()).unwrap();
         }
 

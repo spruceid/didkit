@@ -25,6 +25,9 @@ serde_json = "1.0"
 clap = { version = "3.0", features = ["derive", "env"] }
 sshkeys = "0.3"
 anyhow = "1.0"
+json-ld = "0.12.1"
+rdf-types = "0.12.17"
+iref = "2.2.3"
 
 [dev-dependencies]
 tokio = { version = "1.0", features = ["macros", "process"] }

@@ -48,7 +48,7 @@ jobs:
     - name: Install Rust old stable with incremental compilation
       uses: actions-rs/toolchain@v1
       with:
-        toolchain: 1.60.0
+        toolchain: 1.66.0
         profile: minimal
         default: true
 
