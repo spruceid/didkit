@@ -8,8 +8,11 @@ use std::str::FromStr;
 use anyhow::{anyhow, bail, Context, Error as AError, Result as AResult};
 use chrono::prelude::*;
 use clap::{AppSettings, ArgGroup, Parser, StructOpt};
-use didkit::ssi::jsonld::{self, parse_ld_context};
+use didkit::ssi::jsonld::{self, RemoteContextReference};
 use didkit::ssi::ldp::ProofSuiteType;
+use didkit::ssi::rdf;
+use iref::IriBuf;
+use json_ld::JsonLdProcessor;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use sshkeys::PublicKey;
@@ -979,12 +982,23 @@ fn main() -> AResult<()> {
         }
 
         DIDKit::ToRdfURDNA2015 {
-            base: _,
-            expand_context: _,
+            base,
+            expand_context,
             more_context_json,
         } => {
-            use ssi::jsonld::{json_to_dataset, StaticLoader};
-            let mut loader = StaticLoader;
+            use ssi::jsonld::ContextLoader;
+            let mut loader = if let Some(context) = more_context_json {
+                ContextLoader::default()
+                    .with_context_map_from(
+                        [("http://example.com".to_string(), context)]
+                            .iter()
+                            .cloned()
+                            .collect(),
+                    )
+                    .unwrap()
+            } else {
+                ContextLoader::default()
+            };
             let mut reader = BufReader::new(stdin());
             let mut json = String::new();
             reader.read_to_string(&mut json).unwrap();
@@ -993,10 +1007,25 @@ fn main() -> AResult<()> {
                 Default::default,
             )
             .unwrap();
-            let more_context = more_context_json.map(|j| parse_ld_context(&j).unwrap());
-            let dataset = rt
-                .block_on(json_to_dataset(json, &mut loader, more_context))
+            // Implementation of `ssi::jsonld::json_to_dataset`
+            let options = jsonld::Options {
+                base: base.map(|b| IriBuf::from_string(b).unwrap()),
+                expand_context: expand_context
+                    .map(|c| RemoteContextReference::Iri(IriBuf::from_string(c).unwrap())),
+                expansion_policy: json_ld::expansion::Policy::Strict,
+                ..Default::default()
+            };
+            let doc = jsonld::RemoteDocument::new(None, None, json);
+            let mut generator = rdf_types::generator::Blank::new_with_prefix("b".to_string())
+                .with_default_metadata();
+            let mut to_rdf = rt
+                .block_on(doc.to_rdf_using(&mut generator, &mut loader, options))
+                .map_err(Box::new)
                 .unwrap();
+            let dataset: rdf::DataSet = to_rdf
+                .cloned_quads()
+                .map(|q| q.map_predicate(|p| p.into_iri().unwrap()))
+                .collect();
             let dataset_normalized = ssi::urdna2015::normalize(dataset.quads().map(Into::into));
             let normalized = dataset_normalized.into_nquads();
             stdout().write_all(normalized.as_bytes()).unwrap();
