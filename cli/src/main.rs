@@ -990,7 +990,13 @@ fn main() -> AResult<()> {
             let mut loader = StaticLoader;
             let expand_context = if let Some(m_c) = more_context_json {
                 if let Some(e_c) = expand_context {
-                    Some(serde_json::to_string(&json!([e_c, m_c])).unwrap())
+                    Some(
+                        serde_json::to_string(&json!([
+                            e_c,
+                            serde_json::from_str::<serde_json::Value>(&m_c).unwrap()
+                        ]))
+                        .unwrap(),
+                    )
                 } else {
                     Some(m_c)
                 }
