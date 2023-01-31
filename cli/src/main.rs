@@ -982,28 +982,9 @@ fn main() -> AResult<()> {
             expand_context,
             more_context_json,
         } => {
-            use ssi::jsonld::{json_to_dataset, JsonLdOptions, StaticLoader};
-            let mut loader = StaticLoader;
-            let mut reader = BufReader::new(stdin());
-            let mut json = String::new();
-            reader.read_to_string(&mut json).unwrap();
-            let options = JsonLdOptions {
-                base,
-                expand_context,
-                ..Default::default()
-            };
-            let dataset = rt
-                .block_on(json_to_dataset(
-                    &json,
-                    more_context_json.as_ref(),
-                    false,
-                    Some(&options),
-                    &mut loader,
-                ))
-                .unwrap();
-            let dataset_normalized = ssi::urdna2015::normalize(&dataset).unwrap();
-            let normalized = dataset_normalized.to_nquads().unwrap();
-            stdout().write_all(normalized.as_bytes()).unwrap();
+            // json_to_dataset doesn't seem to support generic JSON-LD anymore, has
+            // to be de-serialized into a specific format first
+            unimplemented!("Converting arbitrary JSON-LD to n-quads not currently supported");
         }
 
         DIDKit::DIDCreate {
