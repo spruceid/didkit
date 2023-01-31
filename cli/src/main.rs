@@ -8,6 +8,7 @@ use std::str::FromStr;
 use anyhow::{anyhow, bail, Context, Error as AError, Result as AResult};
 use chrono::prelude::*;
 use clap::{AppSettings, ArgGroup, Parser, StructOpt};
+use didkit::ssi::jsonld::{self, parse_ld_context};
 use didkit::ssi::ldp::ProofSuiteType;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
@@ -978,31 +979,26 @@ fn main() -> AResult<()> {
         }
 
         DIDKit::ToRdfURDNA2015 {
-            base,
-            expand_context,
+            base: _,
+            expand_context: _,
             more_context_json,
         } => {
-            use ssi::jsonld::{json_to_dataset, JsonLdOptions, StaticLoader};
+            use ssi::jsonld::{json_to_dataset, StaticLoader};
             let mut loader = StaticLoader;
             let mut reader = BufReader::new(stdin());
             let mut json = String::new();
             reader.read_to_string(&mut json).unwrap();
-            let options = JsonLdOptions {
-                base,
-                expand_context,
-                ..Default::default()
-            };
+            let json = jsonld::syntax::to_value_with(
+                serde_json::from_str::<serde_json::Value>(&json).unwrap(),
+                Default::default,
+            )
+            .unwrap();
+            let more_context = more_context_json.map(|j| parse_ld_context(&j).unwrap());
             let dataset = rt
-                .block_on(json_to_dataset(
-                    &json,
-                    more_context_json.as_ref(),
-                    false,
-                    Some(&options),
-                    &mut loader,
-                ))
+                .block_on(json_to_dataset(json, &mut loader, more_context))
                 .unwrap();
-            let dataset_normalized = ssi::urdna2015::normalize(&dataset).unwrap();
-            let normalized = dataset_normalized.to_nquads().unwrap();
+            let dataset_normalized = ssi::urdna2015::normalize(dataset.quads().map(Into::into));
+            let normalized = dataset_normalized.into_nquads();
             stdout().write_all(normalized.as_bytes()).unwrap();
         }
 
