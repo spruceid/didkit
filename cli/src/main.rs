@@ -8,13 +8,14 @@ use std::str::FromStr;
 use anyhow::{anyhow, bail, Context, Error as AError, Result as AResult};
 use chrono::prelude::*;
 use clap::{AppSettings, ArgGroup, Parser, StructOpt};
-use didkit::ssi::jsonld::{self, RemoteContextReference};
+use didkit::ssi::jsonld::{self, parse_ld_context, RemoteContextReference, StaticLoader};
 use didkit::ssi::ldp::ProofSuiteType;
 use didkit::ssi::rdf;
+use didkit::ContextLoader;
 use iref::IriBuf;
 use json_ld::JsonLdProcessor;
 use serde::{Deserialize, Serialize};
-use serde_json::Value;
+use serde_json::{json, Value};
 use sshkeys::PublicKey;
 
 use didkit::{
@@ -986,18 +987,15 @@ fn main() -> AResult<()> {
             expand_context,
             more_context_json,
         } => {
-            use ssi::jsonld::ContextLoader;
-            let mut loader = if let Some(context) = more_context_json {
-                ContextLoader::default()
-                    .with_context_map_from(
-                        [("http://example.com".to_string(), context)]
-                            .iter()
-                            .cloned()
-                            .collect(),
-                    )
-                    .unwrap()
+            let mut loader = StaticLoader;
+            let expand_context = if let Some(m_c) = more_context_json {
+                if let Some(e_c) = expand_context {
+                    Some(serde_json::to_string(&json!([e_c, m_c])).unwrap())
+                } else {
+                    Some(m_c)
+                }
             } else {
-                ContextLoader::default()
+                expand_context
             };
             let mut reader = BufReader::new(stdin());
             let mut json = String::new();
@@ -1007,11 +1005,11 @@ fn main() -> AResult<()> {
                 Default::default,
             )
             .unwrap();
+            let expand_context = expand_context.map(|c| parse_ld_context(&c).unwrap());
             // Implementation of `ssi::jsonld::json_to_dataset`
             let options = jsonld::Options {
                 base: base.map(|b| IriBuf::from_string(b).unwrap()),
-                expand_context: expand_context
-                    .map(|c| RemoteContextReference::Iri(IriBuf::from_string(c).unwrap())),
+                expand_context,
                 expansion_policy: json_ld::expansion::Policy::Strict,
                 ..Default::default()
             };
