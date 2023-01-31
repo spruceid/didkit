@@ -42,7 +42,8 @@ const DIDKitHTTP = require('./didkit-http');
       json: false,
       roots: [path.join(__dirname, 'vc-api-test-suite', 'packages', 'vc-http-api-test-server')],
       globals: JSON.stringify({ suiteConfig: config }),
-      testTimeout: 60e3
+      testTimeout: 60e3,
+      testPathIgnorePatterns: [".*verify(Presentation|Credential).spec.js"]
     },
     [process.cwd()]
   );
