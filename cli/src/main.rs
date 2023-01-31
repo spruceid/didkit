@@ -1010,7 +1010,6 @@ fn main() -> AResult<()> {
             let options = jsonld::Options {
                 base: base.map(|b| IriBuf::from_string(b).unwrap()),
                 expand_context,
-                expansion_policy: json_ld::expansion::Policy::Strict,
                 ..Default::default()
             };
             let doc = jsonld::RemoteDocument::new(None, None, json);
