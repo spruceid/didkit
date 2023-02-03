@@ -9,7 +9,7 @@ endif
 
 ifeq ($(OS_NAME),darwin)
 	LIB_NAME=libdidkit.dylib
-else 
+else
 	LIB_NAME=libdidkit.so
 endif
 
@@ -31,7 +31,7 @@ android/res $(TARGET)/test $(TARGET)/jvm:
 RUST_SRC=Cargo.toml $(wildcard src/*.rs src/*/*.rs src/*/*/*.rs)
 
 $(TARGET)/didkit.h: cbindgen.toml cbindings/build.rs cbindings/Cargo.toml $(RUST_SRC)
-	cargo build -p didkit-cbindings
+	cargo +nightly build -p didkit-cbindings
 	test -s $@ && touch $@
 
 $(TARGET)/release/$(LIB_NAME): $(RUST_SRC)
