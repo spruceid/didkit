@@ -17,7 +17,7 @@ pub struct ResolverOptions {
 }
 
 impl ResolverOptions {
-    pub fn to_resolver<'a>(&'a self) -> SeriesResolver<'a> {
+    pub fn to_resolver(&self) -> SeriesResolver {
         let mut resolvers = vec![DID_METHODS.to_resolver()];
         if let Some(http_did_resolver) = &self.did_resolver {
             resolvers.push(http_did_resolver);
