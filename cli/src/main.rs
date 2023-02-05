@@ -16,7 +16,7 @@ use didkit::ssi::{
     rdf,
 };
 use didkit::{
-    dereference, generate_proof, get_verification_method,
+    dereference, generate_proof,
     ssi::{
         self,
         did::{DIDMethodTransaction, Service, ServiceEndpoint},
@@ -24,8 +24,8 @@ use didkit::{
     },
     DIDCreate, DIDDeactivate, DIDDocumentOperation, DIDMethod, DIDRecover, DIDResolver, DIDUpdate,
     DereferencingInputMetadata, Error, LinkedDataProofOptions, Metadata, ProofFormat,
-    ResolutionInputMetadata, ResolutionResult, Source, VerifiableCredential,
-    VerifiablePresentation, VerificationRelationship, DIDURL, DID_METHODS, JWK, URI,
+    ResolutionInputMetadata, ResolutionResult, VerifiableCredential, VerifiablePresentation,
+    VerificationRelationship, DIDURL, DID_METHODS, JWK, URI,
 };
 use iref::IriBuf;
 use json_ld::JsonLdProcessor;
@@ -35,6 +35,7 @@ use sshkeys::PublicKey;
 
 mod opts;
 use opts::ResolverOptions;
+mod key;
 
 #[derive(Parser)]
 struct DIDKit {
@@ -49,35 +50,16 @@ pub enum DIDKitCmd {
     GenerateEd25519Key,
     /// Subcommand for keypair operations
     #[clap(subcommand)]
-    Key(KeyCmd),
+    Key(key::KeyCmd),
     /// Output a did:key DID for a JWK. Deprecated in favor of key-to-did.
     #[clap(hide = true)]
     KeyToDIDKey(KeyArg),
-    /// Output a DID for a given JWK according to the provided DID method name or pattern
-    ///
-    /// Deterministically generate a DID from a public key JWK, for a DID method
-    /// that support this functionality.
-    ///
-    /// The DID method to use may be provided in the `method-pattern` argument. The default is
-    /// "key", corresponding to did:key.
-    ///
-    /// For DID methods that have multiple ways of representing a key, `method-pattern` is
-    /// method-specific but typically is a prefix, for example "pkh:tz" to generate a DID that
-    /// begins with `did:pkh:tz`.
-    KeyToDID {
-        /// DID method name or pattern. e.g. `key`, `tz`, or `pkh:tz`
-        #[clap(default_value = "key")]
-        method_pattern: String,
-        #[clap(flatten)]
-        key: KeyArg,
-    },
-    /// Output a verificationMethod DID URL for a JWK and DID method name/pattern
-    KeyToVerificationMethod {
-        /// DID method id or pattern. e.g. `key`, `tz`, or `pkh:tz`
-        method_pattern: Option<String>,
-        #[clap(flatten)]
-        key: KeyArg,
-    },
+    /// Deprecated in favor of `didkit key to did`
+    #[clap(hide = true)]
+    KeyToDID(key::KeyToDIDArgs),
+    /// Deprecated in favor of `didkit key to verification-method`
+    #[clap(hide = true)]
+    KeyToVerificationMethod(key::KeyToVMArgs),
     /// Convert a SSH public key to a JWK
     SshPkToJwk {
         /// SSH Public Key
@@ -616,23 +598,6 @@ impl From<ProofOptions> for LinkedDataProofOptions {
     }
 }
 
-#[derive(Subcommand)]
-pub enum KeyCmd {
-    /// Generate and output a keypair in JWK format
-    #[clap(subcommand)]
-    Generate(KeyGenerateCmd),
-}
-
-#[derive(Subcommand)]
-pub enum KeyGenerateCmd {
-    /// Generate and output a Ed25519 keypair in JWK format
-    Ed25519,
-    /// Generate and output a K-256 keypair in JWK format
-    Secp256k1,
-    /// Generate and output a P-256 keypair in JWK format
-    Secp256r1,
-}
-
 #[derive(Clone, Debug, Serialize)]
 /// Subset of [DID Metadata Structure][metadata] that is just a string property name and string value.
 /// [metadata]: https://w3c.github.io/did-core/#metadata-structure
@@ -746,54 +711,20 @@ async fn main() -> AResult<()> {
     let ssh_agent_sock;
 
     match opt.command {
-        DIDKitCmd::GenerateEd25519Key => {
-            let jwk = JWK::generate_ed25519().unwrap();
-            let jwk_str = serde_json::to_string(&jwk).unwrap();
-            println!("{jwk_str}");
-        }
-
-        DIDKitCmd::Key(cmd) => match cmd {
-            KeyCmd::Generate(cmd_generate) => {
-                let jwk_str = match cmd_generate {
-                    KeyGenerateCmd::Ed25519 => {
-                        let jwk = JWK::generate_ed25519().unwrap();
-                        serde_json::to_string(&jwk).unwrap()
-                    }
-                    KeyGenerateCmd::Secp256k1 => {
-                        let jwk = JWK::generate_secp256k1().unwrap();
-                        serde_json::to_string(&jwk).unwrap()
-                    }
-                    KeyGenerateCmd::Secp256r1 => {
-                        let jwk = JWK::generate_p256().unwrap();
-                        serde_json::to_string(&jwk).unwrap()
-                    }
-                };
-                println!("{jwk_str}");
-            }
-        },
-
+        DIDKitCmd::GenerateEd25519Key => key::generate(key::KeyGenerateCmd::Ed25519).await.unwrap(),
+        DIDKitCmd::Key(cmd) => key::cli(cmd).await.unwrap(),
         DIDKitCmd::KeyToDIDKey(key) => {
             // Deprecated in favor of KeyToDID
             eprintln!("didkit: use key-to-did instead of key-to-did-key");
-            let jwk = key.get_jwk();
-            let did = DID_METHODS
-                .generate(&Source::KeyAndPattern(&jwk, "key"))
-                .ok_or(Error::UnableToGenerateDID)
-                .unwrap();
-            println!("{did}");
+            key::to_did(key::KeyToDIDArgs {
+                method_pattern: "key".to_string(),
+                key,
+            })
+            .await
+            .unwrap();
         }
-
-        DIDKitCmd::KeyToDID {
-            method_pattern,
-            key,
-        } => {
-            let jwk = key.get_jwk();
-            let did = DID_METHODS
-                .generate(&Source::KeyAndPattern(&jwk, &method_pattern))
-                .ok_or(Error::UnableToGenerateDID)
-                .unwrap();
-            println!("{did}");
-        }
+        DIDKitCmd::KeyToDID(args) => key::to_did(args).await.unwrap(),
+        DIDKitCmd::KeyToVerificationMethod(args) => key::to_vm(args).await.unwrap(),
 
         DIDKitCmd::SshPkToJwk { ssh_pk } => {
             // Deserializing here because PublicKey doesn't derive Clone
@@ -801,32 +732,6 @@ async fn main() -> AResult<()> {
             let jwk = ssi::ssh::ssh_pkk_to_jwk(&ssh_pk.kind).unwrap();
             let stdout_writer = BufWriter::new(stdout());
             serde_json::to_writer_pretty(stdout_writer, &jwk).unwrap();
-        }
-
-        DIDKitCmd::KeyToVerificationMethod {
-            method_pattern,
-            key,
-        } => {
-            let method_pattern = match method_pattern {
-                Some(pattern) => pattern,
-                None => {
-                    eprintln!(
-                        "didkit: key-to-verification-method should be used with method pattern option"
-                    );
-                    "key".to_string()
-                }
-            };
-            let jwk = key.get_jwk();
-            let did = DID_METHODS
-                .generate(&Source::KeyAndPattern(&jwk, &method_pattern))
-                .ok_or(Error::UnableToGenerateDID)
-                .unwrap();
-            let did_resolver = DID_METHODS.to_resolver();
-            let vm = get_verification_method(&did, did_resolver)
-                .await
-                .ok_or(Error::UnableToGetVerificationMethod)
-                .unwrap();
-            println!("{vm}");
         }
 
         DIDKitCmd::VCIssueCredential {
