@@ -6,7 +6,6 @@ edition = "2018"
 description = "HTTP server for Verifiable Credentials and Decentralized Identifiers."
 keywords = ["ssi", "did", "vc", "http", "api"]
 license = "Apache-2.0"
-license-file = "../LICENSE"
 categories = ["web-programming::http-server"]
 homepage = "https://github.com/spruceid/didkit/tree/main/http/"
 repository = "https://github.com/spruceid/didkit/"
