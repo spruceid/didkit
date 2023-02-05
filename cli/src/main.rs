@@ -1,3 +1,5 @@
+mod opts;
+
 use std::convert::TryFrom;
 use std::fs::File;
 use std::io::{stdin, stdout, BufReader, BufWriter, Read, Write};

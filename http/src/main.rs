@@ -6,7 +6,7 @@ use clap::{AppSettings, ArgGroup, Parser, StructOpt};
 use hyper::Server;
 
 use didkit::JWK;
-use didkit_cli::opts::ResolverOptions;
+use didkit_http::opts::ResolverOptions;
 use didkit_http::DIDKitHTTPMakeSvc;
 use didkit_http::Error;
 

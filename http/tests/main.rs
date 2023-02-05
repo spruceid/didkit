@@ -1,7 +1,7 @@
 use std::str::FromStr;
 
 use didkit::{Document, JWK};
-use didkit_cli::opts::ResolverOptions;
+use didkit_http::opts::ResolverOptions;
 use didkit_http::DIDKitHTTPMakeSvc;
 use didkit_http::VerifyCredentialResponse;
 use didkit_http::VerifyPresentationResponse;

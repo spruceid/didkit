@@ -21,7 +21,6 @@ ring = ["ssi/ring"]
 
 [dependencies]
 didkit = { version = "0.4", path = "../lib", features = ["http-did"] }
-didkit-cli = { version = "0.2", path = "../cli" }
 tokio = { version = "1.0", features = ["macros", "rt-multi-thread"] }
 clap = { version = "3.0", features = ["derive", "env"] }
 serde = { version = "1.0", features = ["derive"] }
