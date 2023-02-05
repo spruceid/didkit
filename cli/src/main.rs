@@ -1,27 +1,22 @@
-mod opts;
-
-use std::convert::TryFrom;
-use std::fs::File;
-use std::io::{stdin, stdout, BufReader, BufWriter, Read, Write};
-use std::ops::Deref;
-use std::path::PathBuf;
-use std::str::FromStr;
+use std::{
+    convert::TryFrom,
+    fs::File,
+    io::{stdin, stdout, BufReader, BufWriter, Read, Write},
+    ops::Deref,
+    path::PathBuf,
+    str::FromStr,
+};
 
 use anyhow::{anyhow, bail, Context, Error as AError, Result as AResult};
 use chrono::prelude::*;
-use clap::{AppSettings, ArgGroup, Parser, StructOpt};
-use didkit::ssi::jsonld::{self, parse_ld_context, RemoteContextReference, StaticLoader};
-use didkit::ssi::ldp::ProofSuiteType;
-use didkit::ssi::rdf;
-use didkit::ContextLoader;
-use iref::IriBuf;
-use json_ld::JsonLdProcessor;
-use serde::{Deserialize, Serialize};
-use serde_json::{json, Value};
-use sshkeys::PublicKey;
-
+use clap::{ArgGroup, Args, Parser, Subcommand};
+use didkit::ssi::{
+    jsonld::{self, parse_ld_context, StaticLoader},
+    ldp::ProofSuiteType,
+    rdf,
+};
 use didkit::{
-    dereference, generate_proof, get_verification_method, runtime,
+    dereference, generate_proof, get_verification_method,
     ssi::{
         self,
         did::{DIDMethodTransaction, Service, ServiceEndpoint},
@@ -32,22 +27,32 @@ use didkit::{
     ResolutionInputMetadata, ResolutionResult, Source, VerifiableCredential,
     VerifiablePresentation, VerificationRelationship, DIDURL, DID_METHODS, JWK, URI,
 };
-use didkit_cli::opts::ResolverOptions;
+use iref::IriBuf;
+use json_ld::JsonLdProcessor;
+use serde::{Deserialize, Serialize};
+use serde_json::{json, Value};
+use sshkeys::PublicKey;
 
-#[derive(StructOpt, Debug)]
-pub enum DIDKit {
+mod opts;
+use opts::ResolverOptions;
+
+#[derive(Parser)]
+struct DIDKit {
+    #[command(subcommand)]
+    command: DIDKitCmd,
+}
+
+#[derive(Subcommand)]
+pub enum DIDKitCmd {
     /// Generate and output a Ed25519 keypair in JWK format
-    #[clap(setting(clap::AppSettings::Hidden))]
+    #[clap(hide = true)]
     GenerateEd25519Key,
     /// Subcommand for keypair operations
     #[clap(subcommand)]
     Key(KeyCmd),
     /// Output a did:key DID for a JWK. Deprecated in favor of key-to-did.
-    #[clap(setting = AppSettings::Hidden)]
-    KeyToDIDKey {
-        #[clap(flatten)]
-        key: KeyArg,
-    },
+    #[clap(hide = true)]
+    KeyToDIDKey(KeyArg),
     /// Output a DID for a given JWK according to the provided DID method name or pattern
     ///
     /// Deterministically generate a DID from a public key JWK, for a DID method
@@ -75,9 +80,8 @@ pub enum DIDKit {
     },
     /// Convert a SSH public key to a JWK
     SshPkToJwk {
-        #[clap(parse(try_from_str=PublicKey::from_string))]
         /// SSH Public Key
-        ssh_pk: PublicKey,
+        ssh_pk: String,
     },
 
     // DID Functionality
@@ -89,15 +93,15 @@ pub enum DIDKit {
         method: String,
 
         /// JWK file for default verification method
-        #[clap(short, long, parse(from_os_str))]
+        #[clap(short, long)]
         verification_key: Option<PathBuf>,
 
         /// JWK file for DID Update operations
-        #[clap(short, long, parse(from_os_str))]
+        #[clap(short, long)]
         update_key: Option<PathBuf>,
 
         /// JWK file for DID Recovery and/or Deactivate operations
-        #[clap(short, long, parse(from_os_str))]
+        #[clap(short, long)]
         recovery_key: Option<PathBuf>,
 
         #[clap(short = 'o', name = "name=value")]
@@ -120,11 +124,11 @@ pub enum DIDKit {
     /// Update a DID.
     DIDUpdate {
         /// New JWK file for next DID Update operation
-        #[clap(short = 'u', long, parse(from_os_str))]
+        #[clap(short = 'u', long)]
         new_update_key: Option<PathBuf>,
 
         /// JWK file for performing this DID update operation.
-        #[clap(short = 'U', long, parse(from_os_str))]
+        #[clap(short = 'U', long)]
         update_key: Option<PathBuf>,
 
         #[clap(short = 'o', name = "name=value")]
@@ -143,19 +147,19 @@ pub enum DIDKit {
         did: String,
 
         /// New JWK file for default verification method
-        #[clap(short = 'v', long, parse(from_os_str))]
+        #[clap(short = 'v', long)]
         new_verification_key: Option<PathBuf>,
 
         /// New JWK file for DID Update operations
-        #[clap(short = 'u', long, parse(from_os_str))]
+        #[clap(short = 'u', long)]
         new_update_key: Option<PathBuf>,
 
         /// New JWK file for DID Recovery and/or Deactivate operations
-        #[clap(short = 'r', long, parse(from_os_str))]
+        #[clap(short = 'r', long)]
         new_recovery_key: Option<PathBuf>,
 
         /// JWK file for performing this DID recover operation.
-        #[clap(short = 'R', long, parse(from_os_str))]
+        #[clap(short = 'R', long)]
         recovery_key: Option<PathBuf>,
 
         #[clap(short = 'o', name = "name=value")]
@@ -206,7 +210,7 @@ pub enum DIDKit {
         did: String,
 
         /// Filename of JWK to perform the DID Deactivate operation
-        #[clap(short, long, parse(from_os_str))]
+        #[clap(short, long)]
         key: Option<PathBuf>,
 
         #[clap(short = 'o', name = "name=value")]
@@ -285,7 +289,7 @@ pub enum DIDKit {
 // and may be a DID URL.
 //
 // Cannot put docstring here because it overwrites help text for did-update subcommands
-#[derive(StructOpt, Debug)]
+#[derive(Args, Debug)]
 pub struct IdAndDid {
     /// id (URI) of object to add/remove/update in DID document
     id: DIDURL,
@@ -317,7 +321,7 @@ fn parse_service_endpoint(uri_or_object: &str) -> AResult<ServiceEndpoint> {
     }
 }
 
-#[derive(StructOpt, Debug)]
+#[derive(Args, Debug)]
 #[clap(rename_all = "camelCase")]
 #[clap(group = ArgGroup::new("verification_relationship").multiple(true).required(true))]
 pub struct VerificationRelationships {
@@ -371,7 +375,8 @@ impl From<VerificationRelationships> for Vec<VerificationRelationship> {
     }
 }
 
-#[derive(StructOpt, Debug)]
+#[allow(clippy::large_enum_variant)]
+#[derive(Subcommand, Debug)]
 pub enum DIDUpdateCmd {
     /// Add a verification method to the DID document
     SetVerificationMethod {
@@ -405,7 +410,7 @@ pub enum DIDUpdateCmd {
         r#type: Vec<String>,
 
         /// serviceEndpoint URI or JSON object
-        #[clap(short, long, parse(try_from_str = parse_service_endpoint))]
+        #[clap(short, long, value_parser(parse_service_endpoint))]
         endpoint: Vec<ServiceEndpoint>,
     },
 
@@ -416,7 +421,7 @@ pub enum DIDUpdateCmd {
     RemoveVerificationMethod(IdAndDid),
 }
 
-#[derive(StructOpt, Debug, Deserialize)]
+#[derive(Args, Debug, Deserialize)]
 #[non_exhaustive]
 pub struct ProofOptions {
     // Options as in vc-api (vc-http-api)
@@ -438,18 +443,23 @@ pub struct ProofOptions {
     pub proof_format: ProofFormat,
 }
 
-#[derive(StructOpt, Debug)]
+/// https://github.com/clap-rs/clap/issues/4349
+fn parse_jwk(s: &str) -> Result<JWK, serde_json::Error> {
+    serde_json::from_str(s)
+}
+
+#[derive(Args, Clone)]
 #[clap(group = ArgGroup::new("key_group").multiple(true).required(true))]
 pub struct KeyArg {
-    #[clap(env, short, long, parse(from_os_str), group = "key_group")]
+    #[clap(env, short, long, group = "key_group")]
     key_path: Option<PathBuf>,
     #[clap(
         env,
         short,
         long,
-        parse(try_from_str = serde_json::from_str),
+        value_parser(parse_jwk),
         hide_env_values = true,
-        conflicts_with = "key-path",
+        conflicts_with = "key_path",
         group = "key_group",
         help = "WARNING: you should not use this through the CLI in a production environment, prefer its environment variable."
     )]
@@ -459,12 +469,18 @@ pub struct KeyArg {
     ssh_agent: bool,
 }
 
-#[derive(StructOpt, Debug)]
+#[derive(Args, Debug)]
 #[clap(group = ArgGroup::new("public_key_group").required(true))]
 #[clap(rename_all = "camelCase")]
 pub struct PublicKeyArg {
     /// Public key JSON Web Key (JWK)
-    #[clap(short = 'j', long, group = "public_key_group", parse(try_from_str = serde_json::from_str), name = "JWK")]
+    #[clap(
+        short = 'j',
+        long,
+        group = "public_key_group",
+        value_parser(parse_jwk),
+        name = "JWK"
+    )]
     public_key_jwk: Option<JWK>,
 
     /// Public key JWK read from file
@@ -482,7 +498,7 @@ pub struct PublicKeyArg {
 
 /// PublicKeyArg as an enum
 enum PublicKeyArgEnum {
-    PublicKeyJwk(JWK),
+    PublicKeyJwk(Box<JWK>),
     PublicKeyJwkPath(PathBuf),
     PublicKeyMultibase(String),
     BlockchainAccountId(String),
@@ -491,7 +507,7 @@ enum PublicKeyArgEnum {
 /// PublicKeyArgEnum after file reading.
 /// Suitable for use a verification method map.
 enum PublicKeyProperty {
-    JWK(JWK),
+    Jwk(Box<JWK>),
     Multibase(String),
     Account(String),
 }
@@ -513,7 +529,7 @@ impl TryFrom<PublicKeyArg> for PublicKeyArgEnum {
                 public_key_jwk: Some(jwk),
                 public_key_multibase: None,
                 blockchain_account_id: None,
-            } => PublicKeyArgEnum::PublicKeyJwk(jwk),
+            } => PublicKeyArgEnum::PublicKeyJwk(Box::new(jwk)),
             PublicKeyArg {
                 public_key_jwk_path: None,
                 public_key_jwk: None,
@@ -546,9 +562,11 @@ impl TryFrom<PublicKeyArgEnum> for PublicKeyProperty {
                 let key_file = File::open(path).context("Open JWK file")?;
                 let key_reader = BufReader::new(key_file);
                 let jwk: JWK = serde_json::from_reader(key_reader).context("Read JWK file")?;
-                PublicKeyProperty::JWK(jwk.to_public())
+                PublicKeyProperty::Jwk(Box::new(jwk.to_public()))
             }
-            PublicKeyArgEnum::PublicKeyJwk(jwk) => PublicKeyProperty::JWK(jwk.to_public()),
+            PublicKeyArgEnum::PublicKeyJwk(jwk) => {
+                PublicKeyProperty::Jwk(Box::new(jwk.to_public()))
+            }
             PublicKeyArgEnum::PublicKeyMultibase(mb) => PublicKeyProperty::Multibase(mb),
             PublicKeyArgEnum::BlockchainAccountId(account) => PublicKeyProperty::Account(account),
         })
@@ -598,14 +616,14 @@ impl From<ProofOptions> for LinkedDataProofOptions {
     }
 }
 
-#[derive(StructOpt, Debug)]
+#[derive(Subcommand)]
 pub enum KeyCmd {
     /// Generate and output a keypair in JWK format
     #[clap(subcommand)]
     Generate(KeyGenerateCmd),
 }
 
-#[derive(StructOpt, Debug)]
+#[derive(Subcommand)]
 pub enum KeyGenerateCmd {
     /// Generate and output a Ed25519 keypair in JWK format
     Ed25519,
@@ -615,7 +633,7 @@ pub enum KeyGenerateCmd {
     Secp256r1,
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Clone, Debug, Serialize)]
 /// Subset of [DID Metadata Structure][metadata] that is just a string property name and string value.
 /// [metadata]: https://w3c.github.io/did-core/#metadata-structure
 pub struct MetadataProperty {
@@ -672,6 +690,8 @@ fn metadata_properties_to_value(meta_props: Vec<MetadataProperty>) -> Result<Val
 
 #[cfg(test)]
 mod tests {
+    use clap::CommandFactory;
+
     use super::*;
 
     #[test]
@@ -699,8 +719,7 @@ mod tests {
 
     #[test]
     fn verify_app() {
-        use clap::IntoApp;
-        DIDKit::into_app().debug_assert()
+        DIDKit::command().debug_assert()
     }
 }
 
@@ -721,19 +740,19 @@ set. For more info, see the manual for ssh-agent(1) and ssh-add(1).
     }
 }
 
-fn main() -> AResult<()> {
-    let rt = runtime::get().unwrap();
+#[tokio::main]
+async fn main() -> AResult<()> {
     let opt = DIDKit::parse();
     let ssh_agent_sock;
 
-    match opt {
-        DIDKit::GenerateEd25519Key => {
+    match opt.command {
+        DIDKitCmd::GenerateEd25519Key => {
             let jwk = JWK::generate_ed25519().unwrap();
             let jwk_str = serde_json::to_string(&jwk).unwrap();
-            println!("{}", jwk_str);
+            println!("{jwk_str}");
         }
 
-        DIDKit::Key(cmd) => match cmd {
+        DIDKitCmd::Key(cmd) => match cmd {
             KeyCmd::Generate(cmd_generate) => {
                 let jwk_str = match cmd_generate {
                     KeyGenerateCmd::Ed25519 => {
@@ -749,11 +768,11 @@ fn main() -> AResult<()> {
                         serde_json::to_string(&jwk).unwrap()
                     }
                 };
-                println!("{}", jwk_str);
+                println!("{jwk_str}");
             }
         },
 
-        DIDKit::KeyToDIDKey { key } => {
+        DIDKitCmd::KeyToDIDKey(key) => {
             // Deprecated in favor of KeyToDID
             eprintln!("didkit: use key-to-did instead of key-to-did-key");
             let jwk = key.get_jwk();
@@ -761,10 +780,10 @@ fn main() -> AResult<()> {
                 .generate(&Source::KeyAndPattern(&jwk, "key"))
                 .ok_or(Error::UnableToGenerateDID)
                 .unwrap();
-            println!("{}", did);
+            println!("{did}");
         }
 
-        DIDKit::KeyToDID {
+        DIDKitCmd::KeyToDID {
             method_pattern,
             key,
         } => {
@@ -773,16 +792,18 @@ fn main() -> AResult<()> {
                 .generate(&Source::KeyAndPattern(&jwk, &method_pattern))
                 .ok_or(Error::UnableToGenerateDID)
                 .unwrap();
-            println!("{}", did);
+            println!("{did}");
         }
 
-        DIDKit::SshPkToJwk { ssh_pk } => {
+        DIDKitCmd::SshPkToJwk { ssh_pk } => {
+            // Deserializing here because PublicKey doesn't derive Clone
+            let ssh_pk = PublicKey::from_string(&ssh_pk).unwrap();
             let jwk = ssi::ssh::ssh_pkk_to_jwk(&ssh_pk.kind).unwrap();
             let stdout_writer = BufWriter::new(stdout());
             serde_json::to_writer_pretty(stdout_writer, &jwk).unwrap();
         }
 
-        DIDKit::KeyToVerificationMethod {
+        DIDKitCmd::KeyToVerificationMethod {
             method_pattern,
             key,
         } => {
@@ -801,14 +822,14 @@ fn main() -> AResult<()> {
                 .ok_or(Error::UnableToGenerateDID)
                 .unwrap();
             let did_resolver = DID_METHODS.to_resolver();
-            let vm = rt
-                .block_on(get_verification_method(&did, did_resolver))
+            let vm = get_verification_method(&did, did_resolver)
+                .await
                 .ok_or(Error::UnableToGetVerificationMethod)
                 .unwrap();
-            println!("{}", vm);
+            println!("{vm}");
         }
 
-        DIDKit::VCIssueCredential {
+        DIDKitCmd::VCIssueCredential {
             key,
             resolver_options,
             proof_options,
@@ -832,22 +853,23 @@ fn main() -> AResult<()> {
                     if ssh_agent_sock_opt.is_some() {
                         todo!("ssh-agent for JWT not implemented");
                     }
-                    let jwt = rt
-                        .block_on(credential.generate_jwt(jwk_opt.as_ref(), &options, &resolver))
+                    let jwt = credential
+                        .generate_jwt(jwk_opt.as_ref(), &options, &resolver)
+                        .await
                         .unwrap();
-                    print!("{}", jwt);
+                    print!("{jwt}");
                 }
                 ProofFormat::LDP => {
-                    let proof = rt
-                        .block_on(generate_proof(
-                            &credential,
-                            jwk_opt.as_ref(),
-                            options,
-                            &resolver,
-                            &mut context_loader,
-                            ssh_agent_sock_opt,
-                        ))
-                        .unwrap();
+                    let proof = generate_proof(
+                        &credential,
+                        jwk_opt.as_ref(),
+                        options,
+                        &resolver,
+                        &mut context_loader,
+                        ssh_agent_sock_opt,
+                    )
+                    .await
+                    .unwrap();
                     credential.add_proof(proof);
                     let stdout_writer = BufWriter::new(stdout());
                     serde_json::to_writer(stdout_writer, &credential).unwrap();
@@ -858,7 +880,7 @@ fn main() -> AResult<()> {
             }
         }
 
-        DIDKit::VCVerifyCredential {
+        DIDKitCmd::VCVerifyCredential {
             proof_options,
             resolver_options,
         } => {
@@ -871,18 +893,21 @@ fn main() -> AResult<()> {
                 ProofFormat::JWT => {
                     let mut jwt = String::new();
                     credential_reader.read_to_string(&mut jwt).unwrap();
-                    rt.block_on(VerifiableCredential::verify_jwt(
+                    VerifiableCredential::verify_jwt(
                         &jwt,
                         Some(options),
                         &resolver,
                         &mut context_loader,
-                    ))
+                    )
+                    .await
                 }
                 ProofFormat::LDP => {
                     let credential: VerifiableCredential =
                         serde_json::from_reader(credential_reader).unwrap();
                     credential.validate_unsigned().unwrap();
-                    rt.block_on(credential.verify(Some(options), &resolver, &mut context_loader))
+                    credential
+                        .verify(Some(options), &resolver, &mut context_loader)
+                        .await
                 }
                 _ => {
                     panic!("Unknown proof format: {:?}", proof_format);
@@ -891,12 +916,12 @@ fn main() -> AResult<()> {
 
             let stdout_writer = BufWriter::new(stdout());
             serde_json::to_writer(stdout_writer, &result).unwrap();
-            if result.errors.len() > 0 {
+            if !result.errors.is_empty() {
                 std::process::exit(2);
             }
         }
 
-        DIDKit::VCIssuePresentation {
+        DIDKitCmd::VCIssuePresentation {
             key,
             resolver_options,
             proof_options,
@@ -921,22 +946,23 @@ fn main() -> AResult<()> {
                     if ssh_agent_sock_opt.is_some() {
                         todo!("ssh-agent for JWT not implemented");
                     }
-                    let jwt = rt
-                        .block_on(presentation.generate_jwt(jwk_opt.as_ref(), &options, &resolver))
+                    let jwt = presentation
+                        .generate_jwt(jwk_opt.as_ref(), &options, &resolver)
+                        .await
                         .unwrap();
-                    print!("{}", jwt);
+                    print!("{jwt}");
                 }
                 ProofFormat::LDP => {
-                    let proof = rt
-                        .block_on(generate_proof(
-                            &presentation,
-                            jwk_opt.as_ref(),
-                            options,
-                            &resolver,
-                            &mut context_loader,
-                            ssh_agent_sock_opt,
-                        ))
-                        .unwrap();
+                    let proof = generate_proof(
+                        &presentation,
+                        jwk_opt.as_ref(),
+                        options,
+                        &resolver,
+                        &mut context_loader,
+                        ssh_agent_sock_opt,
+                    )
+                    .await
+                    .unwrap();
                     presentation.add_proof(proof);
                     let stdout_writer = BufWriter::new(stdout());
                     serde_json::to_writer(stdout_writer, &presentation).unwrap();
@@ -947,7 +973,7 @@ fn main() -> AResult<()> {
             }
         }
 
-        DIDKit::VCVerifyPresentation {
+        DIDKitCmd::VCVerifyPresentation {
             proof_options,
             resolver_options,
         } => {
@@ -960,18 +986,21 @@ fn main() -> AResult<()> {
                 ProofFormat::JWT => {
                     let mut jwt = String::new();
                     presentation_reader.read_to_string(&mut jwt).unwrap();
-                    rt.block_on(VerifiablePresentation::verify_jwt(
+                    VerifiablePresentation::verify_jwt(
                         &jwt,
                         Some(options),
                         &resolver,
                         &mut context_loader,
-                    ))
+                    )
+                    .await
                 }
                 ProofFormat::LDP => {
                     let presentation: VerifiablePresentation =
                         serde_json::from_reader(presentation_reader).unwrap();
                     presentation.validate_unsigned().unwrap();
-                    rt.block_on(presentation.verify(Some(options), &resolver, &mut context_loader))
+                    presentation
+                        .verify(Some(options), &resolver, &mut context_loader)
+                        .await
                 }
                 _ => {
                     panic!("Unexpected proof format: {:?}", proof_format);
@@ -979,12 +1008,12 @@ fn main() -> AResult<()> {
             };
             let stdout_writer = BufWriter::new(stdout());
             serde_json::to_writer(stdout_writer, &result).unwrap();
-            if result.errors.len() > 0 {
+            if !result.errors.is_empty() {
                 std::process::exit(2);
             }
         }
 
-        DIDKit::ToRdfURDNA2015 {
+        DIDKitCmd::ToRdfURDNA2015 {
             base,
             expand_context,
             more_context_json,
@@ -1023,8 +1052,9 @@ fn main() -> AResult<()> {
             let doc = jsonld::RemoteDocument::new(None, None, json);
             let mut generator = rdf_types::generator::Blank::new_with_prefix("b".to_string())
                 .with_default_metadata();
-            let mut to_rdf = rt
-                .block_on(doc.to_rdf_using(&mut generator, &mut loader, options))
+            let mut to_rdf = doc
+                .to_rdf_using(&mut generator, &mut loader, options)
+                .await
                 .map_err(Box::new)
                 .unwrap();
             let dataset: rdf::DataSet = to_rdf
@@ -1036,7 +1066,7 @@ fn main() -> AResult<()> {
             stdout().write_all(normalized.as_bytes()).unwrap();
         }
 
-        DIDKit::DIDCreate {
+        DIDKitCmd::DIDCreate {
             method,
             verification_key,
             update_key,
@@ -1066,10 +1096,10 @@ fn main() -> AResult<()> {
                 .context("DID Create failed")?;
             let stdout_writer = BufWriter::new(stdout());
             serde_json::to_writer_pretty(stdout_writer, &tx).unwrap();
-            println!("");
+            println!();
         }
 
-        DIDKit::DIDFromTx => {
+        DIDKitCmd::DIDFromTx => {
             let stdin_reader = BufReader::new(stdin());
             let tx: DIDMethodTransaction = serde_json::from_reader(stdin_reader).unwrap();
             let method = DID_METHODS
@@ -1078,24 +1108,25 @@ fn main() -> AResult<()> {
             let did = method
                 .did_from_transaction(tx)
                 .context("Get DID from transaction")?;
-            println!("{}", did);
+            println!("{did}");
         }
 
-        DIDKit::DIDSubmitTx => {
+        DIDKitCmd::DIDSubmitTx => {
             let stdin_reader = BufReader::new(stdin());
             let tx: DIDMethodTransaction = serde_json::from_reader(stdin_reader).unwrap();
             let method = DID_METHODS
                 .get(&tx.did_method)
                 .ok_or(anyhow!("Unable to get DID method"))?;
-            let result = rt
-                .block_on(method.submit_transaction(tx))
+            let result = method
+                .submit_transaction(tx)
+                .await
                 .context("Submit DID transaction")?;
             let stdout_writer = BufWriter::new(stdout());
             serde_json::to_writer_pretty(stdout_writer, &result).unwrap();
-            println!("");
+            println!();
         }
 
-        DIDKit::DIDUpdate {
+        DIDKitCmd::DIDUpdate {
             new_update_key,
             update_key,
             options,
@@ -1133,7 +1164,7 @@ fn main() -> AResult<()> {
                         ..Default::default()
                     };
                     match public_key {
-                        PublicKeyProperty::JWK(jwk) => vmm.public_key_jwk = Some(jwk),
+                        PublicKeyProperty::Jwk(jwk) => vmm.public_key_jwk = Some(*jwk),
                         PublicKeyProperty::Multibase(mb) => {
                             let mut ps = std::collections::BTreeMap::<String, Value>::default();
                             ps.insert("publicKeyMultibase".to_string(), Value::String(mb));
@@ -1194,7 +1225,7 @@ fn main() -> AResult<()> {
             };
             let tx = method
                 .update(DIDUpdate {
-                    did: did.clone(),
+                    did,
                     update_key,
                     new_update_key,
                     operation,
@@ -1203,10 +1234,10 @@ fn main() -> AResult<()> {
                 .context("DID Update failed")?;
             let stdout_writer = BufWriter::new(stdout());
             serde_json::to_writer_pretty(stdout_writer, &tx).unwrap();
-            println!("");
+            println!();
         }
 
-        DIDKit::DIDRecover {
+        DIDKitCmd::DIDRecover {
             did,
             new_verification_key,
             new_update_key,
@@ -1241,10 +1272,10 @@ fn main() -> AResult<()> {
                 .context("DID Recover failed")?;
             let stdout_writer = BufWriter::new(stdout());
             serde_json::to_writer_pretty(stdout_writer, &tx).unwrap();
-            println!("");
+            println!();
         }
 
-        DIDKit::DIDDeactivate { did, key, options } => {
+        DIDKitCmd::DIDDeactivate { did, key, options } => {
             let method = DID_METHODS
                 .get_method(&did)
                 .map_err(|e| anyhow!("Unable to get DID method: {}", e))?;
@@ -1262,10 +1293,10 @@ fn main() -> AResult<()> {
                 .context("DID deactivation failed")?;
             let stdout_writer = BufWriter::new(stdout());
             serde_json::to_writer_pretty(stdout_writer, &tx).unwrap();
-            println!("");
+            println!();
         }
 
-        DIDKit::DIDResolve {
+        DIDKitCmd::DIDResolve {
             did,
             with_metadata,
             input_metadata,
@@ -1277,7 +1308,7 @@ fn main() -> AResult<()> {
                 serde_json::from_value(res_input_meta_value).unwrap();
             if with_metadata {
                 let (res_meta, doc_opt, doc_meta_opt) =
-                    rt.block_on(resolver.resolve(&did, &res_input_meta));
+                    resolver.resolve(&did, &res_input_meta).await;
                 let error = res_meta.error.is_some();
                 let result = ResolutionResult {
                     did_document: doc_opt,
@@ -1292,16 +1323,16 @@ fn main() -> AResult<()> {
                 }
             } else {
                 let (res_meta, doc_data, _doc_meta_opt) =
-                    rt.block_on(resolver.resolve_representation(&did, &res_input_meta));
+                    resolver.resolve_representation(&did, &res_input_meta).await;
                 if let Some(err) = res_meta.error {
-                    eprintln!("{}", err);
+                    eprintln!("{err}");
                     std::process::exit(2);
                 }
                 stdout().write_all(&doc_data).unwrap();
             }
         }
 
-        DIDKit::DIDDereference {
+        DIDKitCmd::DIDDereference {
             did_url,
             with_metadata,
             input_metadata,
@@ -1313,9 +1344,8 @@ fn main() -> AResult<()> {
                 serde_json::from_value(deref_input_meta_value).unwrap();
             let stdout_writer = BufWriter::new(stdout());
             let (deref_meta, content, content_meta) =
-                rt.block_on(dereference(&resolver, &did_url, &deref_input_meta));
+                dereference(&resolver, &did_url, &deref_input_meta).await;
             if with_metadata {
-                use serde_json::json;
                 let result = json!([deref_meta, content, content_meta]);
                 serde_json::to_writer_pretty(stdout_writer, &result).unwrap();
                 if deref_meta.error.is_some() {
@@ -1323,7 +1353,7 @@ fn main() -> AResult<()> {
                 }
             } else {
                 if let Some(err) = deref_meta.error {
-                    eprintln!("{}", err);
+                    eprintln!("{err}");
                     std::process::exit(2);
                 }
                 let content_vec = content.into_vec().unwrap();
@@ -1331,7 +1361,7 @@ fn main() -> AResult<()> {
             }
         }
 
-        DIDKit::DIDAuth {
+        DIDKitCmd::DIDAuth {
             key,
             holder,
             proof_options,
@@ -1339,8 +1369,10 @@ fn main() -> AResult<()> {
         } => {
             let resolver = resolver_options.to_resolver();
             let mut context_loader = ssi::jsonld::ContextLoader::default();
-            let mut presentation = VerifiablePresentation::default();
-            presentation.holder = Some(ssi::vc::URI::String(holder));
+            let mut presentation = VerifiablePresentation {
+                holder: Some(ssi::vc::URI::String(holder)),
+                ..Default::default()
+            };
             let proof_format = proof_options.proof_format.clone();
             let jwk_opt: Option<JWK> = key.get_jwk_opt();
             let ssh_agent_sock_opt = if key.ssh_agent {
@@ -1355,22 +1387,23 @@ fn main() -> AResult<()> {
                     if ssh_agent_sock_opt.is_some() {
                         todo!("ssh-agent for JWT not implemented");
                     }
-                    let jwt = rt
-                        .block_on(presentation.generate_jwt(jwk_opt.as_ref(), &options, &resolver))
+                    let jwt = presentation
+                        .generate_jwt(jwk_opt.as_ref(), &options, &resolver)
+                        .await
                         .unwrap();
-                    print!("{}", jwt);
+                    print!("{jwt}");
                 }
                 ProofFormat::LDP => {
-                    let proof = rt
-                        .block_on(generate_proof(
-                            &presentation,
-                            jwk_opt.as_ref(),
-                            options,
-                            &resolver,
-                            &mut context_loader,
-                            ssh_agent_sock_opt,
-                        ))
-                        .unwrap();
+                    let proof = generate_proof(
+                        &presentation,
+                        jwk_opt.as_ref(),
+                        options,
+                        &resolver,
+                        &mut context_loader,
+                        ssh_agent_sock_opt,
+                    )
+                    .await
+                    .unwrap();
                     presentation.add_proof(proof);
                     let stdout_writer = BufWriter::new(stdout());
                     serde_json::to_writer(stdout_writer, &presentation).unwrap();

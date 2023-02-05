@@ -6,8 +6,8 @@ use didkit::ssi;
 
 static BIN: &str = env!("CARGO_BIN_EXE_didkit");
 
-const DID_KEY_K256: &'static str = "did:key:zQ3shokFTS3brHcDQrn82RUDfCZESWL1ZdCEJwekUDPQiYBme";
-const DID_KEY_P256: &'static str = "did:key:zDnaerDaTF5BXEavCrfRZEk316dpbLsfPDZ3WJ5hRTPFU2169";
+const DID_KEY_K256: &str = "did:key:zQ3shokFTS3brHcDQrn82RUDfCZESWL1ZdCEJwekUDPQiYBme";
+const DID_KEY_P256: &str = "did:key:zDnaerDaTF5BXEavCrfRZEk316dpbLsfPDZ3WJ5hRTPFU2169";
 
 #[test]
 fn generate_key() {
@@ -21,7 +21,7 @@ fn generate_key() {
 fn didkit_cli() {
     // Get DID for key
     let did_output = Command::new(BIN)
-        .args(&["key-to-did", "key", "--key-path", "tests/ed25519-key.jwk"])
+        .args(["key-to-did", "key", "--key-path", "tests/ed25519-key.jwk"])
         .stderr(Stdio::inherit())
         .output()
         .unwrap();
@@ -31,7 +31,7 @@ fn didkit_cli() {
 
     // Get verificationMethod for key
     let vm_output = Command::new(BIN)
-        .args(&[
+        .args([
             "key-to-verification-method",
             "key",
             "-k",
@@ -50,21 +50,20 @@ fn didkit_cli() {
        "@context": "https://www.w3.org/2018/credentials/v1",
        "id": "http://example.org/credentials/3731",
        "type": ["VerifiableCredential"],
-       "issuer": "{}",
+       "issuer": "{did}",
        "issuanceDate": "2020-08-19T21:41:50Z",
        "credentialSubject": {{
            "id": "did:example:d23dd687a7dc6787646f2eb98d0"
        }}
-    }}"#,
-        did
+    }}"#
     );
     let mut issue_credential = Command::new(BIN)
-        .args(&[
+        .args([
             "vc-issue-credential",
             "-k",
             "tests/ed25519-key.jwk",
             "-v",
-            &verification_method.trim(),
+            (verification_method.trim()),
             "-p",
             "assertionMethod",
         ])
@@ -81,7 +80,7 @@ fn didkit_cli() {
 
     // Verify credential
     let mut verify_credential = Command::new(BIN)
-        .args(&["vc-verify-credential", "-p", "assertionMethod"])
+        .args(["vc-verify-credential", "-p", "assertionMethod"])
         .stdin(Stdio::piped())
         .stdout(Stdio::piped())
         .stderr(Stdio::inherit())
@@ -103,12 +102,12 @@ fn didkit_cli() {
     presentation["holder"] = did.to_string().into();
     presentation["verifiableCredential"] = vc_value;
     let mut issue_presentation = Command::new(BIN)
-        .args(&[
+        .args([
             "vc-issue-presentation",
             "-k",
             "tests/ed25519-key.jwk",
             "-v",
-            &verification_method.trim(),
+            (verification_method.trim()),
             "-p",
             "authentication",
         ])
@@ -126,7 +125,7 @@ fn didkit_cli() {
 
     // Verify presentation
     let mut verify_presentation = Command::new(BIN)
-        .args(&["vc-verify-presentation", "-p", "authentication"])
+        .args(["vc-verify-presentation", "-p", "authentication"])
         .stdin(Stdio::piped())
         .stdout(Stdio::piped())
         .stderr(Stdio::inherit())
@@ -139,13 +138,13 @@ fn didkit_cli() {
 
     // Resolve DID
     let resolve = Command::new(BIN)
-        .args(&["did-resolve", "-m", &did])
+        .args(["did-resolve", "-m", &did])
         .stderr(Stdio::inherit())
         .output()
         .unwrap();
     assert!(resolve.status.success());
     let res_result_string = String::from_utf8(resolve.stdout).unwrap();
-    eprintln!("{}", res_result_string);
+    eprintln!("{res_result_string}");
     let res_result: Value = serde_json::from_str(&res_result_string).unwrap();
     assert_ne!(res_result["didDocument"], Value::Null);
     assert_ne!(res_result["didResolutionMetadata"], Value::Null);
@@ -154,13 +153,13 @@ fn didkit_cli() {
 
     // Resolve more DIDs
     let resolve = Command::new(BIN)
-        .args(&["did-resolve", DID_KEY_K256])
+        .args(["did-resolve", DID_KEY_K256])
         .stderr(Stdio::inherit())
         .output()
         .unwrap();
     assert!(resolve.status.success());
     let resolve = Command::new(BIN)
-        .args(&["did-resolve", DID_KEY_P256])
+        .args(["did-resolve", DID_KEY_P256])
         .stderr(Stdio::inherit())
         .output()
         .unwrap();
@@ -168,13 +167,13 @@ fn didkit_cli() {
 
     // Dereference a DID URL to a verification method
     let deref = Command::new(BIN)
-        .args(&["did-dereference", "-m", &verification_method])
+        .args(["did-dereference", "-m", &verification_method])
         .stderr(Stdio::inherit())
         .output()
         .unwrap();
     assert!(deref.status.success());
     let deref_result_string = String::from_utf8(deref.stdout).unwrap();
-    eprintln!("{}", deref_result_string);
+    eprintln!("{deref_result_string}");
     let deref_result: Value = serde_json::from_str(&deref_result_string).unwrap();
     let deref_vec = deref_result
         .as_array()
@@ -187,14 +186,14 @@ fn didkit_cli() {
 
     // Create DIDAuth verifiable presentation
     let mut issue_presentation = Command::new(BIN)
-        .args(&[
+        .args([
             "did-auth",
             "-k",
             "tests/ed25519-key.jwk",
             "--holder",
-            &did.to_string(),
+            &did,
             "-v",
-            &verification_method.trim(),
+            (verification_method.trim()),
             "-p",
             "authentication",
         ])
@@ -211,7 +210,7 @@ fn didkit_cli() {
 
     // Verify DIDAuth presentation
     let mut verify_presentation = Command::new(BIN)
-        .args(&["vc-verify-presentation", "-p", "authentication"])
+        .args(["vc-verify-presentation", "-p", "authentication"])
         .stdin(Stdio::piped())
         .stdout(Stdio::piped())
         .stderr(Stdio::inherit())
@@ -224,7 +223,7 @@ fn didkit_cli() {
 
     // Convert JSON-LD to RDF N-Quads with URDNA2015
     let mut to_rdf = Command::new(BIN)
-        .args(&["to-rdf-urdna2015"])
+        .args(["to-rdf-urdna2015"])
         .stdin(Stdio::piped())
         .stdout(Stdio::piped())
         .stderr(Stdio::inherit())
@@ -299,7 +298,7 @@ async fn resolver_option() {
                             .header(CONTENT_TYPE, "application/json")
                             .body(body)
                             .unwrap();
-                        return Ok::<_, hyper::Error>(response);
+                        Ok::<_, hyper::Error>(response)
                     }
                 }))
             }
@@ -374,7 +373,7 @@ async fn resolver_option() {
     // Resolve DID with -r option for fallback HTTP resolver
     use tokio::process::Command;
     let resolve = Command::new(BIN)
-        .args(&["did-resolve", "-r", &endpoint, "did:example:empty"])
+        .args(["did-resolve", "-r", &endpoint, "did:example:empty"])
         .stdout(Stdio::piped())
         .spawn()
         .unwrap()
@@ -382,13 +381,13 @@ async fn resolver_option() {
         .await
         .unwrap();
     let resolve_result_string = String::from_utf8(resolve.stdout).unwrap();
-    eprintln!("resolve: {}", resolve_result_string);
+    eprintln!("resolve: {resolve_result_string}");
     assert!(resolve.status.success());
 
     // Resolve DID URL with -r option for fallback HTTP resolver
     // Dereference secondary resource client-side
     let deref = Command::new(BIN)
-        .args(&["did-dereference", "-r", &endpoint, "did:example:thing#key1"])
+        .args(["did-dereference", "-r", &endpoint, "did:example:thing#key1"])
         .stdout(Stdio::piped())
         .spawn()
         .unwrap()
@@ -396,7 +395,7 @@ async fn resolver_option() {
         .await
         .unwrap();
     let deref_result_string = String::from_utf8(deref.stdout).unwrap();
-    eprintln!("dereference: {}", deref_result_string);
+    eprintln!("dereference: {deref_result_string}");
     assert!(deref.status.success());
     let deref_result: Value = serde_json::from_str(&deref_result_string).unwrap();
     assert_eq!(deref_result["id"], json!("did:example:thing#key1"));
@@ -404,7 +403,7 @@ async fn resolver_option() {
     // Resolve DID URL with -r option for fallback HTTP resolver
     // DID URL with path
     let deref = Command::new(BIN)
-        .args(&["did-dereference", "-r", &endpoint, "did:example:thing/path"])
+        .args(["did-dereference", "-r", &endpoint, "did:example:thing/path"])
         .stdout(Stdio::piped())
         .spawn()
         .unwrap()
@@ -412,7 +411,7 @@ async fn resolver_option() {
         .await
         .unwrap();
     let deref_result_string = String::from_utf8(deref.stdout).unwrap();
-    eprintln!("dereference with path: {}", deref_result_string);
+    eprintln!("dereference with path: {deref_result_string}");
     assert!(deref.status.success());
     let deref_result: Value = serde_json::from_str(&deref_result_string).unwrap();
     assert_eq!(deref_result, json!({"@id": "did:example:thing/path"}));
