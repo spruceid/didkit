@@ -32,11 +32,11 @@ use iref::IriBuf;
 use json_ld::JsonLdProcessor;
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
-use sshkeys::PublicKey;
 
 mod opts;
 use opts::ResolverOptions;
 mod credential;
+mod did;
 mod key;
 mod presentation;
 
@@ -63,11 +63,8 @@ pub enum DIDKitCmd {
     /// Deprecated in favor of `didkit key to verification-method`
     #[clap(hide = true)]
     KeyToVerificationMethod(key::KeyToVMArgs),
-    /// Convert a SSH public key to a JWK
-    SshPkToJwk {
-        /// SSH Public Key
-        ssh_pk: String,
-    },
+    #[clap(hide = true)]
+    SshPkToJwk(key::KeyFromSSHArgs),
 
     // DID Functionality
     /// Create new DID Document.
@@ -705,14 +702,7 @@ async fn main() -> AResult<()> {
         }
         DIDKitCmd::KeyToDID(args) => key::to_did(args).await.unwrap(),
         DIDKitCmd::KeyToVerificationMethod(args) => key::to_vm(args).await.unwrap(),
-
-        DIDKitCmd::SshPkToJwk { ssh_pk } => {
-            // Deserializing here because PublicKey doesn't derive Clone
-            let ssh_pk = PublicKey::from_string(&ssh_pk).unwrap();
-            let jwk = ssi::ssh::ssh_pkk_to_jwk(&ssh_pk.kind).unwrap();
-            let stdout_writer = BufWriter::new(stdout());
-            serde_json::to_writer_pretty(stdout_writer, &jwk).unwrap();
-        }
+        DIDKitCmd::SshPkToJwk(args) => key::from_ssh(args).await.unwrap(),
 
         DIDKitCmd::VCIssueCredential(args) => credential::issue(args).await.unwrap(),
         DIDKitCmd::VCVerifyCredential(args) => credential::verify(args).await.unwrap(),
