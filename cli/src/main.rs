@@ -10,6 +10,7 @@ use std::{
 use anyhow::{anyhow, bail, Context, Error as AError, Result as AResult};
 use chrono::prelude::*;
 use clap::{ArgGroup, Args, Parser, Subcommand};
+use credential::{CredentialIssueArgs, CredentialVerifyArgs};
 use didkit::ssi::{
     jsonld::{self, parse_ld_context, StaticLoader},
     ldp::ProofSuiteType,
@@ -24,8 +25,8 @@ use didkit::{
     },
     DIDCreate, DIDDeactivate, DIDDocumentOperation, DIDMethod, DIDRecover, DIDResolver, DIDUpdate,
     DereferencingInputMetadata, Error, LinkedDataProofOptions, Metadata, ProofFormat,
-    ResolutionInputMetadata, ResolutionResult, VerifiableCredential, VerifiablePresentation,
-    VerificationRelationship, DIDURL, DID_METHODS, JWK, URI,
+    ResolutionInputMetadata, ResolutionResult, VerifiablePresentation, VerificationRelationship,
+    DIDURL, DID_METHODS, JWK, URI,
 };
 use iref::IriBuf;
 use json_ld::JsonLdProcessor;
@@ -35,7 +36,9 @@ use sshkeys::PublicKey;
 
 mod opts;
 use opts::ResolverOptions;
+mod credential;
 mod key;
+mod presentation;
 
 #[derive(Parser)]
 struct DIDKit {
@@ -200,43 +203,20 @@ pub enum DIDKitCmd {
         options: Vec<MetadataProperty>,
     },
 
-    /*
-    /// Create a Signed IETF JSON Patch to update a DID document.
-    DIDPatch {},
-    */
-    // VC Functionality
-    /// Issue Credential
-    VCIssueCredential {
-        #[clap(flatten)]
-        key: KeyArg,
-        #[clap(flatten)]
-        proof_options: ProofOptions,
-        #[clap(flatten)]
-        resolver_options: ResolverOptions,
-    },
-    /// Verify Credential
-    VCVerifyCredential {
-        #[clap(flatten)]
-        proof_options: ProofOptions,
-        #[clap(flatten)]
-        resolver_options: ResolverOptions,
-    },
-    /// Issue Presentation
-    VCIssuePresentation {
-        #[clap(flatten)]
-        key: KeyArg,
-        #[clap(flatten)]
-        proof_options: ProofOptions,
-        #[clap(flatten)]
-        resolver_options: ResolverOptions,
-    },
-    /// Verify Presentation
-    VCVerifyPresentation {
-        #[clap(flatten)]
-        resolver_options: ResolverOptions,
-        #[clap(flatten)]
-        proof_options: ProofOptions,
-    },
+    #[clap(hide = true)]
+    VCIssueCredential(CredentialIssueArgs),
+    #[clap(hide = true)]
+    VCVerifyCredential(CredentialVerifyArgs),
+    /// Subcommand for verifiable credential operations
+    #[clap(subcommand)]
+    Credential(credential::CredentialCmd),
+    #[clap(hide = true)]
+    VCIssuePresentation(presentation::PresentationIssueArgs),
+    #[clap(hide = true)]
+    VCVerifyPresentation(presentation::PresentationVerifyArgs),
+    /// Subcommand for verifiable presentation operations
+    #[clap(subcommand)]
+    Presentation(presentation::PresentationCmd),
     /// Convert JSON-LD to URDNA2015-canonicalized RDF N-Quads
     ToRdfURDNA2015 {
         /// Base IRI
@@ -734,189 +714,13 @@ async fn main() -> AResult<()> {
             serde_json::to_writer_pretty(stdout_writer, &jwk).unwrap();
         }
 
-        DIDKitCmd::VCIssueCredential {
-            key,
-            resolver_options,
-            proof_options,
-        } => {
-            let resolver = resolver_options.to_resolver();
-            let mut context_loader = ssi::jsonld::ContextLoader::default();
-            let credential_reader = BufReader::new(stdin());
-            let mut credential: VerifiableCredential =
-                serde_json::from_reader(credential_reader).unwrap();
-            let proof_format = proof_options.proof_format.clone();
-            let jwk_opt: Option<JWK> = key.get_jwk_opt();
-            let ssh_agent_sock_opt = if key.ssh_agent {
-                ssh_agent_sock = get_ssh_agent_sock();
-                Some(&ssh_agent_sock[..])
-            } else {
-                None
-            };
-            let options = LinkedDataProofOptions::from(proof_options);
-            match proof_format {
-                ProofFormat::JWT => {
-                    if ssh_agent_sock_opt.is_some() {
-                        todo!("ssh-agent for JWT not implemented");
-                    }
-                    let jwt = credential
-                        .generate_jwt(jwk_opt.as_ref(), &options, &resolver)
-                        .await
-                        .unwrap();
-                    print!("{jwt}");
-                }
-                ProofFormat::LDP => {
-                    let proof = generate_proof(
-                        &credential,
-                        jwk_opt.as_ref(),
-                        options,
-                        &resolver,
-                        &mut context_loader,
-                        ssh_agent_sock_opt,
-                    )
-                    .await
-                    .unwrap();
-                    credential.add_proof(proof);
-                    let stdout_writer = BufWriter::new(stdout());
-                    serde_json::to_writer(stdout_writer, &credential).unwrap();
-                }
-                _ => {
-                    panic!("Unknown proof format: {:?}", proof_format);
-                }
-            }
-        }
+        DIDKitCmd::VCIssueCredential(args) => credential::issue(args).await.unwrap(),
+        DIDKitCmd::VCVerifyCredential(args) => credential::verify(args).await.unwrap(),
+        DIDKitCmd::Credential(cmd) => credential::cli(cmd).await.unwrap(),
 
-        DIDKitCmd::VCVerifyCredential {
-            proof_options,
-            resolver_options,
-        } => {
-            let resolver = resolver_options.to_resolver();
-            let mut context_loader = ssi::jsonld::ContextLoader::default();
-            let mut credential_reader = BufReader::new(stdin());
-            let proof_format = proof_options.proof_format.clone();
-            let options = LinkedDataProofOptions::from(proof_options);
-            let result = match proof_format {
-                ProofFormat::JWT => {
-                    let mut jwt = String::new();
-                    credential_reader.read_to_string(&mut jwt).unwrap();
-                    VerifiableCredential::verify_jwt(
-                        &jwt,
-                        Some(options),
-                        &resolver,
-                        &mut context_loader,
-                    )
-                    .await
-                }
-                ProofFormat::LDP => {
-                    let credential: VerifiableCredential =
-                        serde_json::from_reader(credential_reader).unwrap();
-                    credential.validate_unsigned().unwrap();
-                    credential
-                        .verify(Some(options), &resolver, &mut context_loader)
-                        .await
-                }
-                _ => {
-                    panic!("Unknown proof format: {:?}", proof_format);
-                }
-            };
-
-            let stdout_writer = BufWriter::new(stdout());
-            serde_json::to_writer(stdout_writer, &result).unwrap();
-            if !result.errors.is_empty() {
-                std::process::exit(2);
-            }
-        }
-
-        DIDKitCmd::VCIssuePresentation {
-            key,
-            resolver_options,
-            proof_options,
-        } => {
-            let resolver = resolver_options.to_resolver();
-            let mut context_loader = ssi::jsonld::ContextLoader::default();
-            let presentation_reader = BufReader::new(stdin());
-            let mut presentation: VerifiablePresentation =
-                serde_json::from_reader(presentation_reader).unwrap();
-
-            let jwk_opt: Option<JWK> = key.get_jwk_opt();
-            let ssh_agent_sock_opt = if key.ssh_agent {
-                ssh_agent_sock = get_ssh_agent_sock();
-                Some(&ssh_agent_sock[..])
-            } else {
-                None
-            };
-            let proof_format = proof_options.proof_format.clone();
-            let options = LinkedDataProofOptions::from(proof_options);
-            match proof_format {
-                ProofFormat::JWT => {
-                    if ssh_agent_sock_opt.is_some() {
-                        todo!("ssh-agent for JWT not implemented");
-                    }
-                    let jwt = presentation
-                        .generate_jwt(jwk_opt.as_ref(), &options, &resolver)
-                        .await
-                        .unwrap();
-                    print!("{jwt}");
-                }
-                ProofFormat::LDP => {
-                    let proof = generate_proof(
-                        &presentation,
-                        jwk_opt.as_ref(),
-                        options,
-                        &resolver,
-                        &mut context_loader,
-                        ssh_agent_sock_opt,
-                    )
-                    .await
-                    .unwrap();
-                    presentation.add_proof(proof);
-                    let stdout_writer = BufWriter::new(stdout());
-                    serde_json::to_writer(stdout_writer, &presentation).unwrap();
-                }
-                _ => {
-                    panic!("Unexpected proof format: {:?}", proof_format);
-                }
-            }
-        }
-
-        DIDKitCmd::VCVerifyPresentation {
-            proof_options,
-            resolver_options,
-        } => {
-            let resolver = resolver_options.to_resolver();
-            let mut context_loader = ssi::jsonld::ContextLoader::default();
-            let mut presentation_reader = BufReader::new(stdin());
-            let proof_format = proof_options.proof_format.clone();
-            let options = LinkedDataProofOptions::from(proof_options);
-            let result = match proof_format {
-                ProofFormat::JWT => {
-                    let mut jwt = String::new();
-                    presentation_reader.read_to_string(&mut jwt).unwrap();
-                    VerifiablePresentation::verify_jwt(
-                        &jwt,
-                        Some(options),
-                        &resolver,
-                        &mut context_loader,
-                    )
-                    .await
-                }
-                ProofFormat::LDP => {
-                    let presentation: VerifiablePresentation =
-                        serde_json::from_reader(presentation_reader).unwrap();
-                    presentation.validate_unsigned().unwrap();
-                    presentation
-                        .verify(Some(options), &resolver, &mut context_loader)
-                        .await
-                }
-                _ => {
-                    panic!("Unexpected proof format: {:?}", proof_format);
-                }
-            };
-            let stdout_writer = BufWriter::new(stdout());
-            serde_json::to_writer(stdout_writer, &result).unwrap();
-            if !result.errors.is_empty() {
-                std::process::exit(2);
-            }
-        }
+        DIDKitCmd::VCIssuePresentation(args) => presentation::issue(args).await.unwrap(),
+        DIDKitCmd::VCVerifyPresentation(args) => presentation::verify(args).await.unwrap(),
+        DIDKitCmd::Presentation(cmd) => presentation::cli(cmd).await.unwrap(),
 
         DIDKitCmd::ToRdfURDNA2015 {
             base,

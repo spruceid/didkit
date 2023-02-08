@@ -11,6 +11,7 @@ pub enum KeyCmd {
     #[clap(subcommand)]
     To(Box<KeyToCmd>),
 }
+
 #[derive(Subcommand)]
 pub enum KeyToCmd {
     /// Output a DID for a given JWK according to the provided DID method name or pattern
@@ -63,6 +64,7 @@ pub async fn cli(cmd: KeyCmd) -> Result<()> {
     };
     Ok(())
 }
+
 pub async fn to(cmd: KeyToCmd) -> Result<()> {
     match cmd {
         KeyToCmd::Did(cmd_did) => to_did(cmd_did).await?,
