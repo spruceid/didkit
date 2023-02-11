@@ -1,7 +1,7 @@
 use std::{
     convert::TryFrom,
     fs::File,
-    io::{stdin, stdout, BufReader, BufWriter, Read, Write},
+    io::{stdin, stdout, BufReader, Read, Write},
     ops::Deref,
     path::PathBuf,
     str::FromStr,
@@ -17,15 +17,8 @@ use didkit::ssi::{
     rdf,
 };
 use didkit::{
-    dereference, generate_proof,
-    ssi::{
-        self,
-        did::{DIDMethodTransaction, Service, ServiceEndpoint},
-        one_or_many::OneOrMany,
-    },
-    DIDCreate, DIDDeactivate, DIDDocumentOperation, DIDMethod, DIDRecover, DIDResolver, DIDUpdate,
-    DereferencingInputMetadata, Error, LinkedDataProofOptions, Metadata, ProofFormat,
-    ResolutionInputMetadata, ResolutionResult, VerifiablePresentation, VerificationRelationship,
+    ssi::{self, did::ServiceEndpoint},
+    DIDMethod, Error, LinkedDataProofOptions, Metadata, ProofFormat, VerificationRelationship,
     DIDURL, DID_METHODS, JWK, URI,
 };
 use iref::IriBuf;
@@ -33,11 +26,10 @@ use json_ld::JsonLdProcessor;
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
 
-mod opts;
-use opts::ResolverOptions;
 mod credential;
 mod did;
 mod key;
+mod opts;
 mod presentation;
 
 #[derive(Parser)]
@@ -65,141 +57,27 @@ pub enum DIDKitCmd {
     KeyToVerificationMethod(key::KeyToVMArgs),
     #[clap(hide = true)]
     SshPkToJwk(key::KeyFromSSHArgs),
-
-    // DID Functionality
-    /// Create new DID Document.
-    // See also: https://identity.foundation/did-registration/#create
-    //           (method), jobId, options, secret, didDocument
-    DIDCreate {
-        /// DID method name
-        method: String,
-
-        /// JWK file for default verification method
-        #[clap(short, long)]
-        verification_key: Option<PathBuf>,
-
-        /// JWK file for DID Update operations
-        #[clap(short, long)]
-        update_key: Option<PathBuf>,
-
-        /// JWK file for DID Recovery and/or Deactivate operations
-        #[clap(short, long)]
-        recovery_key: Option<PathBuf>,
-
-        #[clap(short = 'o', name = "name=value")]
-        /// Options for DID create operation
-        ///
-        /// More info: https://identity.foundation/did-registration/#options
-        options: Vec<MetadataProperty>,
-    },
-
-    /// Get DID from DID method transaction
-    ///
-    /// Reads from standard input. Outputs DID on success.
+    /// Subcommand for DID operations
+    #[clap(subcommand)]
+    Did(did::DidCmd),
+    #[clap(hide = true)]
+    DIDCreate(did::DidCreateArgs),
+    #[clap(hide = true)]
     DIDFromTx,
-
-    /// Submit a DID method transaction
-    ///
-    /// Reads from standard input.
+    #[clap(hide = true)]
     DIDSubmitTx,
-
-    /// Update a DID.
-    DIDUpdate {
-        /// New JWK file for next DID Update operation
-        #[clap(short = 'u', long)]
-        new_update_key: Option<PathBuf>,
-
-        /// JWK file for performing this DID update operation.
-        #[clap(short = 'U', long)]
-        update_key: Option<PathBuf>,
-
-        #[clap(short = 'o', name = "name=value")]
-        /// Options for DID Update operation
-        ///
-        /// More info: https://identity.foundation/did-registration/#options
-        options: Vec<MetadataProperty>,
-
-        #[clap(subcommand)]
-        cmd: DIDUpdateCmd,
-    },
-
-    /// Recover a DID.
-    DIDRecover {
-        /// DID to recover
-        did: String,
-
-        /// New JWK file for default verification method
-        #[clap(short = 'v', long)]
-        new_verification_key: Option<PathBuf>,
-
-        /// New JWK file for DID Update operations
-        #[clap(short = 'u', long)]
-        new_update_key: Option<PathBuf>,
-
-        /// New JWK file for DID Recovery and/or Deactivate operations
-        #[clap(short = 'r', long)]
-        new_recovery_key: Option<PathBuf>,
-
-        /// JWK file for performing this DID recover operation.
-        #[clap(short = 'R', long)]
-        recovery_key: Option<PathBuf>,
-
-        #[clap(short = 'o', name = "name=value")]
-        /// Options for DID Recover operation
-        ///
-        /// More info: https://identity.foundation/did-registration/#options
-        options: Vec<MetadataProperty>,
-    },
-
-    /// Resolve a DID to a DID Document.
-    DIDResolve {
-        did: String,
-        #[clap(short = 'm', long)]
-        /// Return resolution result with metadata
-        with_metadata: bool,
-        #[clap(short = 'i', name = "name=value")]
-        /// DID resolution input metadata
-        input_metadata: Vec<MetadataProperty>,
-        #[clap(flatten)]
-        resolver_options: ResolverOptions,
-    },
-    /// Dereference a DID URL to a resource.
-    DIDDereference {
-        did_url: String,
-        #[clap(short = 'm', long)]
-        /// Return resolution result with metadata
-        with_metadata: bool,
-        #[clap(short = 'i', name = "name=value")]
-        /// DID dereferencing input metadata
-        input_metadata: Vec<MetadataProperty>,
-        #[clap(flatten)]
-        resolver_options: ResolverOptions,
-    },
-    /// Authenticate with a DID.
-    DIDAuth {
-        #[clap(flatten)]
-        key: KeyArg,
-        #[clap(short = 'H', long)]
-        holder: String,
-        #[clap(flatten)]
-        proof_options: ProofOptions,
-        #[clap(flatten)]
-        resolver_options: ResolverOptions,
-    },
-
-    /// Deactivate a DID.
-    DIDDeactivate {
-        did: String,
-
-        /// Filename of JWK to perform the DID Deactivate operation
-        #[clap(short, long)]
-        key: Option<PathBuf>,
-
-        #[clap(short = 'o', name = "name=value")]
-        /// Options for DID deactivate operation
-        options: Vec<MetadataProperty>,
-    },
-
+    #[clap(hide = true)]
+    DIDUpdate(did::DidUpdateArgs),
+    #[clap(hide = true)]
+    DIDRecover(did::DidRecoverArgs),
+    #[clap(hide = true)]
+    DIDResolve(did::DidResolveArgs),
+    #[clap(hide = true)]
+    DIDDereference(did::DidDereferenceArgs),
+    #[clap(hide = true)]
+    DIDAuth(did::DidAuthenticateArgs),
+    #[clap(hide = true)]
+    DIDDeactivate(did::DidDeactivateArgs),
     #[clap(hide = true)]
     VCIssueCredential(CredentialIssueArgs),
     #[clap(hide = true)]
@@ -332,52 +210,6 @@ impl From<VerificationRelationships> for Vec<VerificationRelationship> {
         }
         vrels_vec
     }
-}
-
-#[allow(clippy::large_enum_variant)]
-#[derive(Subcommand, Debug)]
-pub enum DIDUpdateCmd {
-    /// Add a verification method to the DID document
-    SetVerificationMethod {
-        #[clap(flatten)]
-        id_and_did: IdAndDid,
-
-        /// Verification method type
-        #[clap(short, long)]
-        type_: String,
-
-        /// Verification method controller property
-        ///
-        /// Defaults to the DID this update is for (the <did> option)
-        #[clap(short, long)]
-        controller: Option<String>,
-
-        #[clap(flatten)]
-        verification_relationships: VerificationRelationships,
-
-        #[clap(flatten)]
-        public_key: PublicKeyArg,
-    },
-
-    /// Add a service to the DID document
-    SetService {
-        #[clap(flatten)]
-        id_and_did: IdAndDid,
-
-        /// Service type
-        #[clap(short, long)]
-        r#type: Vec<String>,
-
-        /// serviceEndpoint URI or JSON object
-        #[clap(short, long, value_parser(parse_service_endpoint))]
-        endpoint: Vec<ServiceEndpoint>,
-    },
-
-    /// Remove a service endpoint from the DID document
-    RemoveService(IdAndDid),
-
-    /// Remove a verification method from the DID document
-    RemoveVerificationMethod(IdAndDid),
 }
 
 #[derive(Args, Debug, Deserialize)]
@@ -685,8 +517,6 @@ set. For more info, see the manual for ssh-agent(1) and ssh-add(1).
 #[tokio::main]
 async fn main() -> AResult<()> {
     let opt = DIDKit::parse();
-    let ssh_agent_sock;
-
     match opt.command {
         DIDKitCmd::GenerateEd25519Key => key::generate(key::KeyGenerateCmd::Ed25519).await.unwrap(),
         DIDKitCmd::Key(cmd) => key::cli(cmd).await.unwrap(),
@@ -765,353 +595,16 @@ async fn main() -> AResult<()> {
             stdout().write_all(normalized.as_bytes()).unwrap();
         }
 
-        DIDKitCmd::DIDCreate {
-            method,
-            verification_key,
-            update_key,
-            recovery_key,
-            options,
-        } => {
-            let method = DID_METHODS
-                .get(&method)
-                .ok_or(anyhow!("Unable to get DID method"))?;
-            let verification_key = read_jwk_file_opt(&verification_key)
-                .context("Read verification key for DID Create")?;
-            let update_key =
-                read_jwk_file_opt(&update_key).context("Read update key for DID Create")?;
-            let recovery_key =
-                read_jwk_file_opt(&recovery_key).context("Read recovery key for DID Create")?;
-            let options =
-                metadata_properties_to_value(options).context("Parse options for DID Create")?;
-            let options = serde_json::from_value(options).context("Unable to convert options")?;
-
-            let tx = method
-                .create(DIDCreate {
-                    recovery_key,
-                    update_key,
-                    verification_key,
-                    options,
-                })
-                .context("DID Create failed")?;
-            let stdout_writer = BufWriter::new(stdout());
-            serde_json::to_writer_pretty(stdout_writer, &tx).unwrap();
-            println!();
-        }
-
-        DIDKitCmd::DIDFromTx => {
-            let stdin_reader = BufReader::new(stdin());
-            let tx: DIDMethodTransaction = serde_json::from_reader(stdin_reader).unwrap();
-            let method = DID_METHODS
-                .get(&tx.did_method)
-                .ok_or(anyhow!("Unable to get DID method"))?;
-            let did = method
-                .did_from_transaction(tx)
-                .context("Get DID from transaction")?;
-            println!("{did}");
-        }
-
-        DIDKitCmd::DIDSubmitTx => {
-            let stdin_reader = BufReader::new(stdin());
-            let tx: DIDMethodTransaction = serde_json::from_reader(stdin_reader).unwrap();
-            let method = DID_METHODS
-                .get(&tx.did_method)
-                .ok_or(anyhow!("Unable to get DID method"))?;
-            let result = method
-                .submit_transaction(tx)
-                .await
-                .context("Submit DID transaction")?;
-            let stdout_writer = BufWriter::new(stdout());
-            serde_json::to_writer_pretty(stdout_writer, &result).unwrap();
-            println!();
-        }
-
-        DIDKitCmd::DIDUpdate {
-            new_update_key,
-            update_key,
-            options,
-            cmd,
-        } => {
-            let new_update_key =
-                read_jwk_file_opt(&new_update_key).context("Read new update key for DID update")?;
-            let update_key =
-                read_jwk_file_opt(&update_key).context("Read update key for DID update")?;
-            let options =
-                metadata_properties_to_value(options).context("Parse options for DID update")?;
-            let options = serde_json::from_value(options).context("Unable to convert options")?;
-
-            let (did, method, operation) = match cmd {
-                DIDUpdateCmd::SetVerificationMethod {
-                    id_and_did,
-                    type_,
-                    controller,
-                    public_key,
-                    verification_relationships,
-                } => {
-                    let (method, did, id) = id_and_did
-                        .parse()
-                        .context("Parse id/DID for set-verification-method subcommand")?;
-                    let pk_enum =
-                        PublicKeyArgEnum::try_from(public_key).context("Read public key option")?;
-                    let public_key =
-                        PublicKeyProperty::try_from(pk_enum).context("Read public key property")?;
-                    let purposes = verification_relationships.into();
-                    let controller = controller.unwrap_or_else(|| did.clone());
-                    let mut vmm = ssi::did::VerificationMethodMap {
-                        id: id.to_string(),
-                        type_,
-                        controller,
-                        ..Default::default()
-                    };
-                    match public_key {
-                        PublicKeyProperty::Jwk(jwk) => vmm.public_key_jwk = Some(*jwk),
-                        PublicKeyProperty::Multibase(mb) => {
-                            let mut ps = std::collections::BTreeMap::<String, Value>::default();
-                            ps.insert("publicKeyMultibase".to_string(), Value::String(mb));
-                            vmm.property_set = Some(ps);
-                        }
-                        PublicKeyProperty::Account(account) => {
-                            vmm.blockchain_account_id = Some(account);
-                        }
-                    }
-                    let op = DIDDocumentOperation::SetVerificationMethod { vmm, purposes };
-                    (did, method, op)
-                }
-                DIDUpdateCmd::RemoveVerificationMethod(id_and_did) => {
-                    let (method, did, id) = id_and_did.parse().context(
-                        "Unable to parse id/DID for remove-verification-method subcommand",
-                    )?;
-                    let op = DIDDocumentOperation::RemoveVerificationMethod(id);
-                    (did, method, op)
-                }
-                DIDUpdateCmd::SetService {
-                    id_and_did,
-                    endpoint,
-                    r#type,
-                } => {
-                    let (method, did, id) = id_and_did
-                        .parse()
-                        .context("Parse id/DID for set-verification-method subcommand")?;
-                    let service_endpoint = match endpoint.len() {
-                        0 => None,
-                        1 => endpoint.into_iter().next().map(OneOrMany::One),
-                        _ => Some(OneOrMany::Many(endpoint)),
-                    };
-                    let type_ = match r#type.len() {
-                        1 => r#type
-                            .into_iter()
-                            .next()
-                            .map(OneOrMany::One)
-                            .ok_or(anyhow!("Missing service type"))?,
-
-                        _ => OneOrMany::Many(r#type),
-                    };
-                    let service = Service {
-                        id: id.to_string(),
-                        type_,
-                        service_endpoint,
-                        property_set: None,
-                    };
-                    let op = DIDDocumentOperation::SetService(service);
-                    (did, method, op)
-                }
-                DIDUpdateCmd::RemoveService(id_and_did) => {
-                    let (method, did, id) = id_and_did
-                        .parse()
-                        .context("Parse id/DID for set-verification-method subcommand")?;
-                    let op = DIDDocumentOperation::RemoveService(id);
-                    (did, method, op)
-                }
-            };
-            let tx = method
-                .update(DIDUpdate {
-                    did,
-                    update_key,
-                    new_update_key,
-                    operation,
-                    options,
-                })
-                .context("DID Update failed")?;
-            let stdout_writer = BufWriter::new(stdout());
-            serde_json::to_writer_pretty(stdout_writer, &tx).unwrap();
-            println!();
-        }
-
-        DIDKitCmd::DIDRecover {
-            did,
-            new_verification_key,
-            new_update_key,
-            new_recovery_key,
-            recovery_key,
-            options,
-        } => {
-            let method = DID_METHODS
-                .get_method(&did)
-                .map_err(|e| anyhow!("Unable to get DID method: {}", e))?;
-            let new_verification_key = read_jwk_file_opt(&new_verification_key)
-                .context("Read new signing key for DID recovery")?;
-            let new_update_key = read_jwk_file_opt(&new_update_key)
-                .context("Read new update key for DID recovery")?;
-            let new_recovery_key = read_jwk_file_opt(&new_recovery_key)
-                .context("Read new recovery key for DID recovery")?;
-            let recovery_key =
-                read_jwk_file_opt(&recovery_key).context("Read recovery key for DID recovery")?;
-            let options =
-                metadata_properties_to_value(options).context("Parse options for DID recovery")?;
-            let options = serde_json::from_value(options).context("Unable to convert options")?;
-
-            let tx = method
-                .recover(DIDRecover {
-                    did: did.clone(),
-                    recovery_key,
-                    new_recovery_key,
-                    new_update_key,
-                    new_verification_key,
-                    options,
-                })
-                .context("DID Recover failed")?;
-            let stdout_writer = BufWriter::new(stdout());
-            serde_json::to_writer_pretty(stdout_writer, &tx).unwrap();
-            println!();
-        }
-
-        DIDKitCmd::DIDDeactivate { did, key, options } => {
-            let method = DID_METHODS
-                .get_method(&did)
-                .map_err(|e| anyhow!("Unable to get DID method: {}", e))?;
-            let key = read_jwk_file_opt(&key).context("Read key for DID deactivation")?;
-            let options = metadata_properties_to_value(options)
-                .context("Parse options for DID deactivation")?;
-            let options = serde_json::from_value(options).context("Unable to convert options")?;
-
-            let tx = method
-                .deactivate(DIDDeactivate {
-                    did: did.clone(),
-                    key,
-                    options,
-                })
-                .context("DID deactivation failed")?;
-            let stdout_writer = BufWriter::new(stdout());
-            serde_json::to_writer_pretty(stdout_writer, &tx).unwrap();
-            println!();
-        }
-
-        DIDKitCmd::DIDResolve {
-            did,
-            with_metadata,
-            input_metadata,
-            resolver_options,
-        } => {
-            let resolver = resolver_options.to_resolver();
-            let res_input_meta_value = metadata_properties_to_value(input_metadata).unwrap();
-            let res_input_meta: ResolutionInputMetadata =
-                serde_json::from_value(res_input_meta_value).unwrap();
-            if with_metadata {
-                let (res_meta, doc_opt, doc_meta_opt) =
-                    resolver.resolve(&did, &res_input_meta).await;
-                let error = res_meta.error.is_some();
-                let result = ResolutionResult {
-                    did_document: doc_opt,
-                    did_resolution_metadata: Some(res_meta),
-                    did_document_metadata: doc_meta_opt,
-                    ..Default::default()
-                };
-                let stdout_writer = BufWriter::new(stdout());
-                serde_json::to_writer_pretty(stdout_writer, &result).unwrap();
-                if error {
-                    std::process::exit(2);
-                }
-            } else {
-                let (res_meta, doc_data, _doc_meta_opt) =
-                    resolver.resolve_representation(&did, &res_input_meta).await;
-                if let Some(err) = res_meta.error {
-                    eprintln!("{err}");
-                    std::process::exit(2);
-                }
-                stdout().write_all(&doc_data).unwrap();
-            }
-        }
-
-        DIDKitCmd::DIDDereference {
-            did_url,
-            with_metadata,
-            input_metadata,
-            resolver_options,
-        } => {
-            let resolver = resolver_options.to_resolver();
-            let deref_input_meta_value = metadata_properties_to_value(input_metadata).unwrap();
-            let deref_input_meta: DereferencingInputMetadata =
-                serde_json::from_value(deref_input_meta_value).unwrap();
-            let stdout_writer = BufWriter::new(stdout());
-            let (deref_meta, content, content_meta) =
-                dereference(&resolver, &did_url, &deref_input_meta).await;
-            if with_metadata {
-                let result = json!([deref_meta, content, content_meta]);
-                serde_json::to_writer_pretty(stdout_writer, &result).unwrap();
-                if deref_meta.error.is_some() {
-                    std::process::exit(2);
-                }
-            } else {
-                if let Some(err) = deref_meta.error {
-                    eprintln!("{err}");
-                    std::process::exit(2);
-                }
-                let content_vec = content.into_vec().unwrap();
-                stdout().write_all(&content_vec).unwrap();
-            }
-        }
-
-        DIDKitCmd::DIDAuth {
-            key,
-            holder,
-            proof_options,
-            resolver_options,
-        } => {
-            let resolver = resolver_options.to_resolver();
-            let mut context_loader = ssi::jsonld::ContextLoader::default();
-            let mut presentation = VerifiablePresentation {
-                holder: Some(ssi::vc::URI::String(holder)),
-                ..Default::default()
-            };
-            let proof_format = proof_options.proof_format.clone();
-            let jwk_opt: Option<JWK> = key.get_jwk_opt();
-            let ssh_agent_sock_opt = if key.ssh_agent {
-                ssh_agent_sock = get_ssh_agent_sock();
-                Some(&ssh_agent_sock[..])
-            } else {
-                None
-            };
-            let options = LinkedDataProofOptions::from(proof_options);
-            match proof_format {
-                ProofFormat::JWT => {
-                    if ssh_agent_sock_opt.is_some() {
-                        todo!("ssh-agent for JWT not implemented");
-                    }
-                    let jwt = presentation
-                        .generate_jwt(jwk_opt.as_ref(), &options, &resolver)
-                        .await
-                        .unwrap();
-                    print!("{jwt}");
-                }
-                ProofFormat::LDP => {
-                    let proof = generate_proof(
-                        &presentation,
-                        jwk_opt.as_ref(),
-                        options,
-                        &resolver,
-                        &mut context_loader,
-                        ssh_agent_sock_opt,
-                    )
-                    .await
-                    .unwrap();
-                    presentation.add_proof(proof);
-                    let stdout_writer = BufWriter::new(stdout());
-                    serde_json::to_writer(stdout_writer, &presentation).unwrap();
-                }
-                _ => {
-                    panic!("Unexpected proof format: {:?}", proof_format);
-                }
-            }
-        }
+        DIDKitCmd::Did(args) => did::cli(args).await.unwrap(),
+        DIDKitCmd::DIDCreate(args) => did::create(args).await.unwrap(),
+        DIDKitCmd::DIDFromTx => did::from_tx().await.unwrap(),
+        DIDKitCmd::DIDSubmitTx => did::submit_tx().await.unwrap(),
+        DIDKitCmd::DIDUpdate(args) => did::update(args).await.unwrap(),
+        DIDKitCmd::DIDRecover(args) => did::recover(args).await.unwrap(),
+        DIDKitCmd::DIDDeactivate(args) => did::deactivate(args).await.unwrap(),
+        DIDKitCmd::DIDResolve(args) => did::resolve(args).await.unwrap(),
+        DIDKitCmd::DIDDereference(args) => did::dereference(args).await.unwrap(),
+        DIDKitCmd::DIDAuth(args) => did::authenticate(args).await.unwrap(),
     }
     Ok(())
 }
