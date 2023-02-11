@@ -1,33 +1,20 @@
-use std::{
-    convert::TryFrom,
-    fs::File,
-    io::{stdin, stdout, BufReader, Read, Write},
-    ops::Deref,
-    path::PathBuf,
-    str::FromStr,
-};
+use std::{convert::TryFrom, fs::File, io::BufReader, ops::Deref, path::PathBuf, str::FromStr};
 
 use anyhow::{anyhow, bail, Context, Error as AError, Result as AResult};
 use chrono::prelude::*;
 use clap::{ArgGroup, Args, Parser, Subcommand};
 use credential::{CredentialIssueArgs, CredentialVerifyArgs};
-use didkit::ssi::{
-    jsonld::{self, parse_ld_context, StaticLoader},
-    ldp::ProofSuiteType,
-    rdf,
-};
+use didkit::ssi::ldp::ProofSuiteType;
 use didkit::{
-    ssi::{self, did::ServiceEndpoint},
-    DIDMethod, Error, LinkedDataProofOptions, Metadata, ProofFormat, VerificationRelationship,
-    DIDURL, DID_METHODS, JWK, URI,
+    ssi::did::ServiceEndpoint, DIDMethod, Error, LinkedDataProofOptions, Metadata, ProofFormat,
+    VerificationRelationship, DIDURL, DID_METHODS, JWK, URI,
 };
-use iref::IriBuf;
-use json_ld::JsonLdProcessor;
 use serde::{Deserialize, Serialize};
-use serde_json::{json, Value};
+use serde_json::Value;
 
 mod credential;
 mod did;
+mod jsonld;
 mod key;
 mod opts;
 mod presentation;
@@ -92,18 +79,11 @@ pub enum DIDKitCmd {
     /// Subcommand for verifiable presentation operations
     #[clap(subcommand)]
     Presentation(presentation::PresentationCmd),
-    /// Convert JSON-LD to URDNA2015-canonicalized RDF N-Quads
-    ToRdfURDNA2015 {
-        /// Base IRI
-        #[clap(short = 'b', long)]
-        base: Option<String>,
-        /// IRI for expandContext option
-        #[clap(short = 'c', long)]
-        expand_context: Option<String>,
-        /// Additional values for JSON-LD @context property.
-        #[clap(short = 'C', long)]
-        more_context_json: Option<String>,
-    },
+    /// Subcommand for JSON-LD operations
+    #[clap(subcommand)]
+    Jsonld(jsonld::JsonldCmd),
+    #[clap(hide = true)]
+    ToRdfURDNA2015(jsonld::JsonldToRDFURDNAArgs),
     /*
     /// Revoke Credential
     VCRevokeCredential {},
@@ -533,68 +513,14 @@ async fn main() -> AResult<()> {
         DIDKitCmd::KeyToDID(args) => key::to_did(args).await.unwrap(),
         DIDKitCmd::KeyToVerificationMethod(args) => key::to_vm(args).await.unwrap(),
         DIDKitCmd::SshPkToJwk(args) => key::from_ssh(args).await.unwrap(),
-
         DIDKitCmd::VCIssueCredential(args) => credential::issue(args).await.unwrap(),
         DIDKitCmd::VCVerifyCredential(args) => credential::verify(args).await.unwrap(),
         DIDKitCmd::Credential(cmd) => credential::cli(cmd).await.unwrap(),
-
         DIDKitCmd::VCIssuePresentation(args) => presentation::issue(args).await.unwrap(),
         DIDKitCmd::VCVerifyPresentation(args) => presentation::verify(args).await.unwrap(),
         DIDKitCmd::Presentation(cmd) => presentation::cli(cmd).await.unwrap(),
-
-        DIDKitCmd::ToRdfURDNA2015 {
-            base,
-            expand_context,
-            more_context_json,
-        } => {
-            let mut loader = StaticLoader;
-            let expand_context = if let Some(m_c) = more_context_json {
-                if let Some(e_c) = expand_context {
-                    Some(
-                        serde_json::to_string(&json!([
-                            e_c,
-                            serde_json::from_str::<serde_json::Value>(&m_c).unwrap()
-                        ]))
-                        .unwrap(),
-                    )
-                } else {
-                    Some(m_c)
-                }
-            } else {
-                expand_context
-            };
-            let mut reader = BufReader::new(stdin());
-            let mut json = String::new();
-            reader.read_to_string(&mut json).unwrap();
-            let json = jsonld::syntax::to_value_with(
-                serde_json::from_str::<serde_json::Value>(&json).unwrap(),
-                Default::default,
-            )
-            .unwrap();
-            let expand_context = expand_context.map(|c| parse_ld_context(&c).unwrap());
-            // Implementation of `ssi::jsonld::json_to_dataset`
-            let options = jsonld::Options {
-                base: base.map(|b| IriBuf::from_string(b).unwrap()),
-                expand_context,
-                ..Default::default()
-            };
-            let doc = jsonld::RemoteDocument::new(None, None, json);
-            let mut generator = rdf_types::generator::Blank::new_with_prefix("b".to_string())
-                .with_default_metadata();
-            let mut to_rdf = doc
-                .to_rdf_using(&mut generator, &mut loader, options)
-                .await
-                .map_err(Box::new)
-                .unwrap();
-            let dataset: rdf::DataSet = to_rdf
-                .cloned_quads()
-                .map(|q| q.map_predicate(|p| p.into_iri().unwrap()))
-                .collect();
-            let dataset_normalized = ssi::urdna2015::normalize(dataset.quads().map(Into::into));
-            let normalized = dataset_normalized.into_nquads();
-            stdout().write_all(normalized.as_bytes()).unwrap();
-        }
-
+        DIDKitCmd::Jsonld(cmd) => jsonld::cli(cmd).await.unwrap(),
+        DIDKitCmd::ToRdfURDNA2015(args) => jsonld::to_rdfurdna(args).await.unwrap(),
         DIDKitCmd::Did(args) => did::cli(args).await.unwrap(),
         DIDKitCmd::DIDCreate(args) => did::create(args).await.unwrap(),
         DIDKitCmd::DIDFromTx => did::from_tx().await.unwrap(),
