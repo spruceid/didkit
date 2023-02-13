@@ -5,7 +5,6 @@ authors = ["Spruce Systems, Inc."]
 edition = "2018"
 description = "Library for Verifiable Credentials and Decentralized Identifiers."
 license = "Apache-2.0"
-license-file = "LICENSE"
 homepage = "https://spruceid.dev/docs/didkit/"
 repository = "https://github.com/spruceid/didkit/"
 documentation = "https://docs.rs/didkit/"
@@ -21,10 +20,10 @@ include = [
 [features]
 default = ["w3c", "ed25519", "rsa", "ripemd-160", "eip", "tezos"]
 
-w3c = ["ssi/w3c"]
-secp256k1 = ["ssi/secp256k1"]
-secp256r1 = ["ssi/secp256r1"]
-secp384r1 = ["ssi/secp384r1"]
+w3c = ["ssi/w3c", "secp256r1", "secp256k1"]
+secp256k1 = ["ssi/secp256k1", "did-method-key/secp256k1"]
+secp256r1 = ["ssi/secp256r1", "did-method-key/secp256r1"]
+secp384r1 = ["ssi/secp384r1", "did-method-key/secp384r1"]
 ed25519 = ["ssi/ed25519"]
 rsa = ["ssi/rsa"]
 ripemd-160 = ["ssi/ripemd-160"]

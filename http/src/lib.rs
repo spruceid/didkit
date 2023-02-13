@@ -11,7 +11,7 @@ use didkit::{
     DereferencingInputMetadata, JWTOrLDPOptions, LinkedDataProofOptions, ProofFormat,
     ResolutionResult, VerifiableCredential, VerifiablePresentation, VerificationResult, JWK,
 };
-use didkit_cli::opts::ResolverOptions;
+use opts::ResolverOptions;
 use ssi::did_resolve::{
     ERROR_INVALID_DID, ERROR_NOT_FOUND, ERROR_REPRESENTATION_NOT_SUPPORTED, TYPE_DID_LD_JSON,
     TYPE_DID_RESOLUTION,
@@ -19,6 +19,7 @@ use ssi::did_resolve::{
 
 pub mod accept;
 pub mod error;
+pub mod opts;
 use accept::HttpAccept;
 pub use error::Error;
 
