@@ -1,8 +1,10 @@
+use std::collections::HashMap;
 use std::ffi::CStr;
 use std::ffi::CString;
-use std::os::raw::c_char;
+use std::os::raw::{c_char, c_uint};
 use std::ptr;
 
+use serde::{Deserialize, Serialize};
 use ssi::ldp::{ProofPreparation, ProofSuite};
 use ssi::vc::LinkedDataProofOptions;
 
@@ -92,7 +94,7 @@ fn didkit_key_to_did(
     let key_json = unsafe { CStr::from_ptr(key_json_ptr) }.to_str()?;
     let key: JWK = serde_json::from_str(key_json)?;
     let did = DID_METHODS
-        .generate(&Source::KeyAndPattern(&key, &method_pattern))
+        .generate(&Source::KeyAndPattern(&key, method_pattern))
         .ok_or(Error::UnableToGenerateDID)?;
     Ok(CString::new(did)?.into_raw())
 }
@@ -110,7 +112,7 @@ fn didkit_key_to_verification_method(
     let key_json = unsafe { CStr::from_ptr(key_json_ptr) }.to_str()?;
     let key: JWK = serde_json::from_str(key_json)?;
     let did_method = DID_METHODS
-        .get(&method_pattern)
+        .get(method_pattern)
         .ok_or(Error::UnknownDIDMethod)?;
     let did = did_method
         .generate(&Source::Key(&key))
@@ -133,9 +135,10 @@ fn didkit_vc_issue_credential(
     credential_json_ptr: *const c_char,
     proof_options_json_ptr: *const c_char,
     key_json_ptr: *const c_char,
+    context_loader_ptr: *const c_char,
 ) -> Result<*const c_char, Error> {
     let resolver = DID_METHODS.to_resolver();
-    let mut context_loader = ssi::jsonld::ContextLoader::default();
+    let mut context_loader = load_context(context_loader_ptr)?;
     let credential_json = unsafe { CStr::from_ptr(credential_json_ptr) }.to_str()?;
     let proof_options_json = unsafe { CStr::from_ptr(proof_options_json_ptr) }.to_str()?;
     let key_json = unsafe { CStr::from_ptr(key_json_ptr) }.to_str()?;
@@ -175,6 +178,7 @@ fn didkit_vc_issue_credential(
 fn didkit_vc_verify_credential(
     credential_ptr: *const c_char,
     proof_options_json_ptr: *const c_char,
+    context_loader_ptr: *const c_char,
 ) -> Result<*const c_char, Error> {
     let vc_str = unsafe { CStr::from_ptr(credential_ptr) }.to_str()?;
     let proof_options_json = unsafe { CStr::from_ptr(proof_options_json_ptr) }.to_str()?;
@@ -182,10 +186,10 @@ fn didkit_vc_verify_credential(
     let proof_format = options.proof_format.unwrap_or_default();
     let rt = runtime::get()?;
     let resolver = DID_METHODS.to_resolver();
-    let mut context_loader = ssi::jsonld::ContextLoader::default();
+    let mut context_loader = load_context(context_loader_ptr)?;
     let result = match proof_format {
         ProofFormat::JWT => rt.block_on(VerifiableCredential::verify_jwt(
-            &vc_str,
+            vc_str,
             Some(options.ldp_options),
             resolver,
             &mut context_loader,
@@ -208,9 +212,10 @@ fn didkit_vc_issue_presentation(
     presentation_json_ptr: *const c_char,
     proof_options_json_ptr: *const c_char,
     key_json_ptr: *const c_char,
+    context_loader_ptr: *const c_char,
 ) -> Result<*const c_char, Error> {
     let resolver = DID_METHODS.to_resolver();
-    let mut context_loader = ssi::jsonld::ContextLoader::default();
+    let mut context_loader = load_context(context_loader_ptr)?;
     let presentation_json = unsafe { CStr::from_ptr(presentation_json_ptr) }.to_str()?;
     let proof_options_json = unsafe { CStr::from_ptr(proof_options_json_ptr) }.to_str()?;
     let key_json = unsafe { CStr::from_ptr(key_json_ptr) }.to_str()?;
@@ -250,18 +255,19 @@ fn didkit_vc_issue_presentation(
 fn didkit_vc_verify_presentation(
     presentation_ptr: *const c_char,
     proof_options_json_ptr: *const c_char,
+    context_loader_ptr: *const c_char,
 ) -> Result<*const c_char, Error> {
     let vp_str = unsafe { CStr::from_ptr(presentation_ptr) }.to_str()?;
     let proof_options_json = unsafe { CStr::from_ptr(proof_options_json_ptr) }.to_str()?;
     // TODO
     let options: JWTOrLDPOptions = serde_json::from_str(proof_options_json)?;
     let proof_format = options.proof_format.unwrap_or_default();
-    let mut context_loader = ssi::jsonld::ContextLoader::default();
+    let mut context_loader = load_context(context_loader_ptr)?;
     let rt = runtime::get()?;
     let resolver = DID_METHODS.to_resolver();
     let result = match proof_format {
         ProofFormat::JWT => rt.block_on(VerifiablePresentation::verify_jwt(
-            &vp_str,
+            vp_str,
             Some(options.ldp_options),
             resolver,
             &mut context_loader,
@@ -287,14 +293,17 @@ fn didkit_did_auth(
     holder_ptr: *const c_char,
     proof_options_json_ptr: *const c_char,
     key_json_ptr: *const c_char,
+    context_loader_ptr: *const c_char,
 ) -> Result<*const c_char, Error> {
     let resolver = DID_METHODS.to_resolver();
-    let mut context_loader = ssi::jsonld::ContextLoader::default();
+    let mut context_loader = load_context(context_loader_ptr)?;
     let holder = unsafe { CStr::from_ptr(holder_ptr) }.to_str()?;
     let proof_options_json = unsafe { CStr::from_ptr(proof_options_json_ptr) }.to_str()?;
     let key_json = unsafe { CStr::from_ptr(key_json_ptr) }.to_str()?;
-    let mut presentation = VerifiablePresentation::default();
-    presentation.holder = Some(ssi::vc::URI::String(holder.to_string()));
+    let mut presentation = VerifiablePresentation {
+        holder: Some(ssi::vc::URI::String(holder.to_string())),
+        ..VerifiablePresentation::default()
+    };
     let key: JWK = serde_json::from_str(key_json)?;
     let options: JWTOrLDPOptions = serde_json::from_str(proof_options_json)?;
     let proof_format = options.proof_format.unwrap_or_default();
@@ -371,21 +380,83 @@ fn didkit_dereference_did_url(
     Ok(CString::new(serde_json::to_string(&result)?)?.into_raw())
 }
 
+#[derive(Serialize, Deserialize)]
+struct Context {
+    url: String,
+    json: String,
+}
+
+impl Context {
+    fn into_pair(self) -> (String, String) {
+        (self.url, self.json)
+    }
+}
+
+#[didkit_macros::c_export(wrap = "ccchar_or_error")]
+fn didkit_create_context(url: *const c_char, json: *const c_char) -> Result<*const c_char, Error> {
+    let url = unsafe { CStr::from_ptr(url) }.to_str()?.to_string();
+    let json = unsafe { CStr::from_ptr(json) }.to_str()?.to_string();
+    let context = Context { url, json };
+    let json = serde_json::to_string(&context)?;
+    let encoded = base64::encode(json);
+    Ok(CString::new(encoded)?.into_raw())
+}
+
+#[didkit_macros::c_export(wrap = "ccchar_or_error")]
+fn didkit_create_context_map(
+    contexts_ptr: *const *const c_char,
+    size: c_uint,
+) -> Result<*const c_char, Error> {
+    let mut contexts: Vec<String> = Vec::with_capacity(size as usize);
+    for i in 0..size as isize {
+        let context_ptr = unsafe { contexts_ptr.offset(i) };
+        let context = unsafe { CStr::from_ptr(context_ptr.read()) }
+            .to_str()?
+            .to_string();
+        contexts.push(context);
+    }
+    let json = serde_json::to_string(&contexts)?;
+    let encoded = base64::encode(json);
+    Ok(CString::new(encoded)?.into_raw())
+}
+
+fn load_context(context_loader_ptr: *const c_char) -> Result<ssi::jsonld::ContextLoader, Error> {
+    if !context_loader_ptr.is_null() {
+        let encoded = unsafe { CStr::from_ptr(context_loader_ptr) }.to_str()?;
+        let json = base64::decode(encoded)?;
+        let contexts: Vec<String> = serde_json::from_slice(&json)?;
+        let map: HashMap<String, String> = contexts
+            .into_iter()
+            .map(base64::decode)
+            .collect::<Result<Vec<Vec<u8>>, _>>()?
+            .into_iter()
+            .map(|e| serde_json::from_slice(e.as_slice()))
+            .collect::<Result<Vec<Context>, _>>()?
+            .into_iter()
+            .map(Context::into_pair)
+            .collect();
+        Ok(ssi::jsonld::ContextLoader::default().with_context_map_from(map)?)
+    } else {
+        Ok(ssi::jsonld::ContextLoader::default())
+    }
+}
+
 #[didkit_macros::c_export(wrap = "ccchar_or_error")]
 fn didkit_vc_prepare_issue_credential(
     credential_ptr: *const c_char,
     linked_data_proof_options_ptr: *const c_char,
     public_key_ptr: *const c_char,
+    context_loader_ptr: *const c_char,
 ) -> Result<*const c_char, Error> {
     let credential = unsafe { CStr::from_ptr(credential_ptr) }.to_str()?;
     let linked_data_proof_options =
         unsafe { CStr::from_ptr(linked_data_proof_options_ptr) }.to_str()?;
     let public_key = unsafe { CStr::from_ptr(public_key_ptr) }.to_str()?;
-    let public_key: JWK = serde_json::from_str(&public_key)?;
-    let credential = VerifiableCredential::from_json_unsigned(&credential)?;
-    let options: LinkedDataProofOptions = serde_json::from_str(&linked_data_proof_options)?;
+    let public_key: JWK = serde_json::from_str(public_key)?;
+    let credential = VerifiableCredential::from_json_unsigned(credential)?;
+    let options: LinkedDataProofOptions = serde_json::from_str(linked_data_proof_options)?;
     let resolver = DID_METHODS.to_resolver();
-    let mut context_loader = ssi::jsonld::ContextLoader::default();
+    let mut context_loader = load_context(context_loader_ptr)?;
     let rt = runtime::get()?;
     let preparation = rt.block_on(credential.prepare_proof(
         &public_key,
@@ -405,10 +476,10 @@ fn didkit_vc_complete_issue_credential(
     let credential = unsafe { CStr::from_ptr(credential_ptr) }.to_str()?;
     let preparation = unsafe { CStr::from_ptr(preparation_ptr) }.to_str()?;
     let signature = unsafe { CStr::from_ptr(signature_ptr) }.to_str()?;
-    let mut credential = VerifiableCredential::from_json_unsigned(&credential)?;
-    let preparation: ProofPreparation = serde_json::from_str(&preparation)?;
+    let mut credential = VerifiableCredential::from_json_unsigned(credential)?;
+    let preparation: ProofPreparation = serde_json::from_str(preparation)?;
     let rt = runtime::get()?;
-    let proof = rt.block_on(preparation.proof.type_.complete(&preparation, &signature))?;
+    let proof = rt.block_on(preparation.proof.type_.complete(&preparation, signature))?;
     credential.add_proof(proof);
     Ok(CString::new(serde_json::to_string(&credential)?)?.into_raw())
 }
@@ -418,16 +489,17 @@ fn didkit_vc_prepare_issue_presentation(
     presentation_ptr: *const c_char,
     linked_data_proof_options_ptr: *const c_char,
     public_key_ptr: *const c_char,
+    context_loader_ptr: *const c_char,
 ) -> Result<*const c_char, Error> {
     let presentation = unsafe { CStr::from_ptr(presentation_ptr) }.to_str()?;
     let linked_data_proof_options =
         unsafe { CStr::from_ptr(linked_data_proof_options_ptr) }.to_str()?;
     let public_key = unsafe { CStr::from_ptr(public_key_ptr) }.to_str()?;
-    let public_key: JWK = serde_json::from_str(&public_key)?;
-    let presentation = VerifiablePresentation::from_json_unsigned(&presentation)?;
-    let options: LinkedDataProofOptions = serde_json::from_str(&linked_data_proof_options)?;
+    let public_key: JWK = serde_json::from_str(public_key)?;
+    let presentation = VerifiablePresentation::from_json_unsigned(presentation)?;
+    let options: LinkedDataProofOptions = serde_json::from_str(linked_data_proof_options)?;
     let resolver = DID_METHODS.to_resolver();
-    let mut context_loader = ssi::jsonld::ContextLoader::default();
+    let mut context_loader = load_context(context_loader_ptr)?;
     let rt = runtime::get()?;
     let preparation = rt.block_on(presentation.prepare_proof(
         &public_key,
@@ -447,10 +519,10 @@ fn didkit_vc_complete_issue_presentation(
     let presentation = unsafe { CStr::from_ptr(presentation_ptr) }.to_str()?;
     let preparation = unsafe { CStr::from_ptr(preparation_ptr) }.to_str()?;
     let signature = unsafe { CStr::from_ptr(signature_ptr) }.to_str()?;
-    let mut presentation = VerifiablePresentation::from_json_unsigned(&presentation)?;
-    let preparation: ProofPreparation = serde_json::from_str(&preparation)?;
+    let mut presentation = VerifiablePresentation::from_json_unsigned(presentation)?;
+    let preparation: ProofPreparation = serde_json::from_str(preparation)?;
     let rt = runtime::get()?;
-    let proof = rt.block_on(preparation.proof.type_.complete(&preparation, &signature))?;
+    let proof = rt.block_on(preparation.proof.type_.complete(&preparation, signature))?;
     presentation.add_proof(proof);
     Ok(CString::new(serde_json::to_string(&presentation)?)?.into_raw())
 }

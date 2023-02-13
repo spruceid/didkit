@@ -40,70 +40,190 @@ final generate_secp384r1_key =
         'didkit_generate_secp384r1_key');
 
 final key_to_did = lib.lookupFunction<
-    Pointer<Utf8> Function(Pointer<Utf8>, Pointer<Utf8>),
-    Pointer<Utf8> Function(Pointer<Utf8>, Pointer<Utf8>)>('didkit_key_to_did');
+    Pointer<Utf8> Function(
+  Pointer<Utf8>,
+  Pointer<Utf8>,
+),
+    Pointer<Utf8> Function(
+  Pointer<Utf8>,
+  Pointer<Utf8>,
+)>('didkit_key_to_did');
 
 final key_to_verification_method = lib.lookupFunction<
-    Pointer<Utf8> Function(Pointer<Utf8>, Pointer<Utf8>),
     Pointer<Utf8> Function(
-        Pointer<Utf8>, Pointer<Utf8>)>('didkit_key_to_verification_method');
+  Pointer<Utf8>,
+  Pointer<Utf8>,
+),
+    Pointer<Utf8> Function(
+  Pointer<Utf8>,
+  Pointer<Utf8>,
+)>('didkit_key_to_verification_method');
 
 final issue_credential = lib.lookupFunction<
-    Pointer<Utf8> Function(Pointer<Utf8>, Pointer<Utf8>, Pointer<Utf8>),
-    Pointer<Utf8> Function(Pointer<Utf8>, Pointer<Utf8>,
-        Pointer<Utf8>)>('didkit_vc_issue_credential');
+    Pointer<Utf8> Function(
+  Pointer<Utf8>,
+  Pointer<Utf8>,
+  Pointer<Utf8>,
+  Pointer<Utf8>,
+),
+    Pointer<Utf8> Function(
+  Pointer<Utf8>,
+  Pointer<Utf8>,
+  Pointer<Utf8>,
+  Pointer<Utf8>,
+)>('didkit_vc_issue_credential');
 
 final verify_credential = lib.lookupFunction<
-    Pointer<Utf8> Function(Pointer<Utf8>, Pointer<Utf8>),
     Pointer<Utf8> Function(
-        Pointer<Utf8>, Pointer<Utf8>)>('didkit_vc_verify_credential');
+  Pointer<Utf8>,
+  Pointer<Utf8>,
+  Pointer<Utf8>,
+),
+    Pointer<Utf8> Function(
+  Pointer<Utf8>,
+  Pointer<Utf8>,
+  Pointer<Utf8>,
+)>('didkit_vc_verify_credential');
 
 final issue_presentation = lib.lookupFunction<
-    Pointer<Utf8> Function(Pointer<Utf8>, Pointer<Utf8>, Pointer<Utf8>),
-    Pointer<Utf8> Function(Pointer<Utf8>, Pointer<Utf8>,
-        Pointer<Utf8>)>('didkit_vc_issue_presentation');
+    Pointer<Utf8> Function(
+  Pointer<Utf8>,
+  Pointer<Utf8>,
+  Pointer<Utf8>,
+  Pointer<Utf8>,
+),
+    Pointer<Utf8> Function(
+  Pointer<Utf8>,
+  Pointer<Utf8>,
+  Pointer<Utf8>,
+  Pointer<Utf8>,
+)>('didkit_vc_issue_presentation');
 
 final verify_presentation = lib.lookupFunction<
-    Pointer<Utf8> Function(Pointer<Utf8>, Pointer<Utf8>),
     Pointer<Utf8> Function(
-        Pointer<Utf8>, Pointer<Utf8>)>('didkit_vc_verify_presentation');
+  Pointer<Utf8>,
+  Pointer<Utf8>,
+  Pointer<Utf8>,
+),
+    Pointer<Utf8> Function(
+  Pointer<Utf8>,
+  Pointer<Utf8>,
+  Pointer<Utf8>,
+)>('didkit_vc_verify_presentation');
 
 final resolve_did = lib.lookupFunction<
-    Pointer<Utf8> Function(Pointer<Utf8>, Pointer<Utf8>),
-    Pointer<Utf8> Function(Pointer<Utf8>, Pointer<Utf8>)>('didkit_resolve_did');
+    Pointer<Utf8> Function(
+  Pointer<Utf8>,
+  Pointer<Utf8>,
+),
+    Pointer<Utf8> Function(
+  Pointer<Utf8>,
+  Pointer<Utf8>,
+)>('didkit_resolve_did');
 
 final dereference_did_url = lib.lookupFunction<
-    Pointer<Utf8> Function(Pointer<Utf8>, Pointer<Utf8>),
     Pointer<Utf8> Function(
-        Pointer<Utf8>, Pointer<Utf8>)>('didkit_dereference_did_url');
+  Pointer<Utf8>,
+  Pointer<Utf8>,
+),
+    Pointer<Utf8> Function(
+  Pointer<Utf8>,
+  Pointer<Utf8>,
+)>('didkit_dereference_did_url');
 
 final did_auth = lib.lookupFunction<
-    Pointer<Utf8> Function(Pointer<Utf8>, Pointer<Utf8>, Pointer<Utf8>),
     Pointer<Utf8> Function(
-        Pointer<Utf8>, Pointer<Utf8>, Pointer<Utf8>)>('didkit_did_auth');
+  Pointer<Utf8>,
+  Pointer<Utf8>,
+  Pointer<Utf8>,
+  Pointer<Utf8>,
+),
+    Pointer<Utf8> Function(
+  Pointer<Utf8>,
+  Pointer<Utf8>,
+  Pointer<Utf8>,
+  Pointer<Utf8>,
+)>('didkit_did_auth');
+
+final create_context = lib.lookupFunction<
+    Pointer<Utf8> Function(
+  Pointer<Utf8>,
+  Pointer<Utf8>,
+),
+    Pointer<Utf8> Function(
+  Pointer<Utf8>,
+  Pointer<Utf8>,
+)>('didkit_create_context');
+
+final create_context_map = lib.lookupFunction<
+    Pointer<Utf8> Function(
+  Pointer<Pointer<Utf8>>,
+  Uint32,
+),
+    Pointer<Utf8> Function(
+  Pointer<Pointer<Utf8>>,
+  int,
+)>('didkit_create_context_map');
 
 final prepare_issue_credential = lib.lookupFunction<
-    Pointer<Utf8> Function(Pointer<Utf8>, Pointer<Utf8>, Pointer<Utf8>),
-    Pointer<Utf8> Function(Pointer<Utf8>, Pointer<Utf8>,
-        Pointer<Utf8>)>('didkit_vc_prepare_issue_credential');
+    Pointer<Utf8> Function(
+  Pointer<Utf8>,
+  Pointer<Utf8>,
+  Pointer<Utf8>,
+  Pointer<Utf8>,
+),
+    Pointer<Utf8> Function(
+  Pointer<Utf8>,
+  Pointer<Utf8>,
+  Pointer<Utf8>,
+  Pointer<Utf8>,
+)>('didkit_vc_prepare_issue_credential');
 
 final complete_issue_credential = lib.lookupFunction<
-    Pointer<Utf8> Function(Pointer<Utf8>, Pointer<Utf8>, Pointer<Utf8>),
-    Pointer<Utf8> Function(Pointer<Utf8>, Pointer<Utf8>,
-        Pointer<Utf8>)>('didkit_vc_complete_issue_credential');
+    Pointer<Utf8> Function(
+  Pointer<Utf8>,
+  Pointer<Utf8>,
+  Pointer<Utf8>,
+),
+    Pointer<Utf8> Function(
+  Pointer<Utf8>,
+  Pointer<Utf8>,
+  Pointer<Utf8>,
+)>('didkit_vc_complete_issue_credential');
 
 final prepare_issue_presentation = lib.lookupFunction<
-    Pointer<Utf8> Function(Pointer<Utf8>, Pointer<Utf8>, Pointer<Utf8>),
-    Pointer<Utf8> Function(Pointer<Utf8>, Pointer<Utf8>,
-        Pointer<Utf8>)>('didkit_vc_prepare_issue_presentation');
+    Pointer<Utf8> Function(
+  Pointer<Utf8>,
+  Pointer<Utf8>,
+  Pointer<Utf8>,
+  Pointer<Utf8>,
+),
+    Pointer<Utf8> Function(
+  Pointer<Utf8>,
+  Pointer<Utf8>,
+  Pointer<Utf8>,
+  Pointer<Utf8>,
+)>('didkit_vc_prepare_issue_presentation');
 
 final complete_issue_presentation = lib.lookupFunction<
-    Pointer<Utf8> Function(Pointer<Utf8>, Pointer<Utf8>, Pointer<Utf8>),
-    Pointer<Utf8> Function(Pointer<Utf8>, Pointer<Utf8>,
-        Pointer<Utf8>)>('didkit_vc_complete_issue_presentation');
+    Pointer<Utf8> Function(
+  Pointer<Utf8>,
+  Pointer<Utf8>,
+  Pointer<Utf8>,
+),
+    Pointer<Utf8> Function(
+  Pointer<Utf8>,
+  Pointer<Utf8>,
+  Pointer<Utf8>,
+)>('didkit_vc_complete_issue_presentation');
 
-final free_string = lib.lookupFunction<Void Function(Pointer<Utf8>),
-    void Function(Pointer<Utf8>)>('didkit_free_string');
+final free_string = lib.lookupFunction<
+    Void Function(
+  Pointer<Utf8>,
+),
+    void Function(
+  Pointer<Utf8>,
+)>('didkit_free_string');
 
 class DIDKitException implements Exception {
   int code;
@@ -190,18 +310,34 @@ class DIDKit {
     return vm_string;
   }
 
-  static String issueCredential(String credential, String options, String key) {
+  static String issueCredential(
+    String credential,
+    String options,
+    String key, [
+    String? contextMap,
+  ]) {
     final vc = issue_credential(
-        credential.toNativeUtf8(), options.toNativeUtf8(), key.toNativeUtf8());
+      credential.toNativeUtf8(),
+      options.toNativeUtf8(),
+      key.toNativeUtf8(),
+      contextMap?.toNativeUtf8() ?? nullptr,
+    );
     if (vc.address == nullptr.address) throw lastError();
     final vc_string = vc.toDartString();
     free_string(vc);
     return vc_string;
   }
 
-  static String verifyCredential(String credential, String options) {
-    final result =
-        verify_credential(credential.toNativeUtf8(), options.toNativeUtf8());
+  static String verifyCredential(
+    String credential,
+    String options, [
+    String? contextMap,
+  ]) {
+    final result = verify_credential(
+      credential.toNativeUtf8(),
+      options.toNativeUtf8(),
+      contextMap?.toNativeUtf8() ?? nullptr,
+    );
     if (result.address == nullptr.address) throw lastError();
     final result_string = result.toDartString();
     free_string(result);
@@ -209,18 +345,33 @@ class DIDKit {
   }
 
   static String issuePresentation(
-      String presentation, String options, String key) {
-    final vp = issue_presentation(presentation.toNativeUtf8(),
-        options.toNativeUtf8(), key.toNativeUtf8());
+    String presentation,
+    String options,
+    String key, [
+    String? contextMap,
+  ]) {
+    final vp = issue_presentation(
+      presentation.toNativeUtf8(),
+      options.toNativeUtf8(),
+      key.toNativeUtf8(),
+      contextMap?.toNativeUtf8() ?? nullptr,
+    );
     if (vp.address == nullptr.address) throw lastError();
     final vp_string = vp.toDartString();
     free_string(vp);
     return vp_string;
   }
 
-  static String verifyPresentation(String presentation, String options) {
+  static String verifyPresentation(
+    String presentation,
+    String options, [
+    String? contextMap,
+  ]) {
     final result = verify_presentation(
-        presentation.toNativeUtf8(), options.toNativeUtf8());
+      presentation.toNativeUtf8(),
+      options.toNativeUtf8(),
+      contextMap?.toNativeUtf8() ?? nullptr,
+    );
     if (result.address == nullptr.address) throw lastError();
     final result_string = result.toDartString();
     free_string(result);
@@ -245,24 +396,68 @@ class DIDKit {
     return result_string;
   }
 
-  static String DIDAuth(String did, String options, String key) {
+  static String DIDAuth(
+    String did,
+    String options,
+    String key, [
+    String? contextMap,
+  ]) {
     final vp = did_auth(
-        did.toNativeUtf8(), options.toNativeUtf8(), key.toNativeUtf8());
+      did.toNativeUtf8(),
+      options.toNativeUtf8(),
+      key.toNativeUtf8(),
+      contextMap?.toNativeUtf8() ?? nullptr,
+    );
     if (vp.address == nullptr.address) throw lastError();
     final vp_string = vp.toDartString();
     free_string(vp);
     return vp_string;
   }
 
+  static String createContext(
+    String url,
+    String json,
+  ) {
+    final context = create_context(
+      url.toNativeUtf8(),
+      json.toNativeUtf8(),
+    );
+    if (context.address == nullptr.address) throw lastError();
+    final context_string = context.toDartString();
+    free_string(context);
+    return context_string;
+  }
+
+  static String createContextMap(List<String> contexts) {
+    final size = contexts.length;
+    final array = malloc.allocate<Pointer<Utf8>>(size);
+
+    final native = contexts.map((c) => c.toNativeUtf8()).toList();
+
+    native.asMap().forEach((index, str) {
+      array[index] = str;
+    });
+
+    final context = create_context_map(array, size);
+    malloc.free(array);
+
+    if (context.address == nullptr.address) throw lastError();
+    final context_string = context.toDartString();
+    free_string(context);
+    return context_string;
+  }
+
   static String prepareIssueCredential(
     String credential,
     String options,
-    String key,
-  ) {
+    String key, [
+    String? contextMap,
+  ]) {
     final prep = prepare_issue_credential(
       credential.toNativeUtf8(),
       options.toNativeUtf8(),
       key.toNativeUtf8(),
+      contextMap?.toNativeUtf8() ?? nullptr,
     );
     if (prep.address == nullptr.address) throw lastError();
     final prep_string = prep.toDartString();
@@ -289,12 +484,14 @@ class DIDKit {
   static String prepareIssuePresentation(
     String presentation,
     String options,
-    String key,
-  ) {
+    String key, [
+    String? contextMap,
+  ]) {
     final prep = prepare_issue_presentation(
       presentation.toNativeUtf8(),
       options.toNativeUtf8(),
       key.toNativeUtf8(),
+      contextMap?.toNativeUtf8() ?? nullptr,
     );
     if (prep.address == nullptr.address) throw lastError();
     final prep_string = prep.toDartString();

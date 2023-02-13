@@ -101,7 +101,7 @@ impl std::fmt::Display for ProofFormat {
 impl FromStr for ProofFormat {
     type Err = String;
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        match &s[..] {
+        match s {
             "ldp" => Ok(Self::LDP),
             "jwt" => Ok(Self::JWT),
             _ => Err(format!("Unexpected proof format: {}", s))?,
@@ -158,7 +158,7 @@ pub async fn generate_proof(
         }
         None => {
             let jwk = key.expect("JWK, Key Path, or SSH Agent option is required.");
-            LinkedDataProofs::sign(document, &options, resolver, context_loader, &jwk, None).await?
+            LinkedDataProofs::sign(document, &options, resolver, context_loader, jwk, None).await?
         }
     };
 

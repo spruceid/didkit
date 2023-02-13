@@ -10,6 +10,7 @@ thread_local! {
 }
 
 #[derive(thiserror::Error, Debug)]
+#[non_exhaustive]
 pub enum Error {
     #[error(transparent)]
     VC(#[from] ssi::vc::Error),
@@ -25,6 +26,10 @@ pub enum Error {
     Borrow(#[from] std::cell::BorrowError),
     #[error(transparent)]
     IO(#[from] std::io::Error),
+    #[error(transparent)]
+    Base64(#[from] base64::DecodeError),
+    #[error(transparent)]
+    JSONLD(#[from] ssi::jsonld::Error),
     #[error("Unable to generate DID")]
     UnableToGenerateDID,
     #[error("Unknown DID method")]
@@ -33,10 +38,6 @@ pub enum Error {
     UnableToGetVerificationMethod,
     #[error("Unknown proof format: {0}")]
     UnknownProofFormat(String),
-
-    #[doc(hidden)]
-    #[error("")]
-    __Nonexhaustive,
 }
 
 impl Error {
@@ -112,7 +113,7 @@ mod tests {
         let presentation = "{}\0".as_ptr() as *const c_char;
         let options = "{}\0".as_ptr() as *const c_char;
         let key = "{}\0".as_ptr() as *const c_char;
-        let vp = didkit_vc_issue_presentation(presentation, options, key);
+        let vp = didkit_vc_issue_presentation(presentation, options, key, std::ptr::null());
         assert_eq!(vp, ptr::null());
         let msg = unsafe { CStr::from_ptr(didkit_error_message()) }
             .to_str()

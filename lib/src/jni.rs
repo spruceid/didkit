@@ -212,8 +212,10 @@ fn Java_com_spruceid_DIDKit_DIDAuth(
     let holder: String = env.get_string(holder_jstring).unwrap().into();
     let proof_options_json: String = env.get_string(proof_options_jstring).unwrap().into();
     let key_json: String = env.get_string(key_jstring).unwrap().into();
-    let mut presentation = VerifiablePresentation::default();
-    presentation.holder = Some(ssi::vc::URI::String(holder));
+    let mut presentation = VerifiablePresentation {
+        holder: Some(ssi::vc::URI::String(holder)),
+        ..VerifiablePresentation::default()
+    };
     let key: JWK = serde_json::from_str(&key_json)?;
     let options: JWTOrLDPOptions = serde_json::from_str(&proof_options_json)?;
     let proof_format = options.proof_format.unwrap_or_default();
