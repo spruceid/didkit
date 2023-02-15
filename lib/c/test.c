@@ -13,7 +13,7 @@ int main() {
   assert(strlen(version) > 0);
 
   // Trigger error
-  const char *vp = didkit_vc_issue_presentation("{}", "{}", "{}");
+  const char *vp = didkit_vc_issue_presentation("{}", "{}", "{}", NULL);
   assert(vp == NULL);
   const char *error_msg = didkit_error_message();
   assert(error_msg != NULL);
@@ -58,7 +58,8 @@ int main() {
            "  \"verificationMethod\": \"%s\""
            "}",
            verification_method);
-  const char *vc_ldp = didkit_vc_issue_credential(credential, vc_options, key);
+  const char *vc_ldp =
+      didkit_vc_issue_credential(credential, vc_options, key, NULL);
   if (vc_ldp == NULL)
     errx(1, "issue credential (LDP): %s", didkit_error_message());
 
@@ -70,13 +71,15 @@ int main() {
            "  \"verificationMethod\": \"%s\""
            "}",
            verification_method);
-  const char *vc_jwt = didkit_vc_issue_credential(credential, vc_options, key);
+  const char *vc_jwt =
+      didkit_vc_issue_credential(credential, vc_options, key, NULL);
   if (vc_jwt == NULL)
     errx(1, "issue credential (JWT): %s", didkit_error_message());
 
   // Verify Credential (LDP)
   const char *vc_verify_options = "{\"proofPurpose\": \"assertionMethod\"}";
-  const char *res = didkit_vc_verify_credential(vc_ldp, vc_verify_options);
+  const char *res =
+      didkit_vc_verify_credential(vc_ldp, vc_verify_options, NULL);
   if (res == NULL)
     errx(1, "verify credential (LDP): %s", didkit_error_message());
   if (strstr(res, "\"errors\":[]") == NULL)
@@ -85,7 +88,7 @@ int main() {
 
   // Verify Credential (JWT)
   vc_verify_options = "{\"proofFormat\": \"jwt\"}";
-  res = didkit_vc_verify_credential(vc_jwt, vc_verify_options);
+  res = didkit_vc_verify_credential(vc_jwt, vc_verify_options, NULL);
   if (res == NULL)
     errx(1, "verify credential (JWT): %s", didkit_error_message());
   if (strstr(res, "\"errors\":[]") == NULL)
@@ -110,13 +113,13 @@ int main() {
            "  \"verificationMethod\": \"%s\""
            "}",
            verification_method);
-  vp = didkit_vc_issue_presentation(presentation, vp_options, key);
+  vp = didkit_vc_issue_presentation(presentation, vp_options, key, NULL);
   if (vp == NULL)
     errx(1, "issue presentation: %s", didkit_error_message());
 
   // Verify Presentation
   const char *vp_verify_options = "{\"proofPurpose\": \"authentication\"}";
-  res = didkit_vc_verify_presentation(vp, vp_verify_options);
+  res = didkit_vc_verify_presentation(vp, vp_verify_options, NULL);
   if (res == NULL)
     errx(1, "verify presentation: %s", didkit_error_message());
   if (strstr(res, "\"errors\":[]") == NULL)
@@ -154,7 +157,7 @@ int main() {
            "  \"challenge\": \"%d\""
            "}",
            verification_method, challenge);
-  vp = didkit_did_auth(did, vp_options, key);
+  vp = didkit_did_auth(did, vp_options, key, NULL);
   if (vp == NULL)
     errx(1, "DIDAuth (LDP): %s", didkit_error_message());
 
@@ -168,7 +171,7 @@ int main() {
            "  \"challenge\": \"%d\""
            "}",
            verification_method, challenge_jwt);
-  const char *vp_jwt = didkit_did_auth(did, vp_options, key);
+  const char *vp_jwt = didkit_did_auth(did, vp_options, key, NULL);
   if (vp_jwt == NULL)
     errx(1, "DIDAuth (JWT): %s", didkit_error_message());
 
@@ -180,7 +183,7 @@ int main() {
            "  \"challenge\": \"%d\""
            "}",
            challenge);
-  res = didkit_vc_verify_presentation(vp, vp_options);
+  res = didkit_vc_verify_presentation(vp, vp_options, NULL);
   if (res == NULL)
     errx(1, "verify DIDAuth (LDP): %s", didkit_error_message());
   if (strstr(res, "\"errors\":[]") == NULL)
@@ -196,7 +199,7 @@ int main() {
            "  \"challenge\": \"%d\""
            "}",
            challenge_jwt);
-  res = didkit_vc_verify_presentation(vp_jwt, vp_options);
+  res = didkit_vc_verify_presentation(vp_jwt, vp_options, NULL);
   if (res == NULL)
     errx(1, "verify DIDAuth (JWT): %s", didkit_error_message());
   if (strstr(res, "\"errors\":[]") == NULL)
