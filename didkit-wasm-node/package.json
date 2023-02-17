@@ -1,0 +1,14 @@
+{
+  "name": "didkit-wasm",
+  "collaborators": [
+    "Spruce Systems, Inc."
+  ],
+  "version": "0.1.0",
+  "files": [
+    "didkit_wasm_bg.wasm",
+    "didkit_wasm.js",
+    "didkit_wasm.d.ts"
+  ],
+  "main": "didkit_wasm.js",
+  "types": "didkit_wasm.d.ts"
+}
