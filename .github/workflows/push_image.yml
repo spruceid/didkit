@@ -1,11 +1,11 @@
 name: push_image
 
 on:
-  push:
-    branches:
-      - main
-  release:
-      types: [published, created, edited]
+#  push:
+#    branches:
+#      - main
+#  release:
+#      types: [published, created, edited]
   workflow_dispatch:
 
 jobs:
