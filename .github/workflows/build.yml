@@ -35,7 +35,7 @@ jobs:
         submodules: true
 
     - name: Cache Cargo registry and build artifacts
-      uses: actions/cache@v3.0.11
+      uses: actions/cache@v3.2.6
       with:
         path: |
           ~/.cargo/registry
@@ -181,7 +181,7 @@ jobs:
         submodules: true
 
     - name: Cache Cargo registry and build artifacts
-      uses: actions/cache@v3.0.11
+      uses: actions/cache@v3.2.6
       with:
         path: |
           ~/.cargo/registry
@@ -214,7 +214,7 @@ jobs:
         submodules: true
 
     - name: Cache Cargo registry and build artifacts
-      uses: actions/cache@v3.0.11
+      uses: actions/cache@v3.2.6
       with:
         path: |
           ~/.cargo/registry
