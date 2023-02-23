@@ -37,14 +37,17 @@ $(TARGET)/release/$(LIB_NAME): $(RUST_SRC)
 	cargo build --lib --release
 	strip $@ || true
 
+$(TARGET)/debug/$(LIB_NAME): $(RUST_SRC)
+	cargo build --lib
+
 ## C
 
-$(TARGET)/test/c.stamp: $(TARGET)/cabi-test $(TARGET)/release/$(LIB_NAME) | $(TARGET)/test
-	LD_LIBRARY_PATH=$(TARGET)/release $(TARGET)/cabi-test
+$(TARGET)/test/c.stamp: $(TARGET)/cabi-test $(TARGET)/debug/$(LIB_NAME) | $(TARGET)/test
+	LD_LIBRARY_PATH=$(TARGET)/debug $(TARGET)/cabi-test
 	touch $@
 
-$(TARGET)/cabi-test: c/test.c $(TARGET)/release/$(LIB_NAME) $(TARGET)/didkit.h
-	$(CC) -I$(TARGET) -L$(TARGET)/release $< -ldl -ldidkit -o $@
+$(TARGET)/cabi-test: c/test.c $(TARGET)/debug/$(LIB_NAME) $(TARGET)/didkit.h
+	$(CC) -I$(TARGET) -L$(TARGET)/debug $< -ldl -ldidkit -o $@
 
 ## Java
 
@@ -54,9 +57,9 @@ $(TARGET)/test/java.stamp: \
 	$(TARGET)/jvm/com/spruceid/DIDKit.class \
 	$(TARGET)/jvm/com/spruceid/DIDKitException.class \
 	$(TARGET)/jvm/com/spruceid/DIDKitTest.class \
-	$(TARGET)/release/$(LIB_NAME) | $(TARGET)/test
+	$(TARGET)/debug/$(LIB_NAME) | $(TARGET)/test
 	java -Djava.class.path=$(TARGET)/jvm \
-		-Djava.library.path=$(TARGET)/release \
+		-Djava.library.path=$(TARGET)/debug \
 		com.spruceid.DIDKitTest
 	touch $@
 
@@ -144,13 +147,6 @@ WEB_SRC=web/Cargo.toml $(wildcard web/src/*.rs)
 .PHONY: install-wasm-pack
 install-wasm-pack:
 	 curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh
-
-$(TARGET)/test/wasm.stamp: $(WEB_SRC) | $(TARGET)/test
-	cd web && wasm-pack build --target web --out-dir pkg/web
-	echo "No test was run"
-	# TODO write automated tests for at least Node.js, and maybe for the bundled output format.
-	# The existing web app installation didn't really make sense as the (dependency) installation has changed.
-	touch $@
 
 ## Cleanup
 
