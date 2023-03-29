@@ -1,5 +1,4 @@
 use std::ffi::CString;
-use std::fmt;
 use std::os::raw::{c_char, c_int};
 use std::ptr;
 
@@ -10,6 +9,7 @@ thread_local! {
     pub static LAST_ERROR: RefCell<Option<(i32, CString)>> = RefCell::new(None);
 }
 
+#[non_exhaustive]
 #[derive(thiserror::Error, Debug)]
 pub enum Error {
     #[error(transparent)]
@@ -34,10 +34,6 @@ pub enum Error {
     UnableToGetVerificationMethod,
     #[error("Unknown proof format: {0}")]
     UnknownProofFormat(String),
-
-    #[doc(hidden)]
-    #[error("")]
-    __Nonexhaustive,
 }
 
 impl Error {
