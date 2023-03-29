@@ -1,6 +1,7 @@
 use core::future::Future;
 
 use js_sys::Promise;
+use serde::Serialize;
 use serde_json::Value;
 use wasm_bindgen::prelude::*;
 use wasm_bindgen_futures::future_to_promise;
@@ -22,22 +23,24 @@ use didkit::{JWTOrLDPOptions, ProofFormat, URI};
 
 pub static VERSION: &str = env!("CARGO_PKG_VERSION");
 
-fn map_jsvalue(result: Result<String, Error>) -> Result<String, JsValue> {
-    match result {
-        Ok(string) => Ok(string),
-        Err(err) => Err(err.to_string().into()),
-    }
+fn map_js_error<E: std::error::Error>(e: E) -> JsError {
+    JsError::new(&e.to_string())
 }
 
-fn map_async_jsvalue<E: std::error::Error>(
-    future: impl Future<Output = Result<String, E>> + 'static,
+fn map_js_value<T: Serialize>(t: T) -> Result<JsValue, JsError> {
+    serde_wasm_bindgen::to_value(&t).map_err(map_js_error)
+}
+
+fn map_js_result<T: Serialize, E: std::error::Error>(
+    result: Result<T, E>,
+) -> Result<JsValue, JsError> {
+    result.map_err(map_js_error).and_then(map_js_value)
+}
+
+fn map_async_jsvalue<T: Serialize, E: std::error::Error>(
+    future: impl Future<Output = Result<T, E>> + 'static,
 ) -> Promise {
-    future_to_promise(async {
-        match future.await {
-            Ok(string) => Ok(string.into()),
-            Err(err) => Err(err.to_string().into()),
-        }
-    })
+    future_to_promise(async { map_js_result(future.await).map_err(|e| e.into()) })
 }
 
 #[wasm_bindgen]
