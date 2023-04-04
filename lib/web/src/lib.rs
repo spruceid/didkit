@@ -11,6 +11,7 @@ use didkit::error::Error;
 use didkit::error::{didkit_error_code, didkit_error_message};
 use didkit::get_verification_method;
 use didkit::ssi::{self, ldp::ProofSuite};
+use didkit::Document;
 use didkit::LinkedDataProofOptions;
 use didkit::ProofPreparation;
 use didkit::Source;
@@ -37,10 +38,14 @@ fn map_js_result<T: Serialize, E: std::error::Error>(
     result.map_err(map_js_error).and_then(map_js_value)
 }
 
-fn map_async_jsvalue<T: Serialize, E: std::error::Error>(
+fn map_async_js_result<T: Serialize, E: std::error::Error>(
     future: impl Future<Output = Result<T, E>> + 'static,
 ) -> Promise {
     future_to_promise(async { map_js_result(future.await).map_err(|e| e.into()) })
+}
+
+fn map_async_js_value<T: Serialize>(future: impl Future<Output = T> + 'static) -> Promise {
+    future_to_promise(async { map_js_value(future.await).map_err(|e| e.into()) })
 }
 
 #[wasm_bindgen]
@@ -49,7 +54,7 @@ pub fn getVersion() -> String {
     VERSION.into()
 }
 
-async fn resolve_did(did: String, input_metadata: String) -> Result<String, String> {
+async fn resolve_did(did: String, input_metadata: String) -> Result<Document, String> {
     let (res_meta, doc, _) = DID_METHODS
         .to_resolver()
         .resolve(
@@ -63,7 +68,7 @@ async fn resolve_did(did: String, input_metadata: String) -> Result<String, Stri
     }
 
     if let Some(d) = doc {
-        Ok(serde_json::to_string(&d).or_else(|e| Err(e.to_string()))?)
+        Ok(d)
     } else {
         Err("No document resolved.".to_string())
     }
@@ -71,44 +76,41 @@ async fn resolve_did(did: String, input_metadata: String) -> Result<String, Stri
 
 #[wasm_bindgen]
 #[allow(non_snake_case)]
-pub fn resolveDID(did: String, input_metadata: String) -> Promise {
+pub fn resolveDID(did: String, input_metadata: JsValue) -> Promise {
     future_to_promise(async {
-        match resolve_did(did, input_metadata).await {
-            Ok(string) => Ok(string.into()),
+        match resolve_did(
+            did,
+            serde_wasm_bindgen::from_value(input_metadata).map_err(JsValue::from)?,
+        )
+        .await
+        {
+            Ok(doc) => Ok(string.into()),
             Err(err) => Err(err.into()),
         }
     })
 }
 
+#[wasm_bindgen]
+#[allow(non_snake_case)]
 #[cfg(feature = "generate")]
-fn generate_ed25519_key() -> Result<String, Error> {
-    let jwk = JWK::generate_ed25519()?;
-    let jwk_json = serde_json::to_string(&jwk)?;
-    Ok(jwk_json)
+pub fn generateEd25519Key() -> Result<JsValue, JsError> {
+    map_js_result(JWK::generate_ed25519())
 }
 
 #[wasm_bindgen]
 #[allow(non_snake_case)]
-#[cfg(feature = "generate")]
-pub fn generateEd25519Key() -> Result<String, JsValue> {
-    map_jsvalue(generate_ed25519_key())
+pub fn keyToDID(method_pattern: String, jwk: JsValue) -> Result<JsValue, JsError> {
+    map_js_result(
+        DID_METHODS
+            .generate(&Source::KeyAndPattern(
+                &serde_wasm_bindgen::from_value(jwk).map_err(JsError::from)?,
+                &method_pattern,
+            ))
+            .ok_or(Error::UnableToGenerateDID),
+    )
 }
 
-fn key_to_did(method_pattern: String, jwk: String) -> Result<String, Error> {
-    let key: JWK = serde_json::from_str(&jwk)?;
-    let did = DID_METHODS
-        .generate(&Source::KeyAndPattern(&key, &method_pattern))
-        .ok_or(Error::UnableToGenerateDID)?;
-    Ok(did)
-}
-
-#[wasm_bindgen]
-#[allow(non_snake_case)]
-pub fn keyToDID(method_pattern: String, jwk: String) -> Result<String, JsValue> {
-    map_jsvalue(key_to_did(method_pattern, jwk))
-}
-
-async fn key_to_verification_method(method_pattern: String, jwk: String) -> Result<String, Error> {
+async fn key_to_verification_method(method_pattern: String, jwk: JWK) -> Result<String, Error> {
     let key: JWK = serde_json::from_str(&jwk)?;
     let did = DID_METHODS
         .generate(&Source::KeyAndPattern(&key, &method_pattern))
@@ -122,8 +124,11 @@ async fn key_to_verification_method(method_pattern: String, jwk: String) -> Resu
 
 #[wasm_bindgen]
 #[allow(non_snake_case)]
-pub fn keyToVerificationMethod(method_pattern: String, jwk: String) -> Promise {
-    map_async_jsvalue(key_to_verification_method(method_pattern, jwk))
+pub fn keyToVerificationMethod(method_pattern: String, jwk: JsValue) -> Promise {
+    map_async_js_result(key_to_verification_method(
+        method_pattern,
+        serde_wasm_bindgen::from_value(jwk).map_err(JsValue::from)?,
+    ))
 }
 
 #[cfg(any(
