@@ -12,5 +12,8 @@
   ],
   "module": "didkit_wasm.js",
   "types": "didkit_wasm.d.ts",
-  "sideEffects": false
+  "sideEffects": [
+    "./didkit_wasm.js",
+    "./snippets/*"
+  ]
 }
