@@ -1,5 +1,4 @@
 use std::ffi::CString;
-use std::fmt;
 use std::os::raw::{c_char, c_int};
 use std::ptr;
 
