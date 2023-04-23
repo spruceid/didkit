@@ -2,7 +2,7 @@ use std::fs::File;
 use std::io::BufReader;
 use std::path::PathBuf;
 
-use clap::{AppSettings, ArgGroup, Parser, StructOpt};
+use clap::{Parser, StructOpt};
 use hyper::Server;
 
 use didkit::JWK;

@@ -432,7 +432,7 @@ pub extern "C" fn didkit_free_string(string: *const c_char) {
         return;
     }
     unsafe {
-        CString::from_raw(string as *mut c_char);
+        drop(CString::from_raw(string as *mut c_char));
     }
 }
 
