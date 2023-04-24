@@ -29,7 +29,9 @@ pub enum Error {
     #[error(transparent)]
     Base64(#[from] base64::DecodeError),
     #[error(transparent)]
-    JSONLD(#[from] ssi::jsonld::Error),
+    JSONLDContextError(#[from] ssi::jsonld::ContextError),
+    #[error(transparent)]
+    JSONLDContextMapError(#[from] ssi::jsonld::FromContextMapError),
     #[error("Unable to generate DID")]
     UnableToGenerateDID,
     #[error("Unknown DID method")]
