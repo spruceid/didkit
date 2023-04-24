@@ -19,7 +19,7 @@ const DIDKitHTTP = require('./didkit-http');
         options: {
           assertionMethod: "did:key:z6MkgYAGxLBSXa6Ygk1PnUbK2F7zya8juE9nfsZhrvY7c9GD#z6MkgYAGxLBSXa6Ygk1PnUbK2F7zya8juE9nfsZhrvY7c9GD"
         },
-        credentialStatusesSupported: []
+        credentialStatusesSupported: ['RevocationList2020Status']
       }
     ],
     verifyCredentialConfiguration: {
