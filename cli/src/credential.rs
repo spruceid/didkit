@@ -5,6 +5,7 @@ use clap::{Args, Subcommand};
 use didkit::{
     generate_proof, ContextLoader, LinkedDataProofOptions, ProofFormat, VerifiableCredential, JWK,
 };
+use tracing::warn;
 
 use crate::{get_ssh_agent_sock, opts::ResolverOptions, KeyArg, ProofOptions};
 
@@ -98,8 +99,17 @@ pub async fn verify(args: CredentialVerifyArgs) -> Result<()> {
         ProofFormat::JWT => {
             let mut jwt = String::new();
             credential_reader.read_to_string(&mut jwt).unwrap();
-            VerifiableCredential::verify_jwt(&jwt, Some(options), &resolver, &mut context_loader)
-                .await
+            let trimmed_jwt = jwt.trim();
+            if jwt != trimmed_jwt {
+                warn!("JWT was trimmed for extraneous whitespaces and new lines.");
+            }
+            VerifiableCredential::verify_jwt(
+                trimmed_jwt,
+                Some(options),
+                &resolver,
+                &mut context_loader,
+            )
+            .await
         }
         ProofFormat::LDP => {
             let credential: VerifiableCredential =

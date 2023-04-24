@@ -496,6 +496,8 @@ set. For more info, see the manual for ssh-agent(1) and ssh-add(1).
 
 #[tokio::main]
 async fn main() -> AResult<()> {
+    tracing_subscriber::fmt::init();
+
     let opt = DIDKit::parse();
     match opt.command {
         DIDKitCmd::GenerateEd25519Key => key::generate(key::KeyGenerateCmd::Ed25519).await.unwrap(),
