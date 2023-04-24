@@ -5,6 +5,7 @@ use clap::{Args, Subcommand};
 use didkit::{
     generate_proof, ContextLoader, LinkedDataProofOptions, ProofFormat, VerifiablePresentation, JWK,
 };
+use tracing::warn;
 
 use crate::{get_ssh_agent_sock, opts::ResolverOptions, KeyArg, ProofOptions};
 
@@ -100,8 +101,17 @@ pub async fn verify(args: PresentationVerifyArgs) -> Result<()> {
         ProofFormat::JWT => {
             let mut jwt = String::new();
             presentation_reader.read_to_string(&mut jwt).unwrap();
-            VerifiablePresentation::verify_jwt(&jwt, Some(options), &resolver, &mut context_loader)
-                .await
+            let trimmed_jwt = jwt.trim();
+            if jwt != trimmed_jwt {
+                warn!("JWT was trimmed for extraneous whitespaces and new lines.");
+            }
+            VerifiablePresentation::verify_jwt(
+                trimmed_jwt,
+                Some(options),
+                &resolver,
+                &mut context_loader,
+            )
+            .await
         }
         ProofFormat::LDP => {
             let presentation: VerifiablePresentation =

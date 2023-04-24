@@ -27,6 +27,8 @@ anyhow = "1.0"
 json-ld = "0.12.1"
 rdf-types = "0.12.17"
 iref = "2.2.3"
+tracing = "0.1"
+tracing-subscriber = "0.3"
 
 [dev-dependencies]
 tokio = { version = "1.0", features = ["macros", "process"] }
