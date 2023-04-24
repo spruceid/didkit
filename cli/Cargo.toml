@@ -1,6 +1,6 @@
 [package]
 name = "didkit-cli"
-version = "0.3.0"
+version = "0.3.1"
 authors = ["Spruce Systems, Inc."]
 edition = "2018"
 description = "Command-line interface for Verifiable Credentials and Decentralized Identifiers."
