@@ -1,74 +1,98 @@
-use std::fs::File;
-use std::io::BufReader;
-use std::path::PathBuf;
+use std::net::SocketAddr;
 
-use clap::{Parser, StructOpt};
-use hyper::Server;
+use axum::{
+    routing::{get, post},
+    Extension, Router,
+};
+use figment::{
+    providers::{Env, Format, Toml},
+    Figment,
+};
+use tower::ServiceBuilder;
+use tower_http::{limit::RequestBodyLimitLayer, trace::TraceLayer};
+use tracing::info;
 
-use didkit::JWK;
-use didkit_http::opts::ResolverOptions;
-use didkit_http::DIDKitHTTPMakeSvc;
-use didkit_http::Error;
+use crate::keys::KeyMap;
 
-#[derive(StructOpt, Debug)]
-pub struct DIDKitHttpOpts {
-    /// Port to listen on
-    #[clap(env, short, long)]
-    port: Option<u16>,
-    /// Hostname to listen on
-    #[clap(env, short = 's', long)]
-    host: Option<std::net::IpAddr>,
-    /// JWK to use for issuing
-    #[clap(flatten)]
-    key: KeyArg,
-    #[clap(flatten)]
-    resolver_options: ResolverOptions,
-}
+mod config;
+mod credentials;
+mod error;
+mod identifiers;
+mod keys;
+mod presentations;
+mod utils;
 
-#[derive(StructOpt, Debug)]
-pub struct KeyArg {
-    #[clap(env, short, long, parse(from_os_str), group = "key_group")]
-    key_path: Option<Vec<PathBuf>>,
-    #[clap(
-        env,
-        short,
-        long,
-        parse(try_from_str = serde_json::from_str),
-        conflicts_with = "key-path",
-        group = "key_group",
-        help = "WARNING: you should not use this through the CLI in a production environment, prefer its environment variable."
-    )]
-    jwk: Option<Vec<JWK>>,
-}
-
-impl KeyArg {
-    fn get_jwks(&self) -> Vec<JWK> {
-        match self.key_path.clone() {
-            Some(paths) => paths
-                .iter()
-                .map(|filename| {
-                    let key_file = File::open(filename).unwrap();
-                    let key_reader = BufReader::new(key_file);
-                    serde_json::from_reader(key_reader).unwrap()
-                })
-                .collect(),
-            None => self.jwk.clone().unwrap_or_default(),
-        }
-    }
-}
+pub async fn healthcheck() {}
 
 #[tokio::main]
-async fn main() -> Result<(), Error> {
-    let opt = DIDKitHttpOpts::from_args();
+async fn main() {
+    tracing_subscriber::fmt::init();
 
-    let keys = opt.key.get_jwks();
-    let makesvc = DIDKitHTTPMakeSvc::new(keys, opt.resolver_options);
-    let host = opt.host.unwrap_or([127, 0, 0, 1].into());
-    let addr = (host, opt.port.unwrap_or(0)).into();
+    let pkg_name = env!("CARGO_PKG_NAME").replace('-', "_");
+    let config: config::Config = Figment::new()
+        .merge(Toml::string(include_str!("../defaults.toml")).nested())
+        .merge(Toml::file(format!("{pkg_name}.toml")).nested())
+        .merge(
+            Env::prefixed(&format!("{}_", pkg_name.to_uppercase()))
+                .split("_")
+                .global(),
+        )
+        .extract()
+        .expect("Unable to load config");
 
-    let server = Server::bind(&addr).serve(makesvc);
-    let url = "http://".to_string() + &server.local_addr().to_string() + "/";
-    println!("Listening on {}", url);
-    server.await?;
-    Ok(())
+    let keys: KeyMap = config
+        .issuer
+        .keys
+        .clone()
+        .unwrap_or_default()
+        .into_iter()
+        .map(|jwk| (jwk.to_public(), jwk))
+        .collect();
+
+    let app = Router::new()
+        .route("/healthz", get(healthcheck))
+        // vc-http-api 0.0.1
+        .route("/issue/credentials", post(credentials::issue))
+        .route("/verify/credentials", post(credentials::verify))
+        .route("/issue/presentations", post(presentations::issue))
+        .route("/verify/presentations", post(presentations::verify))
+        //
+        .route("/credentials/issue", post(credentials::issue))
+        .route("/credentials/verify", post(credentials::verify))
+        .route("/presentations/issue", post(presentations::issue))
+        .route("/presentations/verify", post(presentations::verify))
+        .route("/identifiers/:id", get(identifiers::resolve))
+        .layer(TraceLayer::new_for_http())
+        .layer(RequestBodyLimitLayer::new(config.http.body_size_limit))
+        .layer(
+            ServiceBuilder::new()
+                .layer(Extension(config.clone()))
+                .layer(Extension(keys.clone())),
+        );
+
+    let addr = SocketAddr::from((config.http.address, config.http.port));
+    info!("listening on {}", addr);
+    axum::Server::bind(&addr)
+        .serve(app.into_make_service())
+        .await
+        .expect("failed to start server");
+}
+
+#[cfg(test)]
+mod test {
+    use figment::providers::Format;
+
+    use super::*;
+
+    pub fn default_config() -> config::Config {
+        Figment::new()
+            .merge(Toml::string(include_str!("../defaults.toml")).nested())
+            .extract()
+            .expect("Unable to load config")
+    }
+
+    #[test]
+    fn can_generate_default_config() {
+        default_config();
+    }
 }
