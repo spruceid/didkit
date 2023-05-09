@@ -134,6 +134,62 @@ fn dereferencing_input_metadata_from_raw_ptr(
 }
 
 
+/// Calls a rust function with two arguments marshalled from C
+///
+/// # Arguments
+/// * `arg_one_res` The result we will extract a value from for the first arg to rust_fun
+/// * `arg_two_res` The result we will extract a value from for the second arg to rust_fun
+/// * `rust_fun` is the rust function we wish to call
+/// * `enc_fun` Translates the Ok value returned by rust_fun into something suitable for returning
+///   to the c caller.  Typically this would be a newly allocated *const c_char
+fn marshal_rust_from_c_2<T1, T2, RustFun, RustVal, EncFun, CVal>(
+    arg_one_res: Result<T1, Error>,
+    arg_two_res: Result<T2, Error>,
+    rust_fun: RustFun,
+    enc_fun: EncFun
+) -> Result<CVal, Error>
+where
+    RustFun: Fn(T1, T2) -> Result<RustVal, Error>,
+    EncFun: Fn(RustVal) -> Result<CVal, Error>
+{
+    let a1 = arg_one_res?;
+    let a2 = arg_two_res?;
+    let rust_val = rust_fun(a1, a2)?;
+    enc_fun(rust_val)
+}
+
+
+/// Calls a rust function with two arguments marshalled from C
+///
+/// # Arguments
+/// * `arg_one_res` The result we will extract a value from for the first arg to rust_fun
+/// * `arg_two_res` The result we will extract a value from for the second arg to rust_fun
+/// * `arg_three_res` The result we will extract a value from for the third arg to rust_fun
+/// * `arg_four_res` The result we will extract a value from for the fourth arg to rust_fun
+/// * `rust_fun` is the rust function we wish to call
+/// * `enc_fun` Translates the Ok value returned by rust_fun into something suitable for returning
+///   to the c caller.  Typically this would be a newly allocated *const c_char
+fn marshal_rust_from_c_4<T1, T2, T3, T4, RustFun, RustVal, EncFun, CVal>(
+    arg_one_res: Result<T1, Error>,
+    arg_two_res: Result<T2, Error>,
+    arg_three_res: Result<T3, Error>,
+    arg_four_res: Result<T4, Error>,
+    rust_fun: RustFun,
+    enc_fun: EncFun
+) -> Result<CVal, Error>
+where
+    RustFun: Fn(T1, T2, T3, T4) -> Result<RustVal, Error>,
+    EncFun: Fn(RustVal) -> Result<CVal, Error>
+{
+    let a1 = arg_one_res?;
+    let a2 = arg_two_res?;
+    let a3 = arg_three_res?;
+    let a4 = arg_four_res?;
+    let rust_val = rust_fun(a1, a2, a3, a4)?;
+    enc_fun(rust_val)
+}
+
+
 /// Generate a new Ed25519 keypair in JWK format. On success, returns a pointer to a
 /// newly-allocated string containing the JWK. The string must be freed with [`didkit_free_string`]. On
 /// failure, returns `NULL`; the error message can be retrieved with [`didkit_error_message`].
@@ -186,19 +242,17 @@ pub extern "C" fn didkit_key_to_did(
     method_pattern_ptr: *const c_char,
     key_json_ptr: *const c_char,
 ) -> *const c_char {
-    string_from_raw_ptr(method_pattern_ptr)
-        .and_then(
-            |method_pattern|
-            from_json_raw_ptr::<JWK>(key_json_ptr).map(|jwk| (method_pattern, jwk))
-        )
-        .and_then(|(method_pattern, jwk)| key_to_did(&method_pattern, &jwk))
-        .and_then(to_char_raw_ptr)
-        .unwrap_or_else(stash_err)
+    marshal_rust_from_c_2(
+        string_from_raw_ptr(method_pattern_ptr),
+        from_json_raw_ptr::<JWK>(key_json_ptr),
+        key_to_did,
+        to_char_raw_ptr
+    ).unwrap_or_else(stash_err)
 }
 
-fn key_to_did(method_pattern: &str, jwk: &JWK) -> Result<String, Error> {
+fn key_to_did(method_pattern: String, jwk: JWK) -> Result<String, Error> {
     DID_METHODS
-        .generate(&Source::KeyAndPattern(jwk, method_pattern))
+        .generate(&Source::KeyAndPattern(&jwk, &method_pattern))
         .ok_or(Error::UnableToGenerateDID)
 }
 
@@ -252,29 +306,17 @@ pub extern "C" fn didkit_vc_issue_credential(
     key_json_ptr: *const c_char,
     context_loader_ptr: *const c_char,
 ) -> *const c_char {
-    from_json_raw_ptr::<VerifiableCredential>(credential_json_ptr)
-        .and_then(
-            |credential|
-            from_json_raw_ptr::<JWTOrLDPOptions>(proof_options_json_ptr)
-                .map(|proof_options| (credential, proof_options))
-        )
-        .and_then(
-            |(credential, proof_options)|
-            from_json_raw_ptr::<JWK>(key_json_ptr)
-                .map(|jwk| (credential, proof_options, jwk))
-        )
-        .and_then(
-            |(credential, proof_options, jwk)|
-            load_context(context_loader_ptr)
-                .map(|context| (credential, proof_options, jwk, context))
-        )
-        .and_then(
-            |(credential, proof_options, jwk, context)|
-            vc_issue_credential(credential, proof_options, jwk, context)
-        )
-        .and_then(to_char_raw_ptr)
-        .unwrap_or_else(stash_err)
+    marshal_rust_from_c_4(
+        from_json_raw_ptr::<VerifiableCredential>(credential_json_ptr),
+        from_json_raw_ptr::<JWTOrLDPOptions>(proof_options_json_ptr),
+        from_json_raw_ptr::<JWK>(key_json_ptr),
+        load_context(context_loader_ptr),
+        vc_issue_credential,
+        to_char_raw_ptr
+    ).unwrap_or_else(stash_err)
 }
+
+
 
 fn vc_issue_credential(
     credential: VerifiableCredential,
