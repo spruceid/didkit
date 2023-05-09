@@ -292,14 +292,14 @@ fn vc_issue_credential(
                 .map_err(Error::from)
         }
         ProofFormat::LDP => {
-            let mut ctx = context_loader.clone();
+            let mut ctx = context_loader;
             let proof = rt.block_on(credential.generate_proof(
                 &jwk,
                 &proof_options.ldp_options,
                 resolver,
                 &mut ctx,
             ))?;
-            let mut cred_with_proof = credential.clone();
+            let mut cred_with_proof = credential;
             cred_with_proof.add_proof(proof);
             serde_json::to_string(&cred_with_proof).map_err(Error::from)
         }
@@ -349,7 +349,7 @@ fn vc_verify_credential(
     let proof_format = proof_options.proof_format.unwrap_or_default();
     let rt = runtime::get()?;
     let resolver = DID_METHODS.to_resolver();
-    let mut ctx = context_loader.clone();
+    let mut ctx = context_loader;
     let vr = match proof_format {
         ProofFormat::JWT => rt.block_on(VerifiableCredential::verify_jwt(
             vc_str,
@@ -417,14 +417,14 @@ fn vc_issue_presentation(
             ).map_err(Error::from)
         }
         ProofFormat::LDP => {
-            let mut ctx = context_loader.clone();
+            let mut ctx = context_loader;
             let proof = rt.block_on(presentation.generate_proof(
                 &jwk,
                 &proof_options.ldp_options,
                 resolver,
                 &mut ctx
             ))?;
-            let mut presentation_with_proof = presentation.clone();
+            let mut presentation_with_proof = presentation;
             presentation_with_proof.add_proof(proof);
             serde_json::to_string(&presentation_with_proof).map_err(Error::from)
         }
@@ -476,7 +476,7 @@ fn vc_verify_presentation(
     let proof_format = proof_options.proof_format.unwrap_or_default();
     let rt = runtime::get()?;
     let resolver = DID_METHODS.to_resolver();
-    let mut ctx = context_loader.clone();
+    let mut ctx = context_loader;
     let vr = match proof_format {
         ProofFormat::JWT => rt.block_on(VerifiablePresentation::verify_jwt(
             vp_str,
@@ -556,7 +556,7 @@ fn did_auth(
             ).map_err(Error::from)
         }
         ProofFormat::LDP => {
-            let mut ctx = context_loader.clone();
+            let mut ctx = context_loader;
             let proof = rt.block_on(presentation.generate_proof(
                 &jwk,
                 &proof_options.ldp_options,
@@ -756,7 +756,7 @@ fn vc_prepare_issue_credential(
 ) -> Result<ProofPreparation, Error> {
     let resolver = DID_METHODS.to_resolver();
     let rt = runtime::get()?;
-    let mut ctx = context_loader.clone();
+    let mut ctx = context_loader;
     rt.block_on(credential.prepare_proof(
         &jwk,
         &linked_data_proof_options,
@@ -807,7 +807,7 @@ fn vc_complete_issue_credential(
 ) -> Result<VerifiableCredential, Error> {
     let rt = runtime::get()?;
     let proof = rt.block_on(preparation.proof.type_.complete(&preparation, &signature))?;
-    let mut credential_with_proof = credential.clone();
+    let mut credential_with_proof = credential;
     credential_with_proof.add_proof(proof);
     Ok(credential_with_proof)
 }
@@ -859,7 +859,7 @@ fn vc_prepare_issue_presentation(
 ) -> Result<ProofPreparation, Error> {
     let resolver = DID_METHODS.to_resolver();
     let rt = runtime::get()?;
-    let mut ctx = context_loader.clone();
+    let mut ctx = context_loader;
     rt.block_on(presentation.prepare_proof(
         &jwk,
         &linked_data_proof_options,
@@ -909,7 +909,7 @@ fn vc_complete_issue_presentation(
 ) -> Result<VerifiablePresentation, Error> {
     let rt = runtime::get()?;
     let proof = rt.block_on(preparation.proof.type_.complete(&preparation, &signature))?;
-    let mut presentation_with_proof = presentation.clone();
+    let mut presentation_with_proof = presentation;
     presentation_with_proof.add_proof(proof);
     Ok(presentation_with_proof)
 }
