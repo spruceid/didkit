@@ -6,6 +6,7 @@ use didkit::{
     generate_proof, ContextLoader, LinkedDataProofOptions, ProofFormat, VerifiableCredential, JWK,
 };
 use tracing::warn;
+use didkit::ssi;
 
 use crate::{get_ssh_agent_sock, opts::ResolverOptions, KeyArg, ProofOptions};
 
@@ -15,6 +16,8 @@ pub enum CredentialCmd {
     Issue(Box<CredentialIssueArgs>),
     /// Verify Credential
     Verify(CredentialVerifyArgs),
+    /// Derive Credential
+    Derive(CredentialDeriveArgs)
 }
 
 #[derive(Args)]
@@ -32,6 +35,9 @@ pub struct CredentialDeriveArgs {
     /// Nonce provided by the verifier
     #[clap(short, long)]
     proof_nonce: String,
+    /// Properties to include  
+    #[clap(short, long)]
+    selectors: Vec<String>,    
 }
 
 #[derive(Args)]
@@ -46,11 +52,8 @@ pub async fn cli(cmd: CredentialCmd) -> Result<()> {
     match cmd {
         CredentialCmd::Issue(cmd_issue) => issue(*cmd_issue).await?,
         CredentialCmd::Verify(cmd_verify) => verify(cmd_verify).await?,
+        CredentialCmd::Derive(cmd_derive) => derive(cmd_derive).await.unwrap()
     };
-    Ok(())
-}
-
-pub async fn generate_proof_nonce() -> Result<()> {
     Ok(())
 }
 
@@ -105,14 +108,14 @@ pub async fn derive(args: CredentialDeriveArgs) -> Result<()> {
     let mut credential: VerifiableCredential =
         serde_json::from_reader(credential_reader).unwrap();
 
-    let did_resolver = DID_METHODS.to_resolver();
+    let did_resolver = didkit::DID_METHODS.to_resolver();
 
-    let derived_credential = rt.block_on(ssi::vc::derive_credential(
-            &credential,
-            &proof_nonce,
-            selectors.as_slice(),
-            did_resolver
-    )).unwrap();
+    let derived_credential = ssi::vc::derive_credential(
+        &credential,
+        &args.proof_nonce,
+        &args.selectors.as_slice(),
+        did_resolver
+    ).await.unwrap();
 
     let stdout_writer = BufWriter::new(stdout());
     serde_json::to_writer(stdout_writer, &derived_credential).unwrap();

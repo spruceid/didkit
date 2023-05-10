@@ -6,6 +6,7 @@ use clap::{ArgGroup, Args, Parser, Subcommand};
 use credential::{CredentialIssueArgs, CredentialDeriveArgs, CredentialVerifyArgs};
 use didkit::ssi::ldp::ProofSuiteType;
 use didkit::{
+    ssi,
     ssi::did::ServiceEndpoint, DIDMethod, Error, LinkedDataProofOptions, Metadata, ProofFormat,
     VerificationRelationship, DIDURL, DID_METHODS, JWK, URI,
 };
@@ -71,8 +72,6 @@ pub enum DIDKitCmd {
     #[clap(hide = true)]
     VCIssueCredential(CredentialIssueArgs),
     GenerateProofNonce,
-    #[clap(hide = true)]
-    VCDeriveCredential(CredentialDeriveArgs),
     #[clap(hide = true)]
     VCVerifyCredential(CredentialVerifyArgs),
     /// Subcommand for verifiable credential operations
@@ -534,7 +533,6 @@ async fn main() -> AResult<()> {
             let nonce = ssi::jws::generate_proof_nonce();
             println!("{}", nonce.as_str());
         },
-        DIDKitCmd::VCDeriveCredential(args) => credential::derive(args).await.unwrap(),
         DIDKitCmd::VCVerifyCredential(args) => credential::verify(args).await.unwrap(),
         DIDKitCmd::Credential(cmd) => credential::cli(cmd).await.unwrap(),
         DIDKitCmd::VCIssuePresentation(args) => presentation::issue(args).await.unwrap(),
