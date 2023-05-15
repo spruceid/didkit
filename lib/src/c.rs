@@ -36,11 +36,11 @@ fn stash_err(error: Error) -> *const c_char {
     ptr::null()
 }
 
-fn to_json_raw_ptr<T>(value: &T) -> Result<*const c_char, Error>
+fn to_json_raw_ptr<T>(value: T) -> Result<*const c_char, Error>
 where
-    T: ?Sized + Serialize
+    T: Serialize
 {
-    serde_json::to_string(value).map_err(Error::from)
+    serde_json::to_string(&value).map_err(Error::from)
         .and_then(to_char_raw_ptr)
 }
 
@@ -53,11 +53,19 @@ where
         .map(|s| s.into_raw() as *const c_char)
 }
 
-fn to_bas64_json_raw_ptr<T>(value: &T) -> Result<*const c_char, Error>
+// fn str_to_raw_ptr(value: &str) -> Result<*const c_char, Error> {
+//     to_char_raw_ptr(value)
+// }
+
+fn string_to_raw_ptr(value: String) -> Result<*const c_char, Error> {
+    to_char_raw_ptr(value)
+}
+
+fn to_bas64_json_raw_ptr<T>(value: T) -> Result<*const c_char, Error>
 where
-    T: ?Sized + Serialize
+    T: Serialize
 {
-    serde_json::to_string(value).map_err(Error::from)
+    serde_json::to_string(&value).map_err(Error::from)
         .map(base64::encode)
         .and_then(to_char_raw_ptr)
 }
@@ -142,7 +150,7 @@ fn dereferencing_input_metadata_from_raw_ptr(
 /// * `rust_fun` is the rust function we wish to call
 /// * `enc_fun` Translates the Ok value returned by rust_fun into something suitable for returning
 ///   to the c caller.  Typically this would be a newly allocated *const c_char
-fn marshal_rust_from_c_2<T1, T2, RustFun, RustVal, EncFun, CVal>(
+fn call_rust_from_c_2<T1, T2, RustFun, RustVal, EncFun, CVal>(
     arg_one_res: Result<T1, Error>,
     arg_two_res: Result<T2, Error>,
     rust_fun: RustFun,
@@ -165,11 +173,40 @@ where
 /// * `arg_one_res` The result we will extract a value from for the first arg to rust_fun
 /// * `arg_two_res` The result we will extract a value from for the second arg to rust_fun
 /// * `arg_three_res` The result we will extract a value from for the third arg to rust_fun
+/// * `rust_fun` is the rust function we wish to call
+/// * `enc_fun` Translates the Ok value returned by rust_fun into something suitable for returning
+///   to the c caller.  Typically this would be a newly allocated *const c_char
+fn call_rust_from_c_3<T1, T2, T3, RustFun, RustVal, EncFun, CVal>(
+    arg_one_res: Result<T1, Error>,
+    arg_two_res: Result<T2, Error>,
+    arg_three_res: Result<T3, Error>,
+    rust_fun: RustFun,
+    enc_fun: EncFun
+) -> Result<CVal, Error>
+where
+    RustFun: Fn(T1, T2, T3) -> Result<RustVal, Error>,
+    EncFun: Fn(RustVal) -> Result<CVal, Error>
+{
+    let a1 = arg_one_res?;
+    let a2 = arg_two_res?;
+    let a3 = arg_three_res?;
+    let rust_val = rust_fun(a1, a2, a3)?;
+    enc_fun(rust_val)
+}
+
+
+
+/// Calls a rust function with two arguments marshalled from C
+///
+/// # Arguments
+/// * `arg_one_res` The result we will extract a value from for the first arg to rust_fun
+/// * `arg_two_res` The result we will extract a value from for the second arg to rust_fun
+/// * `arg_three_res` The result we will extract a value from for the third arg to rust_fun
 /// * `arg_four_res` The result we will extract a value from for the fourth arg to rust_fun
 /// * `rust_fun` is the rust function we wish to call
 /// * `enc_fun` Translates the Ok value returned by rust_fun into something suitable for returning
 ///   to the c caller.  Typically this would be a newly allocated *const c_char
-fn marshal_rust_from_c_4<T1, T2, T3, T4, RustFun, RustVal, EncFun, CVal>(
+fn call_rust_from_c_4<T1, T2, T3, T4, RustFun, RustVal, EncFun, CVal>(
     arg_one_res: Result<T1, Error>,
     arg_two_res: Result<T2, Error>,
     arg_three_res: Result<T3, Error>,
@@ -196,7 +233,7 @@ where
 #[no_mangle]
 pub extern "C" fn didkit_generate_ed25519_key() -> *const c_char {
     JWK::generate_ed25519().map_err(Error::from)
-        .and_then(|jwk| to_json_raw_ptr(&jwk))
+        .and_then(to_json_raw_ptr)
         .unwrap_or_else(stash_err)
 
 }
@@ -207,7 +244,7 @@ pub extern "C" fn didkit_generate_ed25519_key() -> *const c_char {
 #[no_mangle]
 pub extern "C" fn didkit_generate_secp256r1_key() -> *const c_char {
     JWK::generate_p256().map_err(Error::from)
-        .and_then(|jwk| to_json_raw_ptr(&jwk))
+        .and_then(to_json_raw_ptr)
         .unwrap_or_else(stash_err)
 }
 
@@ -217,7 +254,7 @@ pub extern "C" fn didkit_generate_secp256r1_key() -> *const c_char {
 #[no_mangle]
 pub extern "C" fn didkit_generate_secp256k1_key() -> *const c_char {
     JWK::generate_secp256k1().map_err(Error::from)
-        .and_then(|jwk| to_json_raw_ptr(&jwk))
+        .and_then(to_json_raw_ptr)
         .unwrap_or_else(stash_err)
 }
 
@@ -227,7 +264,7 @@ pub extern "C" fn didkit_generate_secp256k1_key() -> *const c_char {
 #[no_mangle]
 pub extern "C" fn didkit_generate_secp384r1_key() -> *const c_char {
     JWK::generate_p384().map_err(Error::from)
-        .and_then(|jwk| to_json_raw_ptr(&jwk))
+        .and_then(to_json_raw_ptr)
         .unwrap_or_else(stash_err)
 }
 
@@ -242,11 +279,11 @@ pub extern "C" fn didkit_key_to_did(
     method_pattern_ptr: *const c_char,
     key_json_ptr: *const c_char,
 ) -> *const c_char {
-    marshal_rust_from_c_2(
+    call_rust_from_c_2(
         string_from_raw_ptr(method_pattern_ptr),
         from_json_raw_ptr::<JWK>(key_json_ptr),
         key_to_did,
-        to_char_raw_ptr
+        string_to_raw_ptr
     ).unwrap_or_else(stash_err)
 }
 
@@ -266,15 +303,12 @@ pub extern "C" fn didkit_key_to_verification_method(
     method_pattern_ptr: *const c_char,
     key_json_ptr: *const c_char,
 ) -> *const c_char {
-    string_from_raw_ptr(method_pattern_ptr)
-        .and_then(
-            |method_pattern|
-            from_json_raw_ptr::<JWK>(key_json_ptr)
-                .map(|jwk| (method_pattern, jwk))
-        )
-        .and_then(|(method_pattern, jwk)| key_to_verification_method(&method_pattern, jwk))
-        .and_then(to_char_raw_ptr)
-        .unwrap_or_else(stash_err)
+    call_rust_from_c_2(
+        str_from_raw_ptr(method_pattern_ptr),
+        from_json_raw_ptr::<JWK>(key_json_ptr),
+        key_to_verification_method,
+        string_to_raw_ptr
+    ).unwrap_or_else(stash_err)
 }
 
 fn key_to_verification_method(
@@ -306,7 +340,7 @@ pub extern "C" fn didkit_vc_issue_credential(
     key_json_ptr: *const c_char,
     context_loader_ptr: *const c_char,
 ) -> *const c_char {
-    marshal_rust_from_c_4(
+    call_rust_from_c_4(
         from_json_raw_ptr::<VerifiableCredential>(credential_json_ptr),
         from_json_raw_ptr::<JWTOrLDPOptions>(proof_options_json_ptr),
         from_json_raw_ptr::<JWK>(key_json_ptr),
@@ -364,23 +398,13 @@ pub extern "C" fn didkit_vc_verify_credential(
     proof_options_json_ptr: *const c_char,
     context_loader_ptr: *const c_char,
 ) -> *const c_char {
-    string_from_raw_ptr(vc_str_ptr)
-        .and_then(
-            |vc_str|
-            from_json_raw_ptr::<JWTOrLDPOptions>(proof_options_json_ptr)
-                .map(|proof_options| (vc_str, proof_options))
-        )
-        .and_then(
-            |(vc_str, proof_options)|
-            load_context(context_loader_ptr)
-                .map(|context| (vc_str, proof_options, context))
-        )
-        .and_then(
-            |(vc_str, proof_options, context)|
-            vc_verify_credential(&vc_str, proof_options, context)
-        )
-        .and_then(|verification_result| to_json_raw_ptr(&verification_result))
-        .unwrap_or_else(stash_err)
+    call_rust_from_c_3(
+        str_from_raw_ptr(vc_str_ptr),
+        from_json_raw_ptr::<JWTOrLDPOptions>(proof_options_json_ptr),
+        load_context(context_loader_ptr),
+        vc_verify_credential,
+        to_json_raw_ptr
+    ).unwrap_or_else(stash_err)
 }
 
 fn vc_verify_credential(
@@ -400,7 +424,7 @@ fn vc_verify_credential(
             &mut ctx,
         )),
         ProofFormat::LDP => {
-            let vc = VerifiableCredential::from_json_unsigned(vc_str)?;
+            let vc = VerifiableCredential::from_json_unsigned(&vc_str)?;
             rt.block_on(vc.verify(Some(proof_options.ldp_options), resolver, &mut ctx))
         }
     };
@@ -420,27 +444,14 @@ pub extern "C" fn didkit_vc_issue_presentation(
     key_json_ptr: *const c_char,
     context_loader_ptr: *const c_char,
 ) -> *const c_char {
-    presentation_from_raw_ptr(presentation_json_ptr)
-        .and_then(
-            |presentation|
-            from_json_raw_ptr::<JWTOrLDPOptions>(proof_options_json_ptr)
-                .map(|proof_options| (presentation, proof_options))
-        )
-        .and_then(
-            |(presentation, proof_options)|
-            from_json_raw_ptr::<JWK>(key_json_ptr).map(|jwk| (presentation, proof_options, jwk))
-        )
-        .and_then(
-            |(presentation, proof_options, jwk)|
-            load_context(context_loader_ptr)
-                .map(|context_loader| (presentation, proof_options, jwk, context_loader))
-        )
-        .and_then(
-            |(presentation, proof_options, jwk, context_loader)|
-            vc_issue_presentation(presentation, proof_options, jwk, context_loader)
-        )
-        .and_then(to_char_raw_ptr)
-        .unwrap_or_else(stash_err)
+    call_rust_from_c_4(
+        presentation_from_raw_ptr(presentation_json_ptr),
+        from_json_raw_ptr::<JWTOrLDPOptions>(proof_options_json_ptr),
+        from_json_raw_ptr::<JWK>(key_json_ptr),
+        load_context(context_loader_ptr),
+        vc_issue_presentation,
+        string_to_raw_ptr
+    ).unwrap_or_else(stash_err)
 }
 
 fn vc_issue_presentation(
@@ -490,23 +501,13 @@ pub extern "C" fn didkit_vc_verify_presentation(
     proof_options_json_ptr: *const c_char,
     context_loader_ptr: *const c_char,
 ) -> *const c_char {
-    string_from_raw_ptr(vp_str_ptr)
-        .and_then(
-            |vp_str|
-            from_json_raw_ptr::<JWTOrLDPOptions>(proof_options_json_ptr)
-                .map(|proof_options| (vp_str, proof_options))
-        )
-        .and_then(
-            |(vp_str, proof_options)|
-            load_context(context_loader_ptr)
-                .map(|context_loader| (vp_str, proof_options, context_loader))
-        )
-        .and_then(
-            |(vp_str, proof_options, context_loader)|
-            vc_verify_presentation(&vp_str, proof_options, context_loader)
-        )
-        .and_then(|vr| to_json_raw_ptr(&vr))
-        .unwrap_or_else(stash_err)
+    call_rust_from_c_3(
+        str_from_raw_ptr(vp_str_ptr),
+        from_json_raw_ptr::<JWTOrLDPOptions>(proof_options_json_ptr),
+        load_context(context_loader_ptr),
+        vc_verify_presentation,
+        to_json_raw_ptr
+    ).unwrap_or_else(stash_err)
 }
 
 
@@ -552,28 +553,14 @@ pub extern "C" fn didkit_did_auth(
     key_json_ptr: *const c_char,
     context_loader_ptr: *const c_char,
 ) -> *const c_char {
-    string_from_raw_ptr(holder_ptr)
-        .and_then(
-            |holder|
-            from_json_raw_ptr::<JWTOrLDPOptions>(proof_options_json_ptr)
-                .map(|proof_options| (holder, proof_options))
-        )
-        .and_then(
-            |(holder, proof_options)|
-            from_json_raw_ptr::<JWK>(key_json_ptr)
-                .map(|jwk| (holder, proof_options, jwk))
-        )
-        .and_then(
-            |(holder, proof_options, jwk)|
-            load_context(context_loader_ptr)
-                .map(|context_loader| (holder, proof_options, jwk, context_loader))
-        )
-        .and_then(
-            |(holder, proof_options, jwk, context_loader)|
-            did_auth(holder, proof_options, jwk, context_loader)
-        )
-        .and_then(to_char_raw_ptr)
-        .unwrap_or_else(stash_err)
+    call_rust_from_c_4(
+        string_from_raw_ptr(holder_ptr),
+        from_json_raw_ptr::<JWTOrLDPOptions>(proof_options_json_ptr),
+        from_json_raw_ptr::<JWK>(key_json_ptr),
+        load_context(context_loader_ptr),
+        did_auth,
+        string_to_raw_ptr
+    ).unwrap_or_else(stash_err)
 }
 
 
@@ -621,18 +608,12 @@ pub extern "C" fn didkit_resolve_did(
     did_ptr: *const c_char,
     input_metadata_json_ptr: *const c_char,
 ) -> *const c_char {
-    string_from_raw_ptr(did_ptr)
-        .and_then(
-            |did|
-            input_metadata_from_raw_ptr(input_metadata_json_ptr)
-                .map(|input_metadata| (did, input_metadata))
-        )
-        .and_then(
-            |(did, input_metadata)|
-            resolve_did(&did, input_metadata)
-        )
-        .and_then(|res_result| to_json_raw_ptr(&res_result))
-        .unwrap_or_else(stash_err)
+    call_rust_from_c_2(
+        str_from_raw_ptr(did_ptr),
+        input_metadata_from_raw_ptr(input_metadata_json_ptr),
+        resolve_did,
+        to_json_raw_ptr
+    ).unwrap_or_else(stash_err)
 }
 
 
@@ -663,18 +644,12 @@ pub extern "C" fn didkit_dereference_did_url(
     did_url_ptr: *const c_char,
     input_metadata_json_ptr: *const c_char,
 ) -> *const c_char {
-    string_from_raw_ptr(did_url_ptr)
-        .and_then(
-            |did_url|
-            dereferencing_input_metadata_from_raw_ptr(input_metadata_json_ptr)
-                .map(|input_metadata| (did_url, input_metadata))
-        )
-        .and_then(
-            |(did_url, input_metadata)|
-            dereference_did_url(&did_url, input_metadata)
-        )
-        .and_then(to_char_raw_ptr)
-        .unwrap_or_else(stash_err)
+    call_rust_from_c_2(
+        str_from_raw_ptr(did_url_ptr),
+        dereferencing_input_metadata_from_raw_ptr(input_metadata_json_ptr),
+        dereference_did_url,
+        string_to_raw_ptr
+    ).unwrap_or_else(stash_err)
 }
 
 
@@ -766,26 +741,14 @@ pub extern "C" fn didkit_vc_prepare_issue_credential(
     public_key_ptr: *const c_char,
     context_loader_ptr: *const c_char,
 ) -> *const c_char {
-    from_json_raw_ptr::<VerifiableCredential>(credential_ptr)
-        .and_then(
-            |credential|
-            from_json_raw_ptr::<LinkedDataProofOptions>(linked_data_proof_options_ptr)
-                .map(|proof_options| (credential, proof_options))
-        )
-        .and_then(
-            |(credential, proof_options)|
-            from_json_raw_ptr::<JWK>(public_key_ptr).map(|jwk| (credential, proof_options, jwk))
-        )
-        .and_then(
-            |(credential, proof_options, jwk)|
-            load_context(context_loader_ptr).map(|ctx| (credential, proof_options, jwk, ctx))
-        )
-        .and_then(
-            |(credential, proof_options, jwk, ctx)|
-            vc_prepare_issue_credential(credential, proof_options, jwk, ctx)
-        )
-        .and_then(|preparation| to_json_raw_ptr(&preparation))
-        .unwrap_or_else(stash_err)
+    call_rust_from_c_4(
+        from_json_raw_ptr::<VerifiableCredential>(credential_ptr),
+        from_json_raw_ptr::<LinkedDataProofOptions>(linked_data_proof_options_ptr),
+        from_json_raw_ptr::<JWK>(public_key_ptr),
+        load_context(context_loader_ptr),
+        vc_prepare_issue_credential,
+        to_json_raw_ptr
+    ).unwrap_or_else(stash_err)
 }
 
 
@@ -823,22 +786,13 @@ pub extern "C" fn didkit_vc_complete_issue_credential(
     preparation_ptr: *const c_char,
     signature_ptr: *const c_char,
 ) -> *const c_char {
-    from_json_raw_ptr::<VerifiableCredential>(credential_ptr)
-        .and_then(
-            |credential|
-            from_json_raw_ptr::<ProofPreparation>(preparation_ptr)
-                .map(|preparation| (credential, preparation))
-        )
-        .and_then(
-            |(credential, preparation)|
-            string_from_raw_ptr(signature_ptr).map(|signature| (credential, preparation, signature))
-        )
-        .and_then(
-            |(credential, preparation, signature)|
-            vc_complete_issue_credential(credential, preparation, signature)
-        )
-        .and_then(|credential| to_json_raw_ptr(&credential))
-        .unwrap_or_else(stash_err)
+    call_rust_from_c_3(
+        from_json_raw_ptr::<VerifiableCredential>(credential_ptr),
+        from_json_raw_ptr::<ProofPreparation>(preparation_ptr),
+        string_from_raw_ptr(signature_ptr),
+        vc_complete_issue_credential,
+        to_json_raw_ptr
+    ).unwrap_or_else(stash_err)
 }
 
 
@@ -862,26 +816,14 @@ pub extern "C" fn didkit_vc_prepare_issue_presentation(
     public_key_ptr: *const c_char,
     context_loader_ptr: *const c_char,
 ) -> *const c_char {
-    presentation_from_raw_ptr(presentation_ptr)
-        .and_then(
-            |presentation|
-            from_json_raw_ptr::<LinkedDataProofOptions>(linked_data_proof_options_ptr)
-                .map(|proof_options| (presentation, proof_options))
-        )
-        .and_then(
-            |(presentation, proof_options)|
-            from_json_raw_ptr::<JWK>(public_key_ptr).map(|jwk| (presentation, proof_options, jwk))
-        )
-        .and_then(
-            |(presentation, proof_options, jwk)|
-            load_context(context_loader_ptr).map(|ctx| (presentation, proof_options, jwk, ctx))
-        )
-        .and_then(
-            |(presentation, proof_options, jwk, ctx)|
-            vc_prepare_issue_presentation(presentation, proof_options, jwk, ctx)
-        )
-        .and_then(|preparation| to_json_raw_ptr(&preparation))
-        .unwrap_or_else(stash_err  )
+    call_rust_from_c_4(
+        presentation_from_raw_ptr(presentation_ptr),
+        from_json_raw_ptr::<LinkedDataProofOptions>(linked_data_proof_options_ptr),
+        from_json_raw_ptr::<JWK>(public_key_ptr),
+        load_context(context_loader_ptr),
+        vc_prepare_issue_presentation,
+        to_json_raw_ptr
+    ).unwrap_or_else(stash_err)
 }
 
 
@@ -925,23 +867,13 @@ pub extern "C" fn didkit_vc_complete_issue_presentation(
     preparation_ptr: *const c_char,
     signature_ptr: *const c_char,
 ) -> *const c_char {
-    presentation_from_raw_ptr(presentation_ptr)
-        .and_then(
-            |presentation|
-            from_json_raw_ptr::<ProofPreparation>(preparation_ptr)
-                .map(|preparation| (presentation, preparation))
-        )
-        .and_then(
-            |(presentation, preparation)|
-            string_from_raw_ptr(signature_ptr)
-                .map(|signature| (presentation, preparation, signature))
-        )
-        .and_then(
-            |(presentation, preparation, signature)|
-            vc_complete_issue_presentation(presentation, preparation, signature)
-        )
-        .and_then(|presentation| to_json_raw_ptr(&presentation))
-        .unwrap_or_else(stash_err)
+    call_rust_from_c_3(
+        presentation_from_raw_ptr(presentation_ptr),
+        from_json_raw_ptr::<ProofPreparation>(preparation_ptr),
+        string_from_raw_ptr(signature_ptr),
+        vc_complete_issue_presentation,
+        to_json_raw_ptr
+    ).unwrap_or_else(stash_err)
 }
 
 fn vc_complete_issue_presentation(
