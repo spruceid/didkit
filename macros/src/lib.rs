@@ -45,41 +45,6 @@ impl Parse for Args {
 }
 
 #[proc_macro_attribute]
-pub fn c_export(metadata: TokenStream, input: TokenStream) -> TokenStream {
-    let mut input_fn = parse_macro_input!(input as ItemFn);
-
-    let internal = format_ident!("f");
-    let name = input_fn.sig.ident.to_owned();
-    let args = input_fn.sig.inputs.to_owned();
-    input_fn.sig.ident = internal.to_owned();
-
-    let Args { wrap } = parse_macro_input!(metadata as Args);
-    let wrap = format_ident!("{}", wrap);
-
-    let call_args = args
-        .to_owned()
-        .into_pairs()
-        .map(Pair::into_tuple)
-        .map(|(arg, _)| match arg {
-            FnArg::Typed(PatType { pat, .. }) => match *pat {
-                Pat::Ident(PatIdent { ident, .. }) => ident,
-                _ => todo!(),
-            },
-            _ => todo!(),
-        })
-        .collect::<Vec<Ident>>();
-
-    TokenStream::from(quote! {
-        #[no_mangle]
-        pub extern "C" fn #name( #args ) -> *const c_char {
-            #input_fn
-
-            #wrap( #internal( #(#call_args),* ) )
-        }
-    })
-}
-
-#[proc_macro_attribute]
 pub fn java_export(metadata: TokenStream, input: TokenStream) -> TokenStream {
     let mut input_fn = parse_macro_input!(input as ItemFn);
 

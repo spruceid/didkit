@@ -44,7 +44,6 @@ where
         .and_then(to_char_raw_ptr)
 }
 
-
 fn to_char_raw_ptr<T>(value: T) -> Result<*const c_char, Error>
 where
     T: Into<Vec<u8>>
@@ -52,10 +51,6 @@ where
     CString::new(value).map_err(Error::from)
         .map(|s| s.into_raw() as *const c_char)
 }
-
-// fn str_to_raw_ptr(value: &str) -> Result<*const c_char, Error> {
-//     to_char_raw_ptr(value)
-// }
 
 fn string_to_raw_ptr(value: String) -> Result<*const c_char, Error> {
     to_char_raw_ptr(value)
@@ -141,7 +136,6 @@ fn dereferencing_input_metadata_from_raw_ptr(
         .and_then(|s| serde_json::from_str(&s).map_err(Error::from))
 }
 
-
 /// Calls a rust function with two arguments marshalled from C
 ///
 /// # Arguments
@@ -166,8 +160,7 @@ where
     enc_fun(rust_val)
 }
 
-
-/// Calls a rust function with two arguments marshalled from C
+/// Calls a rust function with three arguments marshalled from C
 ///
 /// # Arguments
 /// * `arg_one_res` The result we will extract a value from for the first arg to rust_fun
@@ -194,9 +187,7 @@ where
     enc_fun(rust_val)
 }
 
-
-
-/// Calls a rust function with two arguments marshalled from C
+/// Calls a rust function with four arguments marshalled from C
 ///
 /// # Arguments
 /// * `arg_one_res` The result we will extract a value from for the first arg to rust_fun
@@ -327,7 +318,6 @@ fn key_to_verification_method(
         .ok_or(Error::UnableToGetVerificationMethod)
 }
 
-
 /// Issue a Verifiable Credential. Input parameters are JSON C strings for the unsigned credential
 /// to be issued, the linked data proof options, and the JWK for signing.  On success, the
 /// newly-issued verifiable credential is returned as a newly-allocated C string.  The returned
@@ -349,8 +339,6 @@ pub extern "C" fn didkit_vc_issue_credential(
         to_char_raw_ptr
     ).unwrap_or_else(stash_err)
 }
-
-
 
 fn vc_issue_credential(
     credential: VerifiableCredential,
@@ -381,7 +369,6 @@ fn vc_issue_credential(
         }
     }
 }
-
 
 /// Verify a Verifiable Credential. Arguments are a C string containing the Verifiable Credential to
 /// verify, and a C string containing a JSON object for the linked data proof options for
@@ -430,7 +417,6 @@ fn vc_verify_credential(
     };
     Ok(vr)
 }
-
 
 /// Issue a Verifiable Presentation. Input parameters are JSON C strings for the unsigned
 /// presentation to be issued, the linked data proof options, and the JWK for signing. On success,
@@ -484,8 +470,6 @@ fn vc_issue_presentation(
     }
 }
 
-
-
 /// Verify a Verifiable Presentation. Arguments are a C string containing the Verifiable
 /// Presentation to verify, and a C string containing a JSON object for the linked data proof
 /// options for verification. The return value is a newly-allocated C string containing a JSON
@@ -509,7 +493,6 @@ pub extern "C" fn didkit_vc_verify_presentation(
         to_json_raw_ptr
     ).unwrap_or_else(stash_err)
 }
-
 
 fn vc_verify_presentation(
     vp_str: &str,
@@ -563,7 +546,6 @@ pub extern "C" fn didkit_did_auth(
     ).unwrap_or_else(stash_err)
 }
 
-
 fn did_auth(
     holder: String,
     proof_options: JWTOrLDPOptions,
@@ -616,7 +598,6 @@ pub extern "C" fn didkit_resolve_did(
     ).unwrap_or_else(stash_err)
 }
 
-
 fn resolve_did(
     did: &str,
     input_metadata: ResolutionInputMetadata
@@ -632,7 +613,6 @@ fn resolve_did(
     };
     Ok(res_result)
 }
-
 
 /// Resolve a DID to a DID Document. Arguments are a C string containing the DID URL to dereference,
 /// and a C string containing a JSON object for dereferencing input metadata. The return value on
@@ -652,7 +632,6 @@ pub extern "C" fn didkit_dereference_did_url(
     ).unwrap_or_else(stash_err)
 }
 
-
 fn dereference_did_url(
     did_url: &str,
     input_metadata: DereferencingInputMetadata
@@ -664,7 +643,6 @@ fn dereference_did_url(
     let result = json!(deref_result);
     serde_json::to_string(&result).map_err(Error::from)
 }
-
 
 #[derive(Serialize, Deserialize)]
 struct Context {
@@ -692,7 +670,6 @@ pub extern "C" fn didkit_create_context(
         .and_then(|ctx| to_bas64_json_raw_ptr(&ctx))
         .unwrap_or_else(stash_err)
 }
-
 
 #[no_mangle]
 pub extern "C" fn didkit_create_context_map(
@@ -725,8 +702,6 @@ fn load_context(context_loader_ptr: *const c_char) -> Result<ssi::jsonld::Contex
     }
 }
 
-
-
 /// Prepares a credential for signing by an external service.
 ///
 /// All parameters are pointers to json encoded strings.
@@ -751,7 +726,6 @@ pub extern "C" fn didkit_vc_prepare_issue_credential(
     ).unwrap_or_else(stash_err)
 }
 
-
 /// Prepares a credential for signing by an external service.
 fn vc_prepare_issue_credential(
     credential: VerifiableCredential,
@@ -769,7 +743,6 @@ fn vc_prepare_issue_credential(
         &mut ctx,
     )).map_err(Error::from)
 }
-
 
 /// Completes credential issuance after obtaining a signature from an external service.
 ///
@@ -795,7 +768,6 @@ pub extern "C" fn didkit_vc_complete_issue_credential(
     ).unwrap_or_else(stash_err)
 }
 
-
 fn vc_complete_issue_credential(
     credential: VerifiableCredential,
     preparation: ProofPreparation,
@@ -807,7 +779,6 @@ fn vc_complete_issue_credential(
     credential_with_proof.add_proof(proof);
     Ok(credential_with_proof)
 }
-
 
 #[no_mangle]
 pub extern "C" fn didkit_vc_prepare_issue_presentation(
@@ -825,8 +796,6 @@ pub extern "C" fn didkit_vc_prepare_issue_presentation(
         to_json_raw_ptr
     ).unwrap_or_else(stash_err)
 }
-
-
 
 /// Prepares a presentation for signing by an external service.
 ///
@@ -887,7 +856,6 @@ fn vc_complete_issue_presentation(
     presentation_with_proof.add_proof(proof);
     Ok(presentation_with_proof)
 }
-
 
 // TODO: didkit_delegate_capability
 // TODO: didkit_prepare_delegate_capability
