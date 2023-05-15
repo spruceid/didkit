@@ -411,7 +411,7 @@ fn vc_verify_credential(
             &mut ctx,
         )),
         ProofFormat::LDP => {
-            let vc = VerifiableCredential::from_json_unsigned(&vc_str)?;
+            let vc = VerifiableCredential::from_json_unsigned(vc_str)?;
             rt.block_on(vc.verify(Some(proof_options.ldp_options), resolver, &mut ctx))
         }
     };
@@ -667,7 +667,7 @@ pub extern "C" fn didkit_create_context(
             string_from_raw_ptr(json_ptr).map(|json| (url, json))
         )
         .map(|(url, json)| Context{url, json})
-        .and_then(|ctx| to_bas64_json_raw_ptr(&ctx))
+        .and_then(to_bas64_json_raw_ptr)
         .unwrap_or_else(stash_err)
 }
 
@@ -677,7 +677,7 @@ pub extern "C" fn didkit_create_context_map(
     size: usize,
 ) -> *const c_char {
     string_vec_from_string_array_raw_ptr(contexts_ptr, size)
-        .and_then(|ctx| to_bas64_json_raw_ptr(&ctx))
+        .and_then(to_bas64_json_raw_ptr)
         .unwrap_or_else(stash_err)
 }
 
