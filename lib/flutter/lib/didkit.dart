@@ -430,7 +430,12 @@ class DIDKit {
 
   static String createContextMap(List<String> contexts) {
     final size = contexts.length;
-    final array = malloc.allocate<Pointer<Utf8>>(size);
+
+    // FOOTGUN NOTE:
+    //   malloc.allocate<type>(size); → allocates 'size' *bytes*
+    //   malloc<type>(size);          → allocates 'size * sizeof(type)' bytes -- YOU WANT THIS ONE
+
+    final array = malloc<Pointer<Utf8>>(size);
 
     final native = contexts.map((c) => c.toNativeUtf8()).toList();
 
