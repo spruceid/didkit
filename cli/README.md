@@ -81,7 +81,7 @@ The following options correspond to linked data [proof options][] as specified i
 #### SSH Agent
 
 DIDKit can use [SSH Agent][] for signing, as an alternative to signing with a JWK private key.
-If the `-S` (`--ssh-agent`) CLI option is used, DIDKit will attempt to connect to a local instance of `ssh-agent`, via the [UNIX socket][] refered to by environmental variable `SSH_AUTH_SOCK`, following the [SSH Agent Protocol][].
+If the `-S` (`--ssh-agent`) CLI option is used, DIDKit will attempt to connect to a local instance of `ssh-agent`, via the [UNIX socket][] referred to by environmental variable `SSH_AUTH_SOCK`, following the [SSH Agent Protocol][].
 
 ##### Key selection
 
@@ -155,7 +155,7 @@ Options and output format are the same as for [didkit vc-verify-credential](#did
 Resolve a DID to a DID document, according to [DID Resolution][did-resolution].
 
 #### Options
-- `-m, --with-metadata` - Return a the resolved DID document with resolution metadata and document metadata, in a [DID Resolution Result][did-resolution-result] object.
+- `-m, --with-metadata` - Return the resolved DID document with resolution metadata and document metadata, in a [DID Resolution Result][did-resolution-result] object.
 - `-i <name=value>` - A [DID Resolution input metadata][did-resolution-input-metadata] property. If `=` is omitted, boolean `true` is used as the value, otherwise, value is a string. May be repeated to add multiple properties. If used multiple times with the same `name`, the values are combined into an array value to form a single property.
 - `-r, --did-resolver <url>` - [DID resolver HTTP(S) endpoint][did-resolution-https-binding], used for DID resolution and DID URL dereferencing for non-built-in DID Methods. Equivalent to environmental variable `DID_RESOLVER`.
 - `-R, --did-resolver-override <url>` - [DID resolver HTTP(S) endpoint][did-resolution-https-binding], used for DID resolution and DID URL dereferencing for all DID Methods. Equivalent to environmental variable `DID_RESOLVER_OVERRIDE`.
@@ -171,7 +171,7 @@ If the `-m` option is used, a DID Resolution Result is returned, which is a JSON
 - `didDocumentMetadata` - [DID document metadata][did-document-metadata]
 - `@context` - JSON-LD context, if using JSON-LD representation.
 
-Exit status is zero on success, and nonzero on failure. On failure, a DID Resolution Result object may still be returned on standard output if the `-m` option is used, where the `error` property of the DID resolution metadata object is set to the error message. If `-m` is not used, the error message is returned on standnard error.
+Exit status is zero on success, and nonzero on failure. On failure, a DID Resolution Result object may still be returned on standard output if the `-m` option is used, where the `error` property of the DID resolution metadata object is set to the error message. If `-m` is not used, the error message is returned on standard error.
 
 ### `didkit did-dereference <did-url>`
 
@@ -235,7 +235,7 @@ A [DID method transaction][] for a DID Update operation.
 
 Construct a [DID method transaction][] to add or modify a [service][services] in a DID document.
 
-The identified service object is created if it is exists, or reset if it does not exist, to contain the properties corresponding to the options passed, i.e. the `type` and `serviceEndpoint` properties.
+The identified service object is created if it exists, or reset if it does not exist, to contain the properties corresponding to the options passed, i.e. the `type` and `serviceEndpoint` properties.
 
 #### Options
 - `-d, --did <did>` - DID whose DID document to update. Default: implied from `<id>`
