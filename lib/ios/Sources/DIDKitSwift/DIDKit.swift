@@ -69,7 +69,7 @@ public enum DIDKit {
     options: String,
     jwk: String
   ) throws -> String {
-    guard let vcPtr = didkit_vc_issue_credential(credential, options, jwk) else {
+    guard let vcPtr = didkit_vc_issue_credential(credential, options, jwk, nil) else {
       throw Error()
     }
     defer { didkit_free_string(vcPtr) }
@@ -77,7 +77,7 @@ public enum DIDKit {
   }
 
   public static func verifyCredential(credential: String, options: String) throws -> String {
-    guard let resultPtr = didkit_vc_verify_credential(credential, options) else {
+      guard let resultPtr = didkit_vc_verify_credential(credential, options, nil) else {
       throw Error()
     }
     defer { didkit_free_string(resultPtr) }
@@ -89,7 +89,7 @@ public enum DIDKit {
     options: String,
     jwk: String
   ) throws -> String {
-    guard let presentationPtr = didkit_vc_issue_presentation(presentation, options, jwk) else {
+    guard let presentationPtr = didkit_vc_issue_presentation(presentation, options, jwk, nil) else {
       throw Error()
     }
     defer { didkit_free_string(presentationPtr) }
@@ -97,7 +97,7 @@ public enum DIDKit {
   }
 
   public static func verifyPresentation(presentation: String, options: String) throws -> String {
-    guard let resultPtr = didkit_vc_verify_presentation(presentation, options) else {
+    guard let resultPtr = didkit_vc_verify_presentation(presentation, options, nil) else {
       throw Error()
     }
     defer { didkit_free_string(resultPtr) }
@@ -121,7 +121,7 @@ public enum DIDKit {
   }
 
   public static func didAuth(holder: String, options: String, jwk: String) throws -> String {
-    guard let vpPtr = didkit_did_auth(holder, options, jwk) else {
+      guard let vpPtr = didkit_did_auth(holder, options, jwk, nil) else {
       throw Error()
     }
     defer { didkit_free_string(vpPtr) }
