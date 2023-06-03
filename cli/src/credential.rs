@@ -17,7 +17,9 @@ pub enum CredentialCmd {
     /// Verify Credential
     Verify(CredentialVerifyArgs),
     /// Derive Credential
-    Derive(CredentialDeriveArgs)
+    Derive(CredentialDeriveArgs),
+    /// Query Credential
+    Query(CredentialQueryArgs),
 }
 
 #[derive(Args)]
@@ -36,7 +38,14 @@ pub struct CredentialDeriveArgs {
     #[clap(short, long)]
     proof_nonce: String,
     /// Properties to include  
-    #[clap(short, long)]
+    #[clap(short, long, num_args(0..))]
+    selectors: Vec<String>,
+}
+
+#[derive(Args)]
+pub struct CredentialQueryArgs {
+    /// Properties to include
+    #[clap(short, long, num_args(0..))]
     selectors: Vec<String>,    
 }
 
@@ -52,7 +61,8 @@ pub async fn cli(cmd: CredentialCmd) -> Result<()> {
     match cmd {
         CredentialCmd::Issue(cmd_issue) => issue(*cmd_issue).await?,
         CredentialCmd::Verify(cmd_verify) => verify(cmd_verify).await?,
-        CredentialCmd::Derive(cmd_derive) => derive(cmd_derive).await.unwrap()
+        CredentialCmd::Derive(cmd_derive) => derive(cmd_derive).await?,
+        CredentialCmd::Query(cmd_query) => get_nquad_positions(cmd_query).await?,
     };
     Ok(())
 }
@@ -103,6 +113,23 @@ pub async fn issue(args: CredentialIssueArgs) -> Result<()> {
     Ok(())
 }
 
+pub async fn get_nquad_positions(args: CredentialQueryArgs) -> Result<()> {
+    if args.selectors.len() == 0 {
+        eprintln!("No selectors given");
+        return Ok(());
+    }
+
+    let credential_reader = BufReader::new(stdin());
+    let mut context_loader = ContextLoader::default();
+    let credential: VerifiableCredential =
+        serde_json::from_reader(credential_reader).unwrap();
+
+    let positions = credential.get_nquad_positions(&args.selectors, &mut context_loader).await?;
+    let strings: Vec<String> = positions.into_iter().map(|position| position.to_string()).collect();
+    println!("{}", strings.join(" "));
+    Ok(())
+}
+
 pub async fn derive(args: CredentialDeriveArgs) -> Result<()> {
     let credential_reader = BufReader::new(stdin());
     let mut credential: VerifiableCredential =
@@ -148,6 +175,7 @@ pub async fn verify(args: CredentialVerifyArgs) -> Result<()> {
             let credential: VerifiableCredential =
                 serde_json::from_reader(credential_reader).unwrap();
             credential.validate_unsigned().unwrap();
+            // todo this needs to be updated with disclosed messages from command line
             credential
                 .verify(Some(options), &resolver, &mut context_loader)
                 .await

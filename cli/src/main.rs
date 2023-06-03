@@ -3,7 +3,7 @@ use std::{convert::TryFrom, fs::File, io::BufReader, ops::Deref, path::PathBuf, 
 use anyhow::{anyhow, bail, Context, Error as AError, Result as AResult};
 use chrono::prelude::*;
 use clap::{ArgGroup, Args, Parser, Subcommand};
-use credential::{CredentialIssueArgs, CredentialDeriveArgs, CredentialVerifyArgs};
+use credential::{CredentialIssueArgs, CredentialDeriveArgs, CredentialQueryArgs, CredentialVerifyArgs};
 use didkit::ssi::ldp::ProofSuiteType;
 use didkit::{
     ssi,
@@ -71,6 +71,8 @@ pub enum DIDKitCmd {
     DIDDeactivate(did::DidDeactivateArgs),
     #[clap(hide = true)]
     VCIssueCredential(CredentialIssueArgs),
+    #[clap(hide = true)]
+    VCQueryCredential(CredentialQueryArgs),
     GenerateProofNonce,
     #[clap(hide = true)]
     VCVerifyCredential(CredentialVerifyArgs),
@@ -213,12 +215,14 @@ pub struct ProofOptions {
     pub challenge: Option<String>,
     #[clap(env, short, long)]
     pub domain: Option<String>,
-    #[clap(env, short, long)]
-    pub nonce: Option<String>,
 
     // Non-standard options
     #[clap(env, default_value_t, short = 'f', long)]
     pub proof_format: ProofFormat,
+    #[clap(env, short, long)]
+    pub nonce: Option<String>,
+    #[clap(env, long, num_args(0..))]
+    pub disclosed_message_indices: Option<Vec<usize>>,
 }
 
 /// https://github.com/clap-rs/clap/issues/4349
@@ -390,6 +394,7 @@ impl From<ProofOptions> for LinkedDataProofOptions {
             domain: options.domain,
             checks: None,
             nonce: options.nonce,
+            disclosed_message_indices: options.disclosed_message_indices,
             ..Default::default()
         }
     }
@@ -533,6 +538,7 @@ async fn main() -> AResult<()> {
             let nonce = ssi::jws::generate_proof_nonce();
             println!("{}", nonce.as_str());
         },
+        DIDKitCmd::VCQueryCredential(args) => credential::get_nquad_positions(args).await.unwrap(),
         DIDKitCmd::VCVerifyCredential(args) => credential::verify(args).await.unwrap(),
         DIDKitCmd::Credential(cmd) => credential::cli(cmd).await.unwrap(),
         DIDKitCmd::VCIssuePresentation(args) => presentation::issue(args).await.unwrap(),
