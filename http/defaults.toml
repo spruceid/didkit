@@ -7,4 +7,4 @@ address = [127, 0, 0, 1]
 bodysizelimit = 2097152 # 2MiB
 
 [default.issuer]
-# DIDKIT_ISSUER_KEYS = '[<JWK>, <JWK>]'
+# DIDKIT_HTTP_ISSUER_KEYS = '[<JWK>, <JWK>]'
