@@ -10,3 +10,6 @@
 [submodule "http/tests/did-key-test-suite"]
 	path = http/tests/did-key-test-suite
 	url = https://github.com/w3c-ccg/did-key-test-suite.git
+[submodule "http/tests/di-eddsa-2022-test-suite"]
+	path = http/tests/di-eddsa-2022-test-suite
+	url = https://github.com/w3c-ccg/di-eddsa-2022-test-suite.git
