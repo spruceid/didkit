@@ -120,5 +120,8 @@ pub async fn verify(Json(req): Json<VerifyRequest>) -> Result<Json<VerificationR
             return Err((StatusCode::BAD_REQUEST, err_msg).into());
         }
     };
+    if !res.errors.is_empty() {
+        return Err((StatusCode::BAD_REQUEST, format!("{:?}", res.errors)).into());
+    }
     Ok(Json(res))
 }

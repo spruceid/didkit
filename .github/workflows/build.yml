@@ -126,7 +126,9 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        suite: ["vc-api-issuer-test-suite"] # "di-ed25519-test-suite", "did-key-test-suite", "vc-api-verifier-test-suite"
+        # di-ed25519-test-suite fails one test because issuer != proof VM
+        # did-key-test-suite requires more checks in ssi
+        suite: ["vc-api-issuer-test-suite", "di-eddsa-2022-test-suite", "vc-api-verifier-test-suite"] # "di-ed25519-test-suite", "did-key-test-suite"]
     steps:
     - name: Checkout DIDKit repository
       uses: actions/checkout@v3
