@@ -14,7 +14,7 @@ exclude = [
 ]
 
 [dependencies]
-didkit = { version = "0.5", path = "../lib", features = ["http-did"] }
+didkit = { version = "0.6", path = "../lib", features = ["http-did"] }
 
 anyhow = "1.0.70"
 axum = { version = "0.6.16", features = ["macros", "headers"] }
