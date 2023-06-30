@@ -48,12 +48,14 @@ pub async fn pick_key<'a>(
 
 #[cfg(test)]
 mod test {
+    use didkit::URI;
+
     use crate::test::default_keys;
 
     use super::*;
 
     #[tokio::test]
-    async fn pick_key_() {
+    async fn pick_key_only_issuer() {
         let keys = default_keys();
 
         let p256_did = "did:key:zDnaej4NHTz2DtpMByubtLGzZfEjYor4ffJWLuW2eJ4KkZ3r2".to_string();
@@ -74,5 +76,36 @@ mod test {
         .unwrap();
 
         assert_ne!(key1, key2);
+    }
+
+    #[tokio::test]
+    async fn pick_key_ldp_options() {
+        let keys = default_keys();
+
+        let p256_did = "did:key:zDnaej4NHTz2DtpMByubtLGzZfEjYor4ffJWLuW2eJ4KkZ3r2".to_string();
+
+        let options = LinkedDataProofOptions {
+        verification_method: Some(URI::String("did:key:zDnaej4NHTz2DtpMByubtLGzZfEjYor4ffJWLuW2eJ4KkZ3r2#zDnaej4NHTz2DtpMByubtLGzZfEjYor4ffJWLuW2eJ4KkZ3r2".to_string())),
+        ..Default::default()
+    };
+
+        let key1 = pick_key(
+            &keys,
+            &Some(p256_did.clone()),
+            &options,
+            DID_METHODS.to_resolver(),
+        )
+        .await
+        .unwrap();
+        let key2 = pick_key(
+            &keys,
+            &Some(p256_did),
+            &LinkedDataProofOptions::default(),
+            DID_METHODS.to_resolver(),
+        )
+        .await
+        .unwrap();
+
+        assert_eq!(key1, key2);
     }
 }
