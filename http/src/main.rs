@@ -80,7 +80,9 @@ async fn main() {
 
 #[cfg(test)]
 mod test {
+    use didkit::JWK;
     use figment::providers::Format;
+    use serde_json::json;
 
     use super::*;
 
@@ -94,5 +96,10 @@ mod test {
     #[test]
     fn can_generate_default_config() {
         default_config();
+    }
+
+    pub fn default_keys() -> KeyMap {
+        let keys: Vec<JWK> = serde_json::from_value(json!([{"kty":"OKP","crv":"Ed25519","x":"HvjBEw94RHAh9KkiD385aYZNxGkxIkwBcrLBY5Z7Koo","d":"1onWu34oC29Y09qCRl0aD2FOp5y5obTqHZxQQRT3-bs"}, {"kty":"EC","crv":"P-256","x":"FMWMt6D0SymYPdlxXzeGMo1OrZLTrZ44aaW0_gyqCZM","y":"3DOY-ceh9ivyq9CzrmWR67ILrC7e3_FegeBxixWoiYc","d":"DjD-ngByYFcS6bfmofNeT7WNJBtWcO2GnGHJq1S9zkU"}])).unwrap();
+        keys.into_iter().map(|jwk| (jwk.to_public(), jwk)).collect()
     }
 }
