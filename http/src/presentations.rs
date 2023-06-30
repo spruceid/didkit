@@ -38,7 +38,14 @@ pub async fn issue(
     let proof_format = options.proof_format.unwrap_or_default();
     let resolver = DID_METHODS.to_resolver();
     let mut context_loader = ContextLoader::default();
-    let key = match pick_key(&keys, &options.ldp_options, resolver).await {
+    let key = match pick_key(
+        &keys,
+        &presentation.holder.clone().map(String::from),
+        &options.ldp_options,
+        resolver,
+    )
+    .await
+    {
         Some(key) => key,
         None => return Err((StatusCode::NOT_FOUND, "Missing key".to_string()).into()),
     };

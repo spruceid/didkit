@@ -38,6 +38,9 @@ jobs:
 
     - name: Rust Cache
       uses: Swatinem/rust-cache@v2
+      with:
+        workspaces: |
+          didkit
 
     - name: Install Rust old stable with incremental compilation
       uses: actions-rs/toolchain@v1
@@ -128,7 +131,8 @@ jobs:
       matrix:
         # di-ed25519-test-suite fails one test because issuer != proof VM
         # did-key-test-suite requires more checks in ssi
-        suite: ["vc-api-issuer-test-suite", "di-eddsa-2022-test-suite", "vc-api-verifier-test-suite"] # "di-ed25519-test-suite", "did-key-test-suite"]
+        # di-eddsa-2022-test-suite passes but currently it's depending on a (npm) git branch that doesn't exist anymore
+        suite: ["vc-api-issuer-test-suite", "vc-api-verifier-test-suite"] # "di-eddsa-2022-test-suite", "di-ed25519-test-suite", "did-key-test-suite"]
     steps:
     - name: Checkout DIDKit repository
       uses: actions/checkout@v3
@@ -187,6 +191,9 @@ jobs:
 
     - name: Rust Cache
       uses: Swatinem/rust-cache@v2
+      with:
+        workspaces: |
+          didkit
 
     - name: Install Rust iOS targets
       run: make -C lib install-rustup-ios
@@ -212,6 +219,9 @@ jobs:
 
     - name: Rust Cache
       uses: Swatinem/rust-cache@v2
+      with:
+        workspaces: |
+          didkit
 
     - name: Build
       run: cargo build

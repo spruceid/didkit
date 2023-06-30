@@ -30,7 +30,14 @@ pub async fn issue(
     let proof_format = options.proof_format.unwrap_or_default();
     let resolver = DID_METHODS.to_resolver();
     let mut context_loader = ContextLoader::default();
-    let key = match pick_key(&keys, &options.ldp_options, resolver).await {
+    let key = match pick_key(
+        &keys,
+        &credential.issuer.clone().map(|i| i.get_id()),
+        &options.ldp_options,
+        resolver,
+    )
+    .await
+    {
         Some(key) => key,
         None => return Err((StatusCode::NOT_FOUND, "Missing key".to_string()).into()),
     };
@@ -122,4 +129,65 @@ pub async fn verify(
         return Err((StatusCode::BAD_REQUEST, format!("{:?}", res.errors)).into());
     }
     Ok(Json(res))
+}
+
+#[cfg(test)]
+mod test {
+    use serde_json::json;
+
+    use crate::test::default_keys;
+
+    use super::*;
+
+    #[tokio::test]
+    async fn issue_ed25519() {
+        let keys = default_keys();
+        let req = serde_json::from_value(json!({
+          "credential": {
+            "@context": [
+              "https://www.w3.org/2018/credentials/v1"
+            ],
+            "id": "urn:uuid:040d4921-4756-447b-99ad-8d4978420e91",
+            "type": [
+              "VerifiableCredential"
+            ],
+            "issuer": "did:key:z6MkgYAGxLBSXa6Ygk1PnUbK2F7zya8juE9nfsZhrvY7c9GD",
+            "credentialSubject": {
+              "id": "did:key:z6MktKwz7Ge1Yxzr4JHavN33wiwa8y81QdcMRLXQsrH9T53b"
+            }
+          },
+          "options": {
+            "type": "DataIntegrityProof"
+          }
+        }))
+        .unwrap();
+
+        let _ = issue(Extension(keys), CustomErrorJson(req)).await.unwrap();
+    }
+
+    #[tokio::test]
+    async fn issue_p256() {
+        let keys = default_keys();
+        let req = serde_json::from_value(json!({
+          "credential": {
+            "@context": [
+              "https://www.w3.org/2018/credentials/v1"
+            ],
+            "id": "urn:uuid:040d4921-4756-447b-99ad-8d4978420e91",
+            "type": [
+              "VerifiableCredential"
+            ],
+            "issuer": "did:key:zDnaej4NHTz2DtpMByubtLGzZfEjYor4ffJWLuW2eJ4KkZ3r2",
+            "credentialSubject": {
+              "id": "did:key:z6MktKwz7Ge1Yxzr4JHavN33wiwa8y81QdcMRLXQsrH9T53b"
+            }
+          },
+          "options": {
+            "type": "DataIntegrityProof"
+          }
+        }))
+        .unwrap();
+
+        let _ = issue(Extension(keys), CustomErrorJson(req)).await.unwrap();
+    }
 }
