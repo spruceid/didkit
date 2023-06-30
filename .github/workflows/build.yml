@@ -38,6 +38,9 @@ jobs:
 
     - name: Rust Cache
       uses: Swatinem/rust-cache@v2
+      with:
+        workspaces: |
+          didkit
 
     - name: Install Rust old stable with incremental compilation
       uses: actions-rs/toolchain@v1
@@ -187,6 +190,9 @@ jobs:
 
     - name: Rust Cache
       uses: Swatinem/rust-cache@v2
+      with:
+        workspaces: |
+          didkit
 
     - name: Install Rust iOS targets
       run: make -C lib install-rustup-ios
@@ -212,6 +218,9 @@ jobs:
 
     - name: Rust Cache
       uses: Swatinem/rust-cache@v2
+      with:
+        workspaces: |
+          didkit
 
     - name: Build
       run: cargo build
