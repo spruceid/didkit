@@ -1,0 +1,15 @@
+[submodule "http/tests/di-ed25519-test-suite"]
+	path = http/tests/di-ed25519-test-suite
+	url = https://github.com/w3c-ccg/di-ed25519-test-suite.git
+[submodule "http/tests/vc-api-issuer-test-suite"]
+	path = http/tests/vc-api-issuer-test-suite
+	url = https://github.com/w3c-ccg/vc-api-issuer-test-suite.git
+[submodule "http/tests/vc-api-verifier-test-suite"]
+	path = http/tests/vc-api-verifier-test-suite
+	url = https://github.com/w3c-ccg/vc-api-verifier-test-suite.git
+[submodule "http/tests/did-key-test-suite"]
+	path = http/tests/did-key-test-suite
+	url = https://github.com/w3c-ccg/did-key-test-suite.git
+[submodule "http/tests/di-eddsa-2022-test-suite"]
+	path = http/tests/di-eddsa-2022-test-suite
+	url = https://github.com/w3c-ccg/di-eddsa-2022-test-suite.git

@@ -1,6 +1,6 @@
 [package]
 name = "didkit"
-version = "0.5.0"
+version = "0.6.0"
 authors = ["Spruce Systems, Inc."]
 edition = "2018"
 description = "Library for Verifiable Credentials and Decentralized Identifiers."
@@ -38,7 +38,7 @@ http-did = ["ssi/http-did"]
 ring = ["ssi/ring"]
 
 [dependencies]
-ssi = { version = "0.6", path = "../../ssi", default-features = false }
+ssi = { version = "0.7.0", path = "../../ssi", default-features = false }
 did-method-key = { version = "0.2.0", path = "../../ssi/did-key", default-features = false }
 did-tz = { version = "0.2.0", path = "../../ssi/did-tezos" }
 did-ethr = { version = "0.2", path = "../../ssi/did-ethr", default-features = false }

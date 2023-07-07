@@ -1,0 +1,10 @@
+[default.http]
+# DIDKIT_HTTP_HTTP_PORT
+port = 3000
+# DIDKIT_HTTP_HTTP_ADDRESS
+address = [127, 0, 0, 1]
+# DIDKIT_HTTP_HTTP_BODYSIZELIMIT
+bodysizelimit = 2097152 # 2MiB
+
+[default.issuer]
+# DIDKIT_HTTP_ISSUER_KEYS = '[<JWK>, <JWK>]'
