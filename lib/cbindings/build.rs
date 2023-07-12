@@ -15,10 +15,7 @@ fn main() {
     let out_dir = workspace_dir.join("target");
     let out_file = out_dir.join("didkit.h");
 
-    let mut config = cbindgen::Config::from_root_or_default(lib_dir);
-    config.parse.expand.crates = vec!["didkit".to_owned()];
-
-    cbindgen::generate_with_config(lib_dir, config)
+    cbindgen::generate(lib_dir)
         .expect("Unable to generate bindings")
         .write_to_file(&out_file);
 
