@@ -39,9 +39,12 @@ fn jstring_or_error(env: &JNIEnv, result: Result<jstring, Error>) -> jstring {
 }
 
 #[no_mangle]
-pub extern "system" fn Java_com_spruceid_DIDKit_generateEd25519Key(env: &JNIEnv) -> jstring {
+pub extern "system" fn Java_com_spruceid_DIDKit_generateEd25519Key(
+    env: JNIEnv,
+    _class: JClass,
+) -> jstring {
     jstring_or_error(
-        env,
+        &env,
         (|| {
             let jwk = JWK::generate_ed25519()?;
             let jwk_json = serde_json::to_string(&jwk)?;
@@ -51,9 +54,12 @@ pub extern "system" fn Java_com_spruceid_DIDKit_generateEd25519Key(env: &JNIEnv)
 }
 
 #[no_mangle]
-pub extern "system" fn Java_com_spruceid_DIDKit_generateSecp256r1Key(env: &JNIEnv) -> jstring {
+pub extern "system" fn Java_com_spruceid_DIDKit_generateSecp256r1Key(
+    env: JNIEnv,
+    _class: JClass,
+) -> jstring {
     jstring_or_error(
-        env,
+        &env,
         (|| {
             let jwk = JWK::generate_p256()?;
             let jwk_json = serde_json::to_string(&jwk)?;
@@ -63,9 +69,12 @@ pub extern "system" fn Java_com_spruceid_DIDKit_generateSecp256r1Key(env: &JNIEn
 }
 
 #[no_mangle]
-pub extern "system" fn Java_com_spruceid_DIDKit_generateSecp256k1Key(env: &JNIEnv) -> jstring {
+pub extern "system" fn Java_com_spruceid_DIDKit_generateSecp256k1Key(
+    env: JNIEnv,
+    _class: JClass,
+) -> jstring {
     jstring_or_error(
-        env,
+        &env,
         (|| {
             let jwk = JWK::generate_secp256k1()?;
             let jwk_json = serde_json::to_string(&jwk)?;
@@ -75,9 +84,12 @@ pub extern "system" fn Java_com_spruceid_DIDKit_generateSecp256k1Key(env: &JNIEn
 }
 
 #[no_mangle]
-pub extern "system" fn Java_com_spruceid_DIDKit_generateSecp384r1Key(env: &JNIEnv) -> jstring {
+pub extern "system" fn Java_com_spruceid_DIDKit_generateSecp384r1Key(
+    env: JNIEnv,
+    _class: JClass,
+) -> jstring {
     jstring_or_error(
-        env,
+        &env,
         (|| {
             let jwk = JWK::generate_p384()?;
             let jwk_json = serde_json::to_string(&jwk)?;
@@ -88,12 +100,13 @@ pub extern "system" fn Java_com_spruceid_DIDKit_generateSecp384r1Key(env: &JNIEn
 
 #[no_mangle]
 pub extern "system" fn Java_com_spruceid_DIDKit_keyToDID(
-    env: &JNIEnv,
+    env: JNIEnv,
+    _class: JClass,
     method_pattern_jstring: JString,
     key_jstring: JString,
 ) -> jstring {
     jstring_or_error(
-        env,
+        &env,
         (|| {
             let key_json: String = env.get_string(key_jstring).unwrap().into();
             let method_pattern: String = env.get_string(method_pattern_jstring).unwrap().into();
@@ -108,12 +121,13 @@ pub extern "system" fn Java_com_spruceid_DIDKit_keyToDID(
 
 #[no_mangle]
 pub extern "system" fn Java_com_spruceid_DIDKit_keyToVerificationMethod(
-    env: &JNIEnv,
+    env: JNIEnv,
+    _class: JClass,
     method_pattern_jstring: JString,
     key_jstring: JString,
 ) -> jstring {
     jstring_or_error(
-        env,
+        &env,
         (|| {
             let key_json: String = env.get_string(key_jstring).unwrap().into();
             let method_pattern: String = env.get_string(method_pattern_jstring).unwrap().into();
@@ -133,13 +147,14 @@ pub extern "system" fn Java_com_spruceid_DIDKit_keyToVerificationMethod(
 
 #[no_mangle]
 pub extern "system" fn Java_com_spruceid_DIDKit_issueCredential(
-    env: &JNIEnv,
+    env: JNIEnv,
+    _class: JClass,
     credential_jstring: JString,
     proof_options_jstring: JString,
     key_jstring: JString,
 ) -> jstring {
     jstring_or_error(
-        env,
+        &env,
         (|| {
             let resolver = DID_METHODS.to_resolver();
             let mut context_loader = ssi::jsonld::ContextLoader::default();
@@ -175,12 +190,13 @@ pub extern "system" fn Java_com_spruceid_DIDKit_issueCredential(
 
 #[no_mangle]
 pub extern "system" fn Java_com_spruceid_DIDKit_verifyCredential(
-    env: &JNIEnv,
+    env: JNIEnv,
+    _class: JClass,
     vc_jstring: JString,
     proof_options_jstring: JString,
 ) -> jstring {
     jstring_or_error(
-        env,
+        &env,
         (|| {
             let vc_string: String = env.get_string(vc_jstring).unwrap().into();
             let proof_options_json: String = env.get_string(proof_options_jstring).unwrap().into();
@@ -209,13 +225,14 @@ pub extern "system" fn Java_com_spruceid_DIDKit_verifyCredential(
 
 #[no_mangle]
 pub extern "system" fn Java_com_spruceid_DIDKit_issuePresentation(
-    env: &JNIEnv,
+    env: JNIEnv,
+    _class: JClass,
     presentation_jstring: JString,
     proof_options_jstring: JString,
     key_jstring: JString,
 ) -> jstring {
     jstring_or_error(
-        env,
+        &env,
         (|| {
             let resolver = DID_METHODS.to_resolver();
             let mut context_loader = ssi::jsonld::ContextLoader::default();
@@ -251,13 +268,14 @@ pub extern "system" fn Java_com_spruceid_DIDKit_issuePresentation(
 
 #[no_mangle]
 pub extern "system" fn Java_com_spruceid_DIDKit_DIDAuth(
-    env: &JNIEnv,
+    env: JNIEnv,
+    _class: JClass,
     holder_jstring: JString,
     proof_options_jstring: JString,
     key_jstring: JString,
 ) -> jstring {
     jstring_or_error(
-        env,
+        &env,
         (|| {
             let resolver = DID_METHODS.to_resolver();
             let mut context_loader = ssi::jsonld::ContextLoader::default();
@@ -296,12 +314,13 @@ pub extern "system" fn Java_com_spruceid_DIDKit_DIDAuth(
 
 #[no_mangle]
 pub extern "system" fn Java_com_spruceid_DIDKit_verifyPresentation(
-    env: &JNIEnv,
+    env: JNIEnv,
+    _class: JClass,
     vp_jstring: JString,
     proof_options_jstring: JString,
 ) -> jstring {
     jstring_or_error(
-        env,
+        &env,
         (|| {
             let vp_string: String = env.get_string(vp_jstring).unwrap().into();
             let proof_options_json: String = env.get_string(proof_options_jstring).unwrap().into();
@@ -330,12 +349,13 @@ pub extern "system" fn Java_com_spruceid_DIDKit_verifyPresentation(
 
 #[no_mangle]
 pub extern "system" fn Java_com_spruceid_DIDKit_resolveDID(
-    env: &JNIEnv,
+    env: JNIEnv,
+    _class: JClass,
     did_jstring: JString,
     input_metadata_jstring: JString,
 ) -> jstring {
     jstring_or_error(
-        env,
+        &env,
         (|| {
             let did: String = env.get_string(did_jstring).unwrap().into();
             let input_metadata_json: String = if input_metadata_jstring.is_null() {
@@ -363,12 +383,13 @@ pub extern "system" fn Java_com_spruceid_DIDKit_resolveDID(
 
 #[no_mangle]
 pub extern "system" fn Java_com_spruceid_DIDKit_dereferenceDIDURL(
-    env: &JNIEnv,
+    env: JNIEnv,
+    _class: JClass,
     did_url_jstring: JString,
     input_metadata_jstring: JString,
 ) -> jstring {
     jstring_or_error(
-        env,
+        &env,
         (|| {
             let did_url: String = env.get_string(did_url_jstring).unwrap().into();
             let input_metadata_json: String = if input_metadata_jstring.is_null() {

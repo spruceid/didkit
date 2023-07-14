@@ -62,10 +62,10 @@ $(TARGET)/test/java.stamp: \
 	touch $@
 
 $(TARGET)/jvm/%.class: java/main/%.java | $(TARGET)/jvm
-	javac $^ -d $(TARGET)/jvm -cp java/main -source 1.7 -target 1.7
+	javac $^ -d $(TARGET)/jvm -cp java/main -source 1.8 -target 1.8
 
 $(TARGET)/jvm/%.class: java/test/%.java | $(TARGET)/jvm
-	javac $^ -d $(TARGET)/jvm -cp java/main -source 1.7 -target 1.7
+	javac $^ -d $(TARGET)/jvm -cp java/main -source 1.8 -target 1.8
 
 $(TARGET)/com_spruceid_DIDKit.h: java/main/com/spruceid/DIDKit.java
 	javac -h $(TARGET) $<
