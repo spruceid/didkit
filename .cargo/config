@@ -1,15 +1,11 @@
-[target.aarch64-linux-android]
-ar = "/home/jward/Android/Sdk/ndk/22.0.7026061/toolchains/llvm/prebuilt/darwin-x86_64/bin/aarch64-linux-android-ar"
-linker = "/home/jward/Android/Sdk/ndk/22.0.7026061/toolchains/llvm/prebuilt/darwin-x86_64/bin/aarch64-linux-android30-clang"
+[target.i686-linux-android]
+linker = "i686-linux-android16-clang"
 
 [target.armv7-linux-androideabi]
-ar = "/home/jward/Android/Sdk/ndk/22.0.7026061/toolchains/llvm/prebuilt/darwin-x86_64/bin/arm-linux-androideabi-ar"
-linker = "/home/jward/Android/Sdk/ndk/22.0.7026061/toolchains/llvm/prebuilt/darwin-x86_64/bin/armv7a-linux-androideabi30-clang"
+linker = "armv7a-linux-androideabi16-clang"
 
-[target.i686-linux-android]
-ar = "/home/jward/Android/Sdk/ndk/22.0.7026061/toolchains/llvm/prebuilt/darwin-x86_64/bin/i686-linux-android-ar"
-linker = "/home/jward/Android/Sdk/ndk/22.0.7026061/toolchains/llvm/prebuilt/darwin-x86_64/bin/i686-linux-android30-clang"
+[target.aarch64-linux-android]
+linker = "aarch64-linux-android21-clang"
 
 [target.x86_64-linux-android]
-ar = "/home/jward/Android/Sdk/ndk/22.0.7026061/toolchains/llvm/prebuilt/darwin-x86_64/bin/x86_64-linux-android-ar"
-linker = "/home/jward/Android/Sdk/ndk/22.0.7026061/toolchains/llvm/prebuilt/darwin-x86_64/bin/x86_64-linux-android30-clang"
+linker = "x86_64-linux-android21-clang"
