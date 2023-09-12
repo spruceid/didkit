@@ -29,7 +29,7 @@ jobs:
         registry: ghcr.io
         username: ${{ github.actor }}
         password: ${{ secrets.SBIHEL_GH_PACKAGE_PUSH_TOKEN }}
-    - uses: docker/build-push-action@v4
+    - uses: docker/build-push-action@v5
       with:
         push: true
         tags: ${{ steps.meta.outputs.tags }}
