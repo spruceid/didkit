@@ -1,8 +1,8 @@
 [target.i686-linux-android]
-linker = "i686-linux-android16-clang"
+linker = "i686-linux-android19-clang"
 
 [target.armv7-linux-androideabi]
-linker = "armv7a-linux-androideabi16-clang"
+linker = "armv7a-linux-androideabi19-clang"
 
 [target.aarch64-linux-android]
 linker = "aarch64-linux-android21-clang"
