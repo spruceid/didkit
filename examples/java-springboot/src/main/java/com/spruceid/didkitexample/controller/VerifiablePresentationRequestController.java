@@ -29,12 +29,16 @@ import java.util.Collections;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
 
 @RestController
 @AllArgsConstructor
 public class VerifiablePresentationRequestController {
     private final UserService userService;
     private final StringRedisTemplate redisTemplate;
+    private static Logger logger = LogManager.getLogger();
 
     @Autowired
     private final ConcurrentHashMap<String, WebSocketSession> sessionMap;
@@ -43,6 +47,7 @@ public class VerifiablePresentationRequestController {
     public VerifiablePresentationRequest vpRequestGet(
             @PathVariable("challenge") String challenge
     ) {
+        logger.info("GET /verifiable-presentation-request/" + challenge);
         return new VerifiablePresentationRequest(
                 "VerifiablePresentationRequest",
                 Collections.singletonList(new VerifiablePresentationRequestQuery(
@@ -66,20 +71,25 @@ public class VerifiablePresentationRequestController {
             @PathVariable("challenge") String challenge,
             @RequestParam("presentation") String presentation
     ) throws Exception {
+        logger.info("POST /verifiable-presentation-request/" + challenge);
         final Resource keyFile;
         final String key;
 
+        logger.info("Attempting to load key");
         try {
             keyFile = new FileSystemResource(Resources.key);
             key = Files.readString(keyFile.getFile().toPath());
         } catch (Exception e) {
+            logger.error("POST verifiable-presentation-request failed to load key");
             throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Failed to load key");
         }
 
+        logger.info("VerifiablePresentation.verifyPresentation");
         final Map<String, Object> vc = VerifiablePresentation.verifyPresentation(key, presentation, challenge);
         final Map<String, Object> credentialSubject = (Map<String, Object>) vc.get("credentialSubject");
 
         final String username = credentialSubject.get("alumniOf").toString();
+        logger.info("userService.loadUserByUsername");
         final User user = (User) userService.loadUserByUsername(username);
 
         final String uuid = UUID.randomUUID().toString();
@@ -87,14 +97,20 @@ public class VerifiablePresentationRequestController {
         redisTemplate.expire(uuid, Duration.ofSeconds(90));
 
         if (sessionMap.containsKey(challenge)) {
+            logger.info("SessionMap has a challenge");
             try {
+                logger.info("Trying to send message");
                 sessionMap.get(challenge).sendMessage(new TextMessage(uuid));
             } catch (Exception e) {
+                logger.error("POST Failed to return sign in token");
                 throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Failed to return sign in token");
             }
             sessionMap.remove(challenge);
         } else {
+            logger.info("SessionMap does not have a challenge");
+            logger.error("POST invalid or expired token");
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid or expired token");
         }
+        logger.info("Success");
     }
 }

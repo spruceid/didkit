@@ -25,11 +25,16 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
+
 @RestController
 @AllArgsConstructor
 public class CredentialOfferController {
     private final UserService userService;
     private final StringRedisTemplate redisTemplate;
+    private static Logger logger = LogManager.getLogger();
 
     private static final DateTimeFormatter dateFormat = DateTimeFormatter.ISO_INSTANT.withZone(ZoneId.from(ZoneOffset.UTC));
 
@@ -40,6 +45,7 @@ public class CredentialOfferController {
         final Resource keyFile;
         final String key;
         final String issuer;
+        logger.info("GET /credential-offer/" + token);
 
         try {
             keyFile = new FileSystemResource(Resources.key);
@@ -93,6 +99,7 @@ public class CredentialOfferController {
             @PathVariable("token") String token,
             @RequestParam("subject_id") String did
     ) throws Exception {
+        logger.info("/credential-offer/" + token);
         final String username = redisTemplate.opsForValue().get(token);
         final User user = (User) userService.loadUserByUsername(username);
 
