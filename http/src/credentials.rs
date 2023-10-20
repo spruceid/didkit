@@ -1,7 +1,7 @@
 use anyhow::Context;
 use axum::{http::StatusCode, Extension, Json};
 use didkit::{
-    ssi::ldp::{now_ms, Error as LdpError},
+    ssi::ldp::{now_ns, Error as LdpError},
     ContextLoader, CredentialOrJWT, JWTOrLDPOptions, ProofFormat, VerifiableCredential,
     VerificationResult, DID_METHODS,
 };
@@ -42,7 +42,7 @@ pub async fn issue(
         None => return Err((StatusCode::NOT_FOUND, "Missing key".to_string()).into()),
     };
     if credential.issuance_date.is_none() {
-        credential.issuance_date = Some(now_ms().into());
+        credential.issuance_date = Some(now_ns().into());
     }
     if let Err(e) = credential.validate_unsigned() {
         return Err((StatusCode::BAD_REQUEST, e.to_string()).into());
