@@ -117,7 +117,7 @@ jobs:
     - name: Setup Android SDK
       uses: android-actions/setup-android@v2
     - name: Install NDK
-      run: sdkmanager --install "build-tools;29.0.3" "ndk;22.0.7026061" "cmdline-tools;latest"
+      run: sdkmanager --install "build-tools;33.0.2" "ndk;25.2.9519653" "cmdline-tools;latest"
     - name: Install gcc-multilib
       run: |
         sudo apt update
