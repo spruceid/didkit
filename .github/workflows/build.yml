@@ -45,7 +45,7 @@ jobs:
     - name: Install Rust old stable with incremental compilation
       uses: actions-rs/toolchain@v1
       with:
-        toolchain: 1.66.0
+        toolchain: 1.70.0
         profile: minimal
         default: true
 
@@ -117,13 +117,13 @@ jobs:
     - name: Setup Android SDK
       uses: android-actions/setup-android@v2
     - name: Install NDK
-      run: sdkmanager --install "build-tools;29.0.3" "ndk;22.0.7026061" "cmdline-tools;latest"
+      run: sdkmanager --install "build-tools;33.0.2" "ndk;25.2.9519653" "cmdline-tools;latest"
     - name: Install gcc-multilib
       run: |
         sudo apt update
         sudo apt install gcc-multilib -y
     - name: Build Android Archive
-      run: AR_i686_linux_android=$ANDROID_SDK_ROOT/ndk/22.0.7026061/toolchains/llvm/prebuilt/linux-x86_64/i686-linux-android/bin/ar PATH=$ANDROID_SDK_ROOT/ndk/22.0.7026061/toolchains/llvm/prebuilt/linux-x86_64/bin:$PATH TARGET_CC=$(which clang) cargo build --lib --target i686-linux-android
+      run: AR=$ANDROID_SDK_ROOT/ndk/25.2.9519653/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-ar RANLIB=$ANDROID_SDK_ROOT/ndk/25.2.9519653/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-ranlib TARGET_CC=$ANDROID_SDK_ROOT/ndk/25.2.9519653/toolchains/llvm/prebuilt/linux-x86_64/bin/i686-linux-android19-clang PATH=$ANDROID_SDK_ROOT/ndk/25.2.9519653/toolchains/llvm/prebuilt/linux-x86_64/bin:$PATH cargo build --lib --target i686-linux-android
 
   test_http:
     runs-on: ubuntu-latest
