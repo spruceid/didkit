@@ -11,14 +11,25 @@ import org.springframework.security.authentication.AuthenticationProvider;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Component;
+import org.springframework.beans.factory.annotation.Autowired;
+
+
+import com.spruceid.didkitexample.config.DIDKitConfig;
+
+import java.util.Optional;
+import java.util.Map;
 
 import java.nio.file.Files;
-import java.util.Map;
+
 
 @Component
 @AllArgsConstructor
 public class VPAuthenticationProvider implements AuthenticationProvider {
     private final UserService userService;
+
+    @Autowired
+    private final DIDKitConfig didkitConfig;
+
 
     @Override
     public Authentication authenticate(Authentication auth) {
@@ -37,7 +48,13 @@ public class VPAuthenticationProvider implements AuthenticationProvider {
 
         final Map<String, Object> vc;
         try {
-            vc = VerifiablePresentation.verifyPresentation(key, presentation, null);
+            vc = VerifiablePresentation.verifyPresentation(
+                     key,
+                     presentation,
+                     Optional.empty(),
+                     Optional.empty(),
+                     Optional.of(didkitConfig.maxClockSkew)
+                 );
         } catch (Exception e) {
             throw new BadCredentialsException("Failed to verify presentation");
         }
@@ -55,4 +72,3 @@ public class VPAuthenticationProvider implements AuthenticationProvider {
         return VPAuthenticationToken.class.isAssignableFrom(authentication);
     }
 }
-

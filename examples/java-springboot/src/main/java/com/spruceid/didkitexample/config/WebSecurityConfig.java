@@ -15,6 +15,9 @@ import org.springframework.security.config.annotation.web.configuration.WebSecur
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
+import com.spruceid.didkitexample.config.DIDKitConfig;
+
+
 @EnableWebSecurity
 @AllArgsConstructor
 public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
@@ -24,8 +27,12 @@ public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
     @Autowired
     private final StringRedisTemplate redisTemplate;
 
+    @Autowired
+    private final DIDKitConfig didkitConfig;
+
+
     public AuthenticationProvider customAuthenticationProvider() {
-        return new VPAuthenticationProvider(userService);
+        return new VPAuthenticationProvider(userService, didkitConfig);
     }
 
     public VPAuthenticationFilter authenticationFilter() throws Exception {

@@ -29,6 +29,10 @@ import java.util.Collections;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.Optional;
+
+import com.spruceid.didkitexample.config.DIDKitConfig;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -42,6 +46,9 @@ public class VerifiablePresentationRequestController {
 
     @Autowired
     private final ConcurrentHashMap<String, WebSocketSession> sessionMap;
+
+    @Autowired
+    private final DIDKitConfig didkitConfig;
 
     @GetMapping(value = "/verifiable-presentation-request/{challenge}", produces = MediaType.APPLICATION_JSON_VALUE)
     public VerifiablePresentationRequest vpRequestGet(
@@ -85,7 +92,14 @@ public class VerifiablePresentationRequestController {
         }
 
         logger.info("VerifiablePresentation.verifyPresentation");
-        final Map<String, Object> vc = VerifiablePresentation.verifyPresentation(key, presentation, challenge);
+        final Map<String, Object> vc =
+            VerifiablePresentation.verifyPresentation(
+                key,
+                presentation,
+                Optional.of(challenge),
+                Optional.empty(),
+                Optional.of(didkitConfig.maxClockSkew)
+            );
         final Map<String, Object> credentialSubject = (Map<String, Object>) vc.get("credentialSubject");
 
         final String username = credentialSubject.get("alumniOf").toString();

@@ -48,7 +48,13 @@ public class UserService implements UserDetailsService {
         final String verificationMethod = DIDKit.keyToVerificationMethod("key", key);
 
         final UserCredential credential = new UserCredential(didKey, id, user.getUsername());
-        final DIDKitOptions options = new DIDKitOptions("assertionMethod", verificationMethod, null, null);
+        final DIDKitOptions options = new DIDKitOptions(
+            "assertionMethod",  // proofPurpose
+            verificationMethod, // verificationMethos
+            Optional.empty(),   // challenge
+            null,               // domain
+            Optional.empty()    // created
+        );
 
         final ObjectMapper mapper = new ObjectMapper();
         final String credentialJson = mapper.writeValueAsString(credential);
@@ -57,4 +63,3 @@ public class UserService implements UserDetailsService {
         return DIDKit.issueCredential(credentialJson, optionsJson, key);
     }
 }
-
