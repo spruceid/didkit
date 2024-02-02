@@ -23,13 +23,13 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - name: Checkout DIDKit repository
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4
       with:
         path: didkit
         submodules: true
 
     - name: Checkout SSI library
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4
       with:
         repository: spruceid/ssi
         path: ssi
@@ -135,12 +135,12 @@ jobs:
         suite: ["vc-api-issuer-test-suite", "vc-api-verifier-test-suite"] # "di-eddsa-2022-test-suite", "di-ed25519-test-suite", "did-key-test-suite"]
     steps:
     - name: Checkout DIDKit repository
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4
       with:
         path: didkit
         submodules: true
     - name: Checkout SSI library
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4
       with:
         repository: spruceid/ssi
         path: ssi
@@ -177,12 +177,12 @@ jobs:
     runs-on: macos-latest
     steps:
     - name: Checkout DIDKit repository
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4
       with:
         path: didkit
 
     - name: Checkout SSI library
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4
       with:
         repository: spruceid/ssi
         path: ssi
@@ -205,12 +205,12 @@ jobs:
     runs-on: windows-latest
     steps:
     - name: Checkout DIDKit repository
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4
       with:
         path: didkit
 
     - name: Checkout SSI library
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4
       with:
         repository: spruceid/ssi
         path: ssi
