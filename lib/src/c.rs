@@ -259,6 +259,57 @@ pub extern "C" fn didkit_vc_issue_presentation(
     ))
 }
 
+// Issue Presentation for JWT
+fn issue_presentation_jwt(
+    presentation_json_ptr: *const c_char,
+    proof_options_json_ptr: *const c_char,
+    key_json_ptr: *const c_char,
+) -> Result<*const c_char, Error> {
+    let resolver = DID_METHODS.to_resolver();
+    let mut context_loader = ssi::jsonld::ContextLoader::default();
+    let presentation_json = unsafe { CStr::from_ptr(presentation_json_ptr) }.to_str()?;
+    let proof_options_json = unsafe { CStr::from_ptr(proof_options_json_ptr) }.to_str()?;
+    let key_json = unsafe { CStr::from_ptr(key_json_ptr) }.to_str()?;
+    let mut presentation = VerifiablePresentation::from_json_unsigned(presentation_json)?;
+    let key: JWK = serde_json::from_str(key_json)?;
+    let options: JWTOrLDPOptions = serde_json::from_str(proof_options_json)?;
+    let proof_format = ProofFormat::JWT;
+    let rt = runtime::get()?;
+    let out = match proof_format {
+        ProofFormat::JWT => {
+            rt.block_on(presentation.generate_jwt(Some(&key), &options.ldp_options, resolver))?
+        }
+        ProofFormat::LDP => {
+            let proof = rt.block_on(presentation.generate_proof(
+                &key,
+                &options.ldp_options,
+                resolver,
+                &mut context_loader,
+            ))?;
+            presentation.add_proof(proof);
+            serde_json::to_string(&presentation)?
+        }
+    };
+    Ok(CString::new(out)?.into_raw())
+}
+#[no_mangle]
+/// Issue a Verifiable Presentation. Input parameters are JSON C strings for the unsigned
+/// presentation to be issued, the linked data proof options, and the JWK for signing. On success,
+/// the newly-issued verifiable presentation is returned as a newly-allocated C string. The
+/// returned string should be freed using [`didkit_free_string`]. On failure, `NULL` is returned, and the
+/// error message can be retrieved using [`didkit_error_message`].
+pub extern "C" fn didkit_vc_issue_presentation_jwt(
+    presentation_json: *const c_char,
+    proof_options_json: *const c_char,
+    key_json: *const c_char,
+) -> *const c_char {
+    ccchar_or_error(issue_presentation_jwt(
+        presentation_json,
+        proof_options_json,
+        key_json,
+    ))
+}
+
 // Issue Presentation (DIDAuth)
 fn did_auth(
     holder_ptr: *const c_char,
