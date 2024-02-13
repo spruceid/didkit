@@ -17,7 +17,31 @@ public enum DIDKit {
   }
 
   public static func generateEd25519Key() throws -> String {
-    guard let keyPtr = didkit_vc_generate_ed25519_key() else {
+    guard let keyPtr = didkit_generate_ed25519_key() else {
+      throw Error()
+    }
+    defer { didkit_free_string(keyPtr) }
+    return String(cString: keyPtr)
+  }
+
+  public static func generateSecp256r1Key() throws -> String {
+    guard let keyPtr = didkit_generate_secp256r1_key() else {
+      throw Error()
+    }
+    defer { didkit_free_string(keyPtr) }
+    return String(cString: keyPtr)
+  }
+
+  public static func generateSecp256k1Key() throws -> String {
+    guard let keyPtr = didkit_generate_secp256k1_key() else {
+      throw Error()
+    }
+    defer { didkit_free_string(keyPtr) }
+    return String(cString: keyPtr)
+  }
+
+  public static func generateSecp384r1Key() throws -> String {
+    guard let keyPtr = didkit_generate_secp384r1_key() else {
       throw Error()
     }
     defer { didkit_free_string(keyPtr) }
@@ -45,7 +69,7 @@ public enum DIDKit {
     options: String,
     jwk: String
   ) throws -> String {
-    guard let vcPtr = didkit_vc_issue_credential(credential, options, jwk) else {
+    guard let vcPtr = didkit_vc_issue_credential(credential, options, jwk, nil) else {
       throw Error()
     }
     defer { didkit_free_string(vcPtr) }
@@ -53,7 +77,7 @@ public enum DIDKit {
   }
 
   public static func verifyCredential(credential: String, options: String) throws -> String {
-    guard let resultPtr = didkit_vc_verify_credential(credential, options) else {
+      guard let resultPtr = didkit_vc_verify_credential(credential, options, nil) else {
       throw Error()
     }
     defer { didkit_free_string(resultPtr) }
@@ -65,7 +89,7 @@ public enum DIDKit {
     options: String,
     jwk: String
   ) throws -> String {
-    guard let presentationPtr = didkit_vc_issue_presentation(presentation, options, jwk) else {
+    guard let presentationPtr = didkit_vc_issue_presentation(presentation, options, jwk, nil) else {
       throw Error()
     }
     defer { didkit_free_string(presentationPtr) }
@@ -73,7 +97,7 @@ public enum DIDKit {
   }
 
   public static func verifyPresentation(presentation: String, options: String) throws -> String {
-    guard let resultPtr = didkit_vc_verify_presentation(presentation, options) else {
+    guard let resultPtr = didkit_vc_verify_presentation(presentation, options, nil) else {
       throw Error()
     }
     defer { didkit_free_string(resultPtr) }
@@ -81,7 +105,7 @@ public enum DIDKit {
   }
 
   public static func resolveDID(did: String, inputMetadata: String) throws -> String {
-    guard let resultPtr = didkit_did_resolve(did, inputMetadata) else {
+    guard let resultPtr = didkit_resolve_did(did, inputMetadata) else {
       throw Error()
     }
     defer { didkit_free_string(resultPtr) }
@@ -89,7 +113,7 @@ public enum DIDKit {
   }
 
   public static func dereferenceDIDURL(didURL: String, inputMetadata: String) throws -> String {
-    guard let resultPtr = didkit_did_url_dereference(didURL, inputMetadata) else {
+    guard let resultPtr = didkit_dereference_did_url(didURL, inputMetadata) else {
       throw Error()
     }
     defer { didkit_free_string(resultPtr) }
@@ -97,7 +121,7 @@ public enum DIDKit {
   }
 
   public static func didAuth(holder: String, options: String, jwk: String) throws -> String {
-    guard let vpPtr = didkit_did_auth(holder, options, jwk) else {
+      guard let vpPtr = didkit_did_auth(holder, options, jwk, nil) else {
       throw Error()
     }
     defer { didkit_free_string(vpPtr) }
