@@ -9,7 +9,6 @@
   const activateWalletEventHandler = async () => {
     try {
       await credentialHandlerPolyfill.loadOnce(Config.MEDIATOR);
-      await DIDKitLoader.loadDIDKit();
     } catch (e) {
       console.error("Error in loadOnce:", e);
     }

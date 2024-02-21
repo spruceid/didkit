@@ -1,6 +1,7 @@
 <script lang="ts">
   import { navigate } from "svelte-navigator";
   import { receiveCredentialEvent } from "web-credential-handler";
+  import { verifyCredential } from "didkit-wasm";
 
   import Config from "../../config.ts";
   import { walletState, minimalState } from "../../store.ts";
@@ -28,7 +29,6 @@
       return;
     }
 
-    await DIDKitLoader.loadDIDKit();
     const event = await receiveCredentialEvent();
     const { credential } = event;
     const { data, dataType } = credential;
@@ -52,7 +52,6 @@
     }
 
     accept = async () => {
-      const { verifyCredential } = DIDKit;
       const options = JSON.stringify({
         /*proofPurpose: "assertionMethod",*/
       });
