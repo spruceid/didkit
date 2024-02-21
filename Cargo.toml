@@ -5,6 +5,7 @@ members = [
   "lib",
   "lib/cbindings",
   "lib/web",
+  "licenses"
 ]
 
 default-members = [
