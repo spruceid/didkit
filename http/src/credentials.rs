@@ -1,39 +1,76 @@
-use anyhow::Context;
 use axum::{http::StatusCode, Extension, Json};
 use didkit::{
-    ssi::ldp::{now_ns, Error as LdpError},
-    ContextLoader, CredentialOrJWT, JWTOrLDPOptions, ProofFormat, VerifiableCredential,
-    VerificationResult, DID_METHODS,
+    ssi::{
+        claims::{
+            data_integrity::{
+                AnyInputContext, AnySuite, CryptographicSuiteInput, ProofConfiguration,
+            },
+            vc::any_credential_from_json_slice,
+            Credential, JsonCredentialOrJws, ProofValidity, SpecializedJsonCredential,
+        },
+        dids::{AnyDidMethod, DIDBuf, DIDResolver, DIDTz, VerificationMethodDIDResolver, DIDION},
+        verification_methods::{AnyJwkMethod, AnyMethod, ReferenceOrOwned, SingleSecretSigner},
+    },
+    JWTOrLDPOptions, ProofFormat,
 };
 use serde::{Deserialize, Serialize};
 
-use crate::{error::Error, keys::pick_key, utils::CustomErrorJson, KeyMap};
+use crate::{
+    error::Error,
+    keys::pick_key,
+    utils::{Check, CustomErrorJson, VerificationResult},
+    KeyMap,
+};
 
 #[derive(Deserialize)]
 pub struct IssueRequest {
-    pub credential: VerifiableCredential,
+    pub credential: SpecializedJsonCredential,
     pub options: Option<JWTOrLDPOptions>,
 }
 
 #[derive(Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct IssueResponse {
-    pub verifiable_credential: CredentialOrJWT,
+    pub verifiable_credential: serde_json::Value,
 }
 
 pub async fn issue(
     Extension(keys): Extension<KeyMap>,
     CustomErrorJson(req): CustomErrorJson<IssueRequest>,
 ) -> Result<(StatusCode, Json<IssueResponse>), Error> {
-    let mut credential = req.credential;
-    let options = req.options.unwrap_or_default();
-    let proof_format = options.proof_format.unwrap_or_default();
-    let resolver = DID_METHODS.to_resolver();
-    let mut context_loader = ContextLoader::default();
+    let credential = req.credential;
+    let options = req.options;
+    let proof_format = options.clone().map(|o| o.proof_format).unwrap_or_default();
+    let resolver = AnyDidMethod::new(DIDION::new(None), DIDTz::default());
+    let vm_resolver =
+        VerificationMethodDIDResolver::new(AnyDidMethod::new(DIDION::new(None), DIDTz::default()));
+    let issuer = credential.issuer().clone();
+    let issuer_did = DIDBuf::from_string(issuer.id().to_string()).map_err(|e| {
+        (
+            StatusCode::BAD_REQUEST,
+            format!("Issuer ID is not a DID: {e}"),
+        )
+    })?;
+    let issuer_verification_method: ReferenceOrOwned<AnyMethod> = resolver
+        .resolve_into_any_verification_method(&issuer_did)
+        .await
+        .map_err(|e| {
+            (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                format!("Could not resolve issuer DID: {e}"),
+            )
+        })?
+        .ok_or((
+            StatusCode::INTERNAL_SERVER_ERROR,
+            "Could not get any verification method for issuer DID".to_string(),
+        ))?
+        .id
+        .into_iri()
+        .into();
     let key = match pick_key(
         &keys,
-        &credential.issuer.clone().map(|i| i.get_id()),
-        &options.ldp_options,
+        issuer_verification_method.clone(),
+        &options.clone().map(|o| o.ldp_options),
         resolver,
     )
     .await
@@ -41,34 +78,42 @@ pub async fn issue(
         Some(key) => key,
         None => return Err((StatusCode::NOT_FOUND, "Missing key".to_string()).into()),
     };
-    if credential.issuance_date.is_none() {
-        credential.issuance_date = Some(now_ns().into());
+    let verification_method = options
+        .clone()
+        .map(|o| o.ldp_options.verification_method)
+        .unwrap_or(issuer_verification_method);
+    let signer = SingleSecretSigner::new(key.clone());
+    if !credential.is_valid_credential() {
+        return Err((StatusCode::BAD_REQUEST, "Invalid credential".to_string()).into());
     }
-    if let Err(e) = credential.validate_unsigned() {
-        return Err((StatusCode::BAD_REQUEST, e.to_string()).into());
-    }
-    let res = match proof_format {
-        ProofFormat::JWT => CredentialOrJWT::JWT(
-            credential
-                .generate_jwt(Some(key), &options.ldp_options, resolver)
+    let res = match proof_format.unwrap_or(ProofFormat::LDP) {
+        ProofFormat::JWT => {
+            let jwt = credential
+                .to_jwt_claims()
+                .unwrap()
+                .sign(&verification_method, &vm_resolver, &signer)
                 .await
-                .context("Failed to issue JWT VC")?,
-        ),
+                .unwrap();
+            serde_json::Value::String(jwt.to_string())
+        }
         ProofFormat::LDP => {
-            let proof = match credential
-                .generate_proof(key, &options.ldp_options, resolver, &mut context_loader)
+            let params = ProofConfiguration::from_method_and_options(
+                verification_method,
+                Default::default(),
+            );
+
+            let suite = AnySuite::pick(&key, Some(&params.verification_method)).unwrap();
+            let vc = suite
+                .sign(
+                    credential,
+                    AnyInputContext::default(),
+                    &vm_resolver,
+                    &signer,
+                    params,
+                )
                 .await
-            {
-                Ok(p) => p,
-                Err(LdpError::ToRdfError(e)) => {
-                    return Err(
-                        (StatusCode::BAD_REQUEST, LdpError::ToRdfError(e).to_string()).into(),
-                    )
-                }
-                e => e.context("Faield to generate proof")?,
-            };
-            credential.add_proof(proof);
-            CredentialOrJWT::Credential(credential)
+                .unwrap();
+            serde_json::to_value(&vc).expect("Could not serialize VC")
         }
         _ => return Err((StatusCode::BAD_REQUEST, "Unknown proof format".to_string()).into()),
     };
@@ -83,43 +128,80 @@ pub async fn issue(
 #[derive(Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct VerifyRequest {
-    pub verifiable_credential: CredentialOrJWT,
+    pub verifiable_credential: JsonCredentialOrJws,
     pub options: Option<JWTOrLDPOptions>,
 }
 
 pub async fn verify(
     CustomErrorJson(req): CustomErrorJson<VerifyRequest>,
 ) -> Result<Json<VerificationResult>, Error> {
-    let resolver = DID_METHODS.to_resolver();
-    let mut context_loader = ContextLoader::default();
-    let options = req.options.unwrap_or_default();
-    let ldp_options = options.ldp_options;
-    let res = match (options.proof_format, req.verifiable_credential) {
-        (Some(ProofFormat::LDP), CredentialOrJWT::Credential(vc))
-        | (None, CredentialOrJWT::Credential(vc)) => {
-            if let Err(e) = vc.validate() {
-                return Err((StatusCode::BAD_REQUEST, e.to_string()).into());
+    let resolver = AnyDidMethod::new(DIDION::new(None), DIDTz::default());
+    let vm_resolver = VerificationMethodDIDResolver::new(resolver);
+    let options = req.options;
+    let res = match (
+        options.clone().and_then(|o| o.proof_format),
+        req.verifiable_credential,
+    ) {
+        (Some(ProofFormat::LDP), JsonCredentialOrJws::Credential(vc))
+        | (None, JsonCredentialOrJws::Credential(vc)) => {
+            if !vc.is_valid_credential() {
+                return Err((StatusCode::BAD_REQUEST, "Credential not valid".to_string()).into());
             }
-            vc.verify(Some(ldp_options), resolver, &mut context_loader)
-                .await
-        }
-        (Some(ProofFormat::JWT), CredentialOrJWT::JWT(vc_jwt))
-        | (None, CredentialOrJWT::JWT(vc_jwt)) => {
-            VerifiableCredential::verify_jwt(
-                &vc_jwt,
-                Some(ldp_options),
-                resolver,
-                &mut context_loader,
+            let vc = any_credential_from_json_slice(
+                &serde_json::to_vec(&vc).expect("Could not serialize VC to bytes"),
             )
             .await
+            .map_err(|e| {
+                (
+                    StatusCode::INTERNAL_SERVER_ERROR,
+                    format!("Could not build verifiable: {e}"),
+                )
+            })?;
+            match vc.verify(&vm_resolver).await {
+                Ok(ProofValidity::Valid) => VerificationResult {
+                    checks: vec![Check::Proof],
+                    warnings: vec![],
+                    errors: vec![],
+                },
+                Ok(ProofValidity::Invalid) => VerificationResult {
+                    checks: vec![Check::Proof],
+                    warnings: vec![],
+                    errors: vec!["Failed verification".to_string()],
+                },
+                Err(err) => VerificationResult {
+                    checks: vec![Check::Proof],
+                    warnings: vec![],
+                    errors: vec![err.to_string()],
+                },
+            }
+        }
+        (Some(ProofFormat::JWT), JsonCredentialOrJws::Jws(vc_jwt))
+        | (None, JsonCredentialOrJws::Jws(vc_jwt)) => {
+            match vc_jwt.verify::<AnyJwkMethod>(&vm_resolver).await {
+                Ok(true) => VerificationResult {
+                    checks: vec![Check::Proof],
+                    warnings: vec![],
+                    errors: vec![],
+                },
+                Ok(false) => VerificationResult {
+                    checks: vec![Check::Proof],
+                    warnings: vec![],
+                    errors: vec!["Failed verification".to_string()],
+                },
+                Err(err) => VerificationResult {
+                    checks: vec![Check::Proof],
+                    warnings: vec![],
+                    errors: vec![err.to_string()],
+                },
+            }
         }
         (Some(proof_format), vc) => {
             let err_msg = format!(
                 "Credential/proof format mismatch. Proof format: {}, credential format: {}",
                 proof_format,
                 match vc {
-                    CredentialOrJWT::JWT(_) => "JWT".to_string(),
-                    CredentialOrJWT::Credential(_) => "LDP".to_string(),
+                    JsonCredentialOrJws::Jws(_) => "JWT".to_string(),
+                    JsonCredentialOrJws::Credential(_) => "LDP".to_string(),
                 }
             );
             return Err((StatusCode::BAD_REQUEST, err_msg).into());

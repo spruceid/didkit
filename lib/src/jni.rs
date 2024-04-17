@@ -3,6 +3,9 @@ use std::ptr;
 use jni::objects::{JClass, JString};
 use jni::sys::jstring;
 use jni::JNIEnv;
+use ssi::claims::data_integrity::{
+    AnyInputContext, AnySuite, CryptographicSuiteInput, ProofConfiguration,
+};
 
 use crate::error::Error;
 use crate::get_verification_method;
@@ -112,11 +115,12 @@ fn issue_credential(
     key_jstring: JString,
 ) -> Result<jstring, Error> {
     let resolver = DID_METHODS.to_resolver();
-    let mut context_loader = ssi::jsonld::ContextLoader::default();
+    // let mut context_loader = ssi::jsonld::ContextLoader::default();
     let credential_json: String = env.get_string(credential_jstring).unwrap().into();
     let proof_options_json: String = env.get_string(proof_options_jstring).unwrap().into();
     let key_json: String = env.get_string(key_jstring).unwrap().into();
-    let mut credential = VerifiableCredential::from_json_unsigned(&credential_json)?;
+    let mut credential: ssi::claims::vc::SpecializedJsonCredential =
+        serde_json::from_str(&credential_json)?;
     let key: JWK = serde_json::from_str(&key_json)?;
     let options: JWTOrLDPOptions = serde_json::from_str(&proof_options_json)?;
     let rt = runtime::get()?;
@@ -126,12 +130,23 @@ fn issue_credential(
             rt.block_on(credential.generate_jwt(Some(&key), &options.ldp_options, resolver))?
         }
         ProofFormat::LDP => {
-            let proof = rt.block_on(credential.generate_proof(
-                &key,
-                &options.ldp_options,
-                resolver,
-                &mut context_loader,
-            ))?;
+            let proof = rt.block_on({
+                // credential.generate_proof(&key, &options.ldp_options, resolver, &mut context_loader),
+                let params = ProofConfiguration::from_method_and_options(
+                    verification_method,
+                    Default::default(),
+                );
+                let suite = AnySuite::pick(&key, Some(&params.verification_method))?;
+                let vc = suite
+                    .sign(
+                        credential,
+                        AnyInputContext::default(),
+                        &resolver,
+                        &signer,
+                        params,
+                    )
+                    .await?;
+            })?;
             credential.add_proof(proof);
             serde_json::to_string(&credential)?
         }

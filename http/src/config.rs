@@ -1,4 +1,4 @@
-use didkit::JWK;
+use didkit::ssi::JWK;
 use serde::Deserialize;
 use serde_with::{json::JsonString, serde_as};
 

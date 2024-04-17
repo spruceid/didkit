@@ -2,7 +2,7 @@
 name = "didkit-cli"
 version = "0.3.2"
 authors = ["Spruce Systems, Inc."]
-edition = "2018"
+edition = "2021"
 description = "Command-line interface for Verifiable Credentials and Decentralized Identifiers."
 license = "Apache-2.0"
 keywords = ["ssi", "did", "vc", "cli"]
