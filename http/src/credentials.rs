@@ -5,11 +5,12 @@ use didkit::{
             data_integrity::{
                 AnyInputContext, AnySuite, CryptographicSuiteInput, ProofConfiguration,
             },
-            vc::any_credential_from_json_slice,
-            Credential, JsonCredentialOrJws, ProofValidity, SpecializedJsonCredential,
+            vc::{any_credential_from_json_slice, ToJwtClaims},
+            Credential, JsonCredentialOrJws, SpecializedJsonCredential, ValidationEnvironment,
         },
         dids::{AnyDidMethod, DIDBuf, DIDResolver, DIDTz, VerificationMethodDIDResolver, DIDION},
-        verification_methods::{AnyJwkMethod, AnyMethod, ReferenceOrOwned, SingleSecretSigner},
+        prelude::JWSPayload,
+        verification_methods::{AnyMethod, ReferenceOrOwned, SingleSecretSigner},
     },
     JWTOrLDPOptions, ProofFormat,
 };
@@ -34,6 +35,7 @@ pub struct IssueResponse {
     pub verifiable_credential: serde_json::Value,
 }
 
+#[axum::debug_handler]
 pub async fn issue(
     Extension(keys): Extension<KeyMap>,
     CustomErrorJson(req): CustomErrorJson<IssueRequest>,
@@ -83,15 +85,19 @@ pub async fn issue(
         .map(|o| o.ldp_options.verification_method)
         .unwrap_or(issuer_verification_method);
     let signer = SingleSecretSigner::new(key.clone());
-    if !credential.is_valid_credential() {
-        return Err((StatusCode::BAD_REQUEST, "Invalid credential".to_string()).into());
+    if let Err(err) = credential.validate_credential(&ValidationEnvironment::default()) {
+        return Err((
+            StatusCode::BAD_REQUEST,
+            format!("Credential not valid, {err:?}"),
+        )
+            .into());
     }
     let res = match proof_format.unwrap_or(ProofFormat::LDP) {
         ProofFormat::JWT => {
             let jwt = credential
                 .to_jwt_claims()
                 .unwrap()
-                .sign(&verification_method, &vm_resolver, &signer)
+                .sign(&key)
                 .await
                 .unwrap();
             serde_json::Value::String(jwt.to_string())
@@ -144,8 +150,12 @@ pub async fn verify(
     ) {
         (Some(ProofFormat::LDP), JsonCredentialOrJws::Credential(vc))
         | (None, JsonCredentialOrJws::Credential(vc)) => {
-            if !vc.is_valid_credential() {
-                return Err((StatusCode::BAD_REQUEST, "Credential not valid".to_string()).into());
+            if let Err(err) = vc.validate_credential(&ValidationEnvironment::default()) {
+                return Err((
+                    StatusCode::BAD_REQUEST,
+                    format!("Credential not valid, {err:?}"),
+                )
+                    .into());
             }
             let vc = any_credential_from_json_slice(
                 &serde_json::to_vec(&vc).expect("Could not serialize VC to bytes"),
@@ -158,15 +168,15 @@ pub async fn verify(
                 )
             })?;
             match vc.verify(&vm_resolver).await {
-                Ok(ProofValidity::Valid) => VerificationResult {
+                Ok(Ok(())) => VerificationResult {
                     checks: vec![Check::Proof],
                     warnings: vec![],
                     errors: vec![],
                 },
-                Ok(ProofValidity::Invalid) => VerificationResult {
+                Ok(Err(err)) => VerificationResult {
                     checks: vec![Check::Proof],
                     warnings: vec![],
-                    errors: vec!["Failed verification".to_string()],
+                    errors: vec![err.to_string()],
                 },
                 Err(err) => VerificationResult {
                     checks: vec![Check::Proof],
@@ -176,25 +186,23 @@ pub async fn verify(
             }
         }
         (Some(ProofFormat::JWT), JsonCredentialOrJws::Jws(vc_jwt))
-        | (None, JsonCredentialOrJws::Jws(vc_jwt)) => {
-            match vc_jwt.verify::<AnyJwkMethod>(&vm_resolver).await {
-                Ok(true) => VerificationResult {
-                    checks: vec![Check::Proof],
-                    warnings: vec![],
-                    errors: vec![],
-                },
-                Ok(false) => VerificationResult {
-                    checks: vec![Check::Proof],
-                    warnings: vec![],
-                    errors: vec!["Failed verification".to_string()],
-                },
-                Err(err) => VerificationResult {
-                    checks: vec![Check::Proof],
-                    warnings: vec![],
-                    errors: vec![err.to_string()],
-                },
-            }
-        }
+        | (None, JsonCredentialOrJws::Jws(vc_jwt)) => match vc_jwt.verify(&vm_resolver).await {
+            Ok(Ok(())) => VerificationResult {
+                checks: vec![Check::Proof],
+                warnings: vec![],
+                errors: vec![],
+            },
+            Ok(Err(err)) => VerificationResult {
+                checks: vec![Check::Proof],
+                warnings: vec![],
+                errors: vec![err.to_string()],
+            },
+            Err(err) => VerificationResult {
+                checks: vec![Check::Proof],
+                warnings: vec![],
+                errors: vec![err.to_string()],
+            },
+        },
         (Some(proof_format), vc) => {
             let err_msg = format!(
                 "Credential/proof format mismatch. Proof format: {}, credential format: {}",
