@@ -8,17 +8,7 @@ use wasm_bindgen_futures::future_to_promise;
 use didkit::error::Error;
 #[cfg(doc)]
 use didkit::error::{didkit_error_code, didkit_error_message};
-use didkit::get_verification_method;
-use didkit::ssi::{self, ldp::ProofSuite};
-use didkit::LinkedDataProofOptions;
-use didkit::ProofPreparation;
-use didkit::Source;
-use didkit::VerifiableCredential;
-use didkit::VerifiablePresentation;
-use didkit::DID_METHODS;
-use didkit::JWK;
-use didkit::{Delegation, Invocation};
-use didkit::{JWTOrLDPOptions, ProofFormat, URI};
+use didkit::{JWTOrLDPOptions, ProofFormat};
 
 pub static VERSION: &str = env!("CARGO_PKG_VERSION");
 

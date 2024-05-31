@@ -1,18 +1,15 @@
-// #[cfg(not(target_arch = "wasm32"))]
-// pub mod c;
-// mod did_methods;
-// pub mod error;
+#[cfg(not(target_arch = "wasm32"))]
+pub mod c;
+mod did_methods;
+pub mod error;
 // #[cfg(not(target_arch = "wasm32"))]
 // pub mod jni;
-// #[cfg(not(target_arch = "wasm32"))]
-// pub mod runtime;
+#[cfg(not(target_arch = "wasm32"))]
+pub mod runtime;
 // #[cfg(not(any(target_arch = "wasm32", target_os = "windows")))]
 // pub mod ssh_agent;
 
-// #[macro_use]
-// extern crate lazy_static;
-//
-// pub use crate::error::Error;
+pub use crate::error::Error;
 
 use core::str::FromStr;
 use serde::{Deserialize, Serialize};
