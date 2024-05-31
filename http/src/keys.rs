@@ -1,45 +1,27 @@
 use std::collections::HashMap;
 
 use didkit::ssi::{
-    claims::data_integrity::ProofConfiguration,
-    dids::{AnyDidMethod, VerificationMethodDIDResolver},
-    verification_methods::{AnyMethod, ReferenceOrOwned, VerificationMethodResolver},
+    verification_methods::{LocalSigner, MaybeJwkVerificationMethod, Signer},
     JWK,
 };
-use tracing::error;
 
 pub type KeyMap = HashMap<JWK, JWK>;
 
-pub async fn pick_key<'a>(
-    keys: &'a KeyMap,
-    issuer: ReferenceOrOwned<AnyMethod>,
-    options: &Option<ProofConfiguration<AnyMethod>>,
-    did_resolver: AnyDidMethod,
-) -> Option<&'a JWK> {
-    if keys.len() <= 1 {
-        return keys.values().next();
+pub struct KeyMapSigner(pub KeyMap);
+
+impl KeyMapSigner {
+    pub fn into_local(self) -> LocalSigner<Self> {
+        LocalSigner(self)
     }
-    let public_key = match (issuer, options.clone().map(|o| o.verification_method)) {
-        (_, Some(vm)) | (vm, None) => {
-            match VerificationMethodDIDResolver::new(did_resolver)
-                .resolve_verification_method(None, Some(vm.borrowed()))
-                .await
-            {
-                Err(err) => {
-                    error!("{err:?}");
-                    return None;
-                }
-                Ok(key) => match key.try_to_jwk() {
-                    Some(k) => k.into_owned(),
-                    None => {
-                        error!("No JWK in VM");
-                        return None;
-                    }
-                },
-            }
-        }
-    };
-    keys.get(&public_key)
+}
+
+impl<M: MaybeJwkVerificationMethod> Signer<M> for KeyMapSigner {
+    type MessageSigner = JWK;
+
+    async fn for_method(&self, method: std::borrow::Cow<'_, M>) -> Option<Self::MessageSigner> {
+        let public_jwk = method.try_to_jwk()?;
+        self.0.get(&public_jwk).cloned()
+    }
 }
 
 // #[cfg(test)]

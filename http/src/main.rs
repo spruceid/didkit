@@ -18,9 +18,9 @@ use crate::keys::KeyMap;
 mod config;
 mod credentials;
 mod error;
-// mod identifiers;
+mod identifiers;
 mod keys;
-// mod presentations;
+mod presentations;
 mod utils;
 
 pub async fn healthcheck() {}
@@ -55,14 +55,14 @@ async fn main() {
         // vc-http-api 0.0.1
         .route("/issue/credentials", post(credentials::issue))
         .route("/verify/credentials", post(credentials::verify))
-        // .route("/issue/presentations", post(presentations::issue))
-        // .route("/verify/presentations", post(presentations::verify))
+        .route("/issue/presentations", post(presentations::issue))
+        .route("/verify/presentations", post(presentations::verify))
         // //
         .route("/credentials/issue", post(credentials::issue))
         .route("/credentials/verify", post(credentials::verify))
-        // .route("/presentations/issue", post(presentations::issue))
-        // .route("/presentations/verify", post(presentations::verify))
-        // .route("/identifiers/:id", get(identifiers::resolve))
+        .route("/presentations/issue", post(presentations::issue))
+        .route("/presentations/verify", post(presentations::verify))
+        .route("/identifiers/:id", get(identifiers::resolve))
         .layer(TraceLayer::new_for_http())
         .layer(RequestBodyLimitLayer::new(config.http.body_size_limit))
         .layer(

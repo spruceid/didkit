@@ -18,7 +18,7 @@ use core::str::FromStr;
 use serde::{Deserialize, Serialize};
 
 pub use ssi;
-use ssi::{claims::data_integrity::ProofConfiguration, verification_methods::AnyMethod};
+use ssi::claims::data_integrity::AnyInputOptions;
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 #[non_exhaustive]
@@ -26,8 +26,21 @@ use ssi::{claims::data_integrity::ProofConfiguration, verification_methods::AnyM
 #[serde(deny_unknown_fields)]
 pub struct JWTOrLDPOptions {
     /// Linked data proof options from vc-api (vc-http-api)
+    ///
+    /// See: <https://w3c-ccg.github.io/vc-api/#options>
     #[serde(flatten)]
-    pub ldp_options: ProofConfiguration<AnyMethod>,
+    pub ldp_options: AnyInputOptions,
+
+    /// Proof format (not standard in vc-api)
+    #[serde(default, skip_serializing_if = "ProofFormat::is_default")]
+    pub proof_format: ProofFormat,
+}
+
+#[derive(Debug, Default, Serialize, Deserialize, Clone)]
+#[non_exhaustive]
+#[serde(rename_all = "camelCase")]
+#[serde(deny_unknown_fields)]
+pub struct VerificationOptions {
     /// Proof format (not standard in vc-api)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub proof_format: Option<ProofFormat>,
@@ -53,15 +66,26 @@ pub struct JWTOrLDPOptions {
 #[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
 #[non_exhaustive]
 pub enum ProofFormat {
+    /// Linked-Data secured credential.
+    ///
     /// <https://www.w3.org/TR/vc-data-model/#linked-data-proofs>
     #[serde(rename = "ldp")]
     LDP,
+
+    /// JWS secured credential.
+    ///
     /// <https://www.w3.org/TR/vc-data-model/#json-web-token>
     #[serde(rename = "jwt")]
     JWT,
 }
 // ProofFormat implements Display and FromStr for structopt. This should be kept in sync with the
 // serde (de)serialization (rename = ...)
+
+impl ProofFormat {
+    pub fn is_default(&self) -> bool {
+        matches!(self, Self::LDP)
+    }
+}
 
 impl Default for ProofFormat {
     fn default() -> Self {

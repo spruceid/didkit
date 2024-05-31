@@ -1,148 +1,171 @@
+//! DID Resolution server-side HTTP Binding implementation.
+//!
+//! See: <https://w3c-ccg.github.io/did-resolution/#bindings-https>
+use crate::{error::Error, utils::Accept};
 use anyhow::Context;
 use axum::{
     body::Bytes,
     extract::{Path, Query},
     http::{
         header::{CONTENT_TYPE, LOCATION},
-        HeaderMap, StatusCode,
+        HeaderMap, HeaderValue, StatusCode,
     },
 };
-use didkit::{
-    dereference,
-    ssi::did_resolve::{
-        ERROR_INVALID_DID, ERROR_INVALID_DID_URL, ERROR_METHOD_NOT_SUPPORTED, ERROR_NOT_FOUND,
-        ERROR_REPRESENTATION_NOT_SUPPORTED, TYPE_DID_LD_JSON, TYPE_DID_RESOLUTION,
-    },
-    Content, ContentMetadata, DereferencingInputMetadata, ResolutionResult, DID_METHODS,
+use axum_extra::TypedHeader;
+use didkit::ssi::dids::{
+    document::representation, http::ResolutionResult, resolution, AnyDidMethod, DIDResolver,
+    DIDURLBuf, InvalidDIDURL, DID,
 };
 use percent_encoding::percent_decode;
 
-use crate::error::Error;
+pub const DID_RESOLUTION_MEDIA_TYPE: &str =
+    "application/ld+json;profile=\"https://w3id.org/did-resolution\"";
+
+enum ContentType {
+    JsonLdDidResolution,
+    Other(representation::MediaType),
+}
+
+impl ContentType {
+    fn representation(&self) -> representation::MediaType {
+        match self {
+            Self::JsonLdDidResolution => representation::MediaType::JsonLd,
+            Self::Other(t) => *t,
+        }
+    }
+
+    pub fn header(&self) -> HeaderValue {
+        HeaderValue::from_str(match self {
+            Self::JsonLdDidResolution => DID_RESOLUTION_MEDIA_TYPE,
+            Self::Other(other) => other.name(),
+        })
+        .unwrap()
+    }
+}
 
 pub async fn resolve(
     Path(path): Path<String>,
-    Query(metadata): Query<DereferencingInputMetadata>,
+    Query(mut options): Query<resolution::Options>,
+    accept: Option<TypedHeader<Accept>>,
 ) -> Result<(StatusCode, HeaderMap, Bytes), Error> {
-    let did_url = percent_decode(path.as_bytes())
+    let did_url: DIDURLBuf = percent_decode(path.as_bytes())
         .decode_utf8()
         .context("Could not percent decode path")
-        .map_err(|e| (StatusCode::BAD_REQUEST, format!("{e:?}")))?;
-    let resolver = DID_METHODS.to_resolver();
-    let (deref_meta, content, content_meta) = dereference(resolver, &did_url, &metadata).await;
-    if let Some(ref error) = deref_meta.error {
-        // 1.6, 1.7, 1.8
-        let status = match &error[..] {
-            ERROR_NOT_FOUND => StatusCode::NOT_FOUND,
-            ERROR_INVALID_DID | ERROR_INVALID_DID_URL => StatusCode::BAD_REQUEST,
-            ERROR_REPRESENTATION_NOT_SUPPORTED => StatusCode::NOT_ACCEPTABLE,
-            ERROR_METHOD_NOT_SUPPORTED => StatusCode::NOT_IMPLEMENTED,
-            _ => StatusCode::INTERNAL_SERVER_ERROR,
-        };
-        return Err((status, format!("Dereferencing failed: {error}")))?;
-    }
-    if let ContentMetadata::DIDDocument(ref did_doc_meta) = content_meta {
-        if did_doc_meta.deactivated == Some(true) {
-            return Err((StatusCode::GONE, "".to_string()))?;
+        .map_err(|e| (StatusCode::BAD_REQUEST, format!("{e:?}")))?
+        .parse()
+        .map_err(|e: InvalidDIDURL<String>| (StatusCode::BAD_REQUEST, e.to_string()))?;
+
+    let content_type = match accept {
+        Some(TypedHeader(accept)) => {
+            if accept == DID_RESOLUTION_MEDIA_TYPE {
+                ContentType::JsonLdDidResolution
+            } else {
+                match accept.as_str().parse() {
+                    Ok(other) => ContentType::Other(other),
+                    Err(unknown) => {
+                        return Err((StatusCode::NOT_ACCEPTABLE, unknown.to_string()).into())
+                    }
+                }
+            }
         }
-    }
+        None => ContentType::Other(representation::MediaType::JsonLd),
+    };
+
+    let resolver = AnyDidMethod::default();
 
     let mut headers = HeaderMap::new();
+    headers.insert(CONTENT_TYPE, content_type.header());
 
-    let body = match content {
-        Content::DIDDocument(did_doc) => {
-            if metadata.accept != Some(TYPE_DID_RESOLUTION.to_string()) {
-                // 1.10.1
-                let content_type = deref_meta
-                    .content_type
-                    .unwrap_or_else(|| TYPE_DID_LD_JSON.to_string());
-                let content_type_header = content_type.parse().map_err(|e| {
-                    (
-                        StatusCode::BAD_REQUEST,
-                        format!("Unable to parse Content-Type: {e}"),
-                    )
-                })?;
-                headers.insert(CONTENT_TYPE, content_type_header);
-                // 1.10.1.3
-                match did_doc.to_representation(&content_type) {
-                    Err(err) => {
-                        return Err((
-                            StatusCode::NOT_ACCEPTABLE,
-                            format!("Unable to represent DID document: {}", err),
-                        ))?;
-                    }
-                    Ok(content_type) => content_type,
-                }
-            } else {
-                // 1.10.2
-                // 1.10.2.1
-                let did_doc_meta_opt = match content_meta {
-                    ContentMetadata::DIDDocument(meta) => Some(meta),
-                    ContentMetadata::Other(map) if map.is_empty() => None,
-                    _ => {
-                        return Err((
-                        StatusCode::NOT_ACCEPTABLE,
-                        format!(
-                        "Expected content-metadata to be a DID Document metadata structure, but found: {:?}", content_meta
-                    )
-                    ))?
-                    }
-                };
-                let result = ResolutionResult {
-                    did_document: Some(did_doc),
-                    did_resolution_metadata: Some(deref_meta.into()),
-                    did_document_metadata: did_doc_meta_opt,
-                    ..Default::default()
-                };
-                // 1.10.2.3
-                let content_type = match TYPE_DID_RESOLUTION.parse() {
-                    Ok(content_type) => content_type,
-                    Err(err) => {
-                        return Err((
-                            StatusCode::BAD_REQUEST,
-                            format!("Unable to parse Content-Type: {}", err),
-                        ))?;
-                    }
-                };
-                headers.insert(CONTENT_TYPE, content_type);
+    let body = match DID::new(&did_url).ok() {
+        Some(did) => {
+            options.accept = Some(content_type.representation());
+            let result = resolver.resolve_representation(did, options).await;
 
-                // 1.10.2.4
-                match serde_json::to_vec(&result) {
-                    Ok(data) => data,
-                    Err(err) => {
-                        return Err((
-                            StatusCode::INTERNAL_SERVER_ERROR,
-                            format!("Unable to serialize resolution result: {}", err),
-                        ))?;
+            match result {
+                Ok(output) => {
+                    if output.document_metadata.deactivated.unwrap_or(false) {
+                        return Err((StatusCode::GONE, "".to_string()))?;
+                    }
+
+                    match content_type {
+                        ContentType::JsonLdDidResolution => {
+                            serde_json::to_vec(&ResolutionResult::Success {
+                                content: String::from_utf8(output.document).map_err(|_| {
+                                    (
+                                        StatusCode::INTERNAL_SERVER_ERROR,
+                                        "Non UTF-8 representation".to_string(),
+                                    )
+                                })?,
+                                metadata: output.metadata,
+                                document_metadata: output.document_metadata,
+                            })
+                            .unwrap()
+                        }
+                        ContentType::Other(_) => output.document,
                     }
                 }
+                Err(e) => match content_type {
+                    ContentType::JsonLdDidResolution => {
+                        serde_json::to_vec(&ResolutionResult::Failure { error: e.into() }).unwrap()
+                    }
+                    _ => return Err(e.into()),
+                },
             }
         }
-        Content::URL(url) => {
-            // 1.11
-            let location = match url.parse() {
-                Ok(location) => location,
-                Err(err) => {
-                    return Err((
-                        StatusCode::BAD_REQUEST,
-                        format!("Unable to parse service endpoint URL: {}", err),
-                    ))?;
+        None => {
+            let result = resolver.dereference(&did_url).await;
+
+            match result {
+                Ok(output) => {
+                    if output.content_metadata.deactivated.unwrap_or(false) {
+                        return Err((StatusCode::GONE, "".to_string()))?;
+                    }
+
+                    let bytes = match output.content {
+                        resolution::Content::Resource(resource) => {
+                            serde_json::to_vec(&resource).unwrap()
+                        }
+                        resolution::Content::Url(url) => {
+                            // 1.11
+                            let location = match url.parse() {
+                                Ok(location) => location,
+                                Err(err) => {
+                                    return Err((
+                                        StatusCode::BAD_REQUEST,
+                                        format!("Unable to parse service endpoint URL: {}", err),
+                                    ))?;
+                                }
+                            };
+                            headers.insert(LOCATION, location);
+                            return Ok((StatusCode::SEE_OTHER, headers, vec![].into()));
+                        }
+                        resolution::Content::Null => Vec::new(),
+                    };
+
+                    match content_type {
+                        ContentType::JsonLdDidResolution => {
+                            serde_json::to_vec(&ResolutionResult::Success {
+                                content: String::from_utf8(bytes).map_err(|_| {
+                                    (
+                                        StatusCode::INTERNAL_SERVER_ERROR,
+                                        "Non UTF-8 representation".to_string(),
+                                    )
+                                })?,
+                                metadata: output.metadata,
+                                document_metadata: output.content_metadata,
+                            })
+                            .unwrap()
+                        }
+                        _ => bytes,
+                    }
                 }
-            };
-            headers.insert(LOCATION, location);
-            return Ok((StatusCode::SEE_OTHER, headers, vec![].into()));
-        }
-        Content::Object(object) => match serde_json::to_vec(&object) {
-            Ok(data) => data,
-            Err(err) => {
-                return Err((
-                    StatusCode::INTERNAL_SERVER_ERROR,
-                    format!("Unable to serialize dereferenced object: {}", err),
-                ))?;
+                Err(e) => match content_type {
+                    ContentType::JsonLdDidResolution => {
+                        serde_json::to_vec(&ResolutionResult::Failure { error: e.into() }).unwrap()
+                    }
+                    _ => return Err(e.into()),
+                },
             }
-        },
-        Content::Data(data) => data,
-        Content::Null => {
-            vec![]
         }
     };
 

@@ -4,9 +4,9 @@ use anyhow::anyhow;
 use axum::{
     async_trait,
     extract::{rejection::JsonRejection, FromRequest},
-    http::Request,
-    http::StatusCode,
+    http::{header::ACCEPT, Request, StatusCode},
 };
+use axum_extra::headers::Header;
 use serde::{Deserialize, Serialize};
 
 pub struct CustomErrorJson<T>(pub T);
@@ -92,5 +92,52 @@ impl From<Check> for String {
             Check::JWS => "JWS".to_string(),
             Check::Status => "credentialStatus".to_string(),
         }
+    }
+}
+
+pub struct Accept(String);
+
+impl Accept {
+    pub fn as_str(&self) -> &str {
+        &self.0
+    }
+}
+
+impl Header for Accept {
+    fn name() -> &'static axum::http::HeaderName {
+        &ACCEPT
+    }
+
+    fn encode<E: Extend<axum::http::HeaderValue>>(&self, values: &mut E) {
+        values.extend(Some(self.0.clone().try_into().unwrap()))
+    }
+
+    fn decode<'i, I>(values: &mut I) -> Result<Self, axum_extra::headers::Error>
+    where
+        Self: Sized,
+        I: Iterator<Item = &'i axum::http::HeaderValue>,
+    {
+        let bytes = values.next().ok_or(axum_extra::headers::Error::invalid())?;
+
+        if values.next().is_none() {
+            let str = bytes
+                .to_str()
+                .map_err(|_| axum_extra::headers::Error::invalid())?;
+            Ok(Self(str.to_owned()))
+        } else {
+            Err(axum_extra::headers::Error::invalid())
+        }
+    }
+}
+
+impl PartialEq<str> for Accept {
+    fn eq(&self, other: &str) -> bool {
+        self.0 == other
+    }
+}
+
+impl<'a> PartialEq<&'a str> for Accept {
+    fn eq(&self, other: &&'a str) -> bool {
+        self.0 == *other
     }
 }

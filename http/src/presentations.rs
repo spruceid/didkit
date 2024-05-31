@@ -1,79 +1,96 @@
-use anyhow::Context;
 use axum::{http::StatusCode, Extension, Json};
 use didkit::{
-    ssi::{ldp::Error as LdpError, vc::Error as VCError},
-    ContextLoader, JWTOrLDPOptions, ProofFormat, VerifiablePresentation, VerificationResult,
-    DID_METHODS,
+    ssi::{
+        claims::{
+            data_integrity::{AnyInputContext, AnySuite, CryptographicSuite},
+            vc::ToJwtClaims,
+            JWSPayload, JsonPresentation, JsonPresentationOrJws, VerifiableClaims,
+        },
+        dids::{AnyDidMethod, VerificationMethodDIDResolver},
+        verification_methods::{
+            AnyMethod, MaybeJwkVerificationMethod, ReferenceOrOwned, ReferenceOrOwnedRef,
+            VerificationMethodResolver,
+        },
+    },
+    JWTOrLDPOptions, ProofFormat, VerificationOptions,
 };
 use serde::{Deserialize, Serialize};
 
-use crate::{error::Error, keys::pick_key, KeyMap};
-
-// TODO move to ssi
-#[derive(Debug, Serialize, Deserialize, Clone)]
-#[serde(untagged)]
-pub enum PresentationOrJWT {
-    VP(VerifiablePresentation),
-    Jwt(String),
-}
+use crate::{
+    error::Error,
+    keys::KeyMapSigner,
+    utils::{Check, VerificationResult},
+    KeyMap,
+};
 
 #[derive(Deserialize)]
 pub struct IssueRequest {
-    pub presentation: VerifiablePresentation,
-    pub options: Option<JWTOrLDPOptions>,
+    pub presentation: JsonPresentation,
+    pub options: JWTOrLDPOptions,
 }
 
 #[derive(Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct IssueResponse {
-    pub verifiable_presentation: PresentationOrJWT,
+    pub verifiable_presentation: JsonPresentationOrJws,
 }
 
 pub async fn issue(
     Extension(keys): Extension<KeyMap>,
-    Json(req): Json<IssueRequest>,
+    Json(mut req): Json<IssueRequest>,
 ) -> Result<(StatusCode, Json<IssueResponse>), Error> {
-    let mut presentation = req.presentation;
-    let options = req.options.unwrap_or_default();
-    let proof_format = options.proof_format.unwrap_or_default();
-    let resolver = DID_METHODS.to_resolver();
-    let mut context_loader = ContextLoader::default();
-    let key = match pick_key(
-        &keys,
-        &presentation.holder.clone().map(String::from),
-        &options.ldp_options,
-        resolver,
-    )
-    .await
-    {
-        Some(key) => key,
-        None => return Err((StatusCode::NOT_FOUND, "Missing key".to_string()).into()),
-    };
-    if let Err(e) = presentation.validate_unsigned() {
-        return Err((StatusCode::BAD_REQUEST, e.to_string()).into());
-    }
-    let res = match proof_format {
-        ProofFormat::JWT => PresentationOrJWT::Jwt(
-            presentation
-                .generate_jwt(Some(key), &options.ldp_options, resolver)
+    let resolver = VerificationMethodDIDResolver::<_, AnyMethod>::new(AnyDidMethod::default());
+
+    let holder = req
+        .presentation
+        .holder
+        .as_deref()
+        .ok_or_else(|| (StatusCode::BAD_REQUEST, "Missing holder".to_string()))?;
+
+    req.options.ldp_options.verification_method =
+        Some(ReferenceOrOwned::Reference(holder.to_owned().into_iri()));
+
+    let method = resolver
+        .resolve_verification_method(
+            Some(holder.as_iri()),
+            Some(ReferenceOrOwnedRef::Reference(holder.as_iri())),
+        )
+        .await?;
+
+    let public_jwk = method.try_to_jwk().ok_or((
+        StatusCode::INTERNAL_SERVER_ERROR,
+        "Could not get any verification method for holder DID".to_string(),
+    ))?;
+
+    let res = match req.options.proof_format {
+        ProofFormat::JWT => JsonPresentationOrJws::Jws(
+            req.presentation
+                .to_jwt_claims()
+                .unwrap()
+                .sign(&public_jwk)
                 .await
-                .context("Failed to issue JWT VC")?,
+                .unwrap(),
         ),
         ProofFormat::LDP => {
-            let proof = match presentation
-                .generate_proof(key, &options.ldp_options, resolver, &mut context_loader)
+            let suite = AnySuite::pick(
+                &public_jwk,
+                req.options.ldp_options.verification_method.as_ref(),
+            )
+            .unwrap();
+
+            let signer = KeyMapSigner(keys).into_local();
+            let vp = suite
+                .sign(
+                    req.presentation,
+                    AnyInputContext::default(),
+                    resolver,
+                    signer,
+                    req.options.ldp_options,
+                )
                 .await
-            {
-                Ok(p) => p,
-                Err(VCError::LDP(LdpError::ToRdfError(e))) => {
-                    return Err(
-                        (StatusCode::BAD_REQUEST, LdpError::ToRdfError(e).to_string()).into(),
-                    )
-                }
-                e => e.context("Faield to generate proof")?,
-            };
-            presentation.add_proof(proof);
-            PresentationOrJWT::VP(presentation)
+                .unwrap();
+
+            JsonPresentationOrJws::Presentation(vp.unprepare())
         }
         _ => return Err((StatusCode::BAD_REQUEST, "Unknown proof format".to_string()).into()),
     };
@@ -88,40 +105,68 @@ pub async fn issue(
 #[derive(Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct VerifyRequest {
-    pub verifiable_presentation: PresentationOrJWT,
-    pub options: Option<JWTOrLDPOptions>,
+    pub verifiable_presentation: JsonPresentationOrJws,
+
+    #[serde(default)]
+    pub options: VerificationOptions,
 }
 
 pub async fn verify(Json(req): Json<VerifyRequest>) -> Result<Json<VerificationResult>, Error> {
-    let resolver = DID_METHODS.to_resolver();
-    let mut context_loader = ContextLoader::default();
-    let options = req.options.unwrap_or_default();
-    let ldp_options = options.ldp_options;
-    let res = match (options.proof_format, req.verifiable_presentation) {
-        (Some(ProofFormat::LDP), PresentationOrJWT::VP(vp)) | (None, PresentationOrJWT::VP(vp)) => {
-            if let Err(e) = vp.validate() {
-                return Err((StatusCode::BAD_REQUEST, e.to_string()).into());
+    let resolver = VerificationMethodDIDResolver::new(AnyDidMethod::default());
+    let res = match (req.options.proof_format, req.verifiable_presentation) {
+        (Some(ProofFormat::LDP) | None, JsonPresentationOrJws::Presentation(vp)) => {
+            match vp.into_verifiable().await {
+                Ok(vc) => match vc.verify(&resolver).await {
+                    Ok(Ok(())) => VerificationResult {
+                        checks: vec![Check::Proof],
+                        warnings: vec![],
+                        errors: vec![],
+                    },
+                    Ok(Err(err)) => VerificationResult {
+                        checks: vec![Check::Proof],
+                        warnings: vec![],
+                        errors: vec![err.to_string()],
+                    },
+                    Err(err) => VerificationResult {
+                        checks: vec![Check::Proof],
+                        warnings: vec![],
+                        errors: vec![err.to_string()],
+                    },
+                },
+                Err(err) => VerificationResult {
+                    checks: vec![Check::Proof],
+                    warnings: vec![],
+                    errors: vec![err.to_string()],
+                },
             }
-            vp.verify(Some(ldp_options), resolver, &mut context_loader)
-                .await
         }
-        (Some(ProofFormat::JWT), PresentationOrJWT::Jwt(vc_jwt))
-        | (None, PresentationOrJWT::Jwt(vc_jwt)) => {
-            VerifiablePresentation::verify_jwt(
-                &vc_jwt,
-                Some(ldp_options),
-                resolver,
-                &mut context_loader,
-            )
-            .await
+        (Some(ProofFormat::JWT) | None, JsonPresentationOrJws::Jws(vp_jwt)) => {
+            // TODO: only the JWS is verified this way. We must also validate the inner VP.
+            match vp_jwt.verify(&resolver).await {
+                Ok(Ok(())) => VerificationResult {
+                    checks: vec![Check::Proof],
+                    warnings: vec![],
+                    errors: vec![],
+                },
+                Ok(Err(err)) => VerificationResult {
+                    checks: vec![Check::Proof],
+                    warnings: vec![],
+                    errors: vec![err.to_string()],
+                },
+                Err(err) => VerificationResult {
+                    checks: vec![Check::Proof],
+                    warnings: vec![],
+                    errors: vec![err.to_string()],
+                },
+            }
         }
         (Some(proof_format), vc) => {
             let err_msg = format!(
-                "Credential/proof format mismatch. Proof format: {}, presentation format: {}",
+                "Presentation/proof format mismatch. Proof format: {}, presentation format: {}",
                 proof_format,
                 match vc {
-                    PresentationOrJWT::Jwt(_) => "JWT".to_string(),
-                    PresentationOrJWT::VP(_) => "LDP".to_string(),
+                    JsonPresentationOrJws::Jws(_) => "JWT".to_string(),
+                    JsonPresentationOrJws::Presentation(_) => "LDP".to_string(),
                 }
             );
             return Err((StatusCode::BAD_REQUEST, err_msg).into());

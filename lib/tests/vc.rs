@@ -1,7 +1,7 @@
-use didkit::VerifiableCredential;
+use ssi::claims::vc::any_credential_from_json_str;
 
-#[test]
-fn verify_credential() {
+#[tokio::test]
+async fn verify_credential() {
     let vc_str = r###"{
         "@context": "https://www.w3.org/2018/credentials/v1",
         "id": "http://example.org/credentials/3731",
@@ -12,5 +12,6 @@ fn verify_credential() {
             "id": "did:example:d23dd687a7dc6787646f2eb98d0"
         }
     }"###;
-    let _cred = VerifiableCredential::from_json_unsigned(vc_str).unwrap();
+
+    let _ = any_credential_from_json_str(vc_str).await;
 }
