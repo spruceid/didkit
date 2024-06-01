@@ -129,10 +129,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        # di-ed25519-test-suite fails one test because issuer != proof VM
-        # did-key-test-suite requires more checks in ssi
-        # di-eddsa-2022-test-suite passes but currently it's depending on a (npm) git branch that doesn't exist anymore
-        suite: ["vc-api-issuer-test-suite", "vc-api-verifier-test-suite"] # "di-eddsa-2022-test-suite", "di-ed25519-test-suite", "did-key-test-suite"]
+        suite: ["vc-api-issuer-test-suite", "vc-api-verifier-test-suite", "vc-di-eddsa-test-suite", "vc-di-ed25519-suite", "did-key-test-suite", "vc-data-model-2.0-test-suite"]
     steps:
     - name: Checkout DIDKit repository
       uses: actions/checkout@v4
@@ -154,7 +151,7 @@ jobs:
         shared-key: "vc-api"
     - uses: actions/setup-node@v4
       with:
-        node-version: 16
+        node-version: 18
     - name: Start VC API
       run: |
         cd http
@@ -166,12 +163,11 @@ jobs:
       run: |
         cd http/tests/${{ matrix.suite }}
         npm i
-        rm node_modules/vc-api-test-suite-implementations/implementations/*.json
-        ln ../vcApiTestImplementationsConfig.cjs .vcApiTestImplementationsConfig.cjs
+        ln ../localConfig.cjs localConfig.cjs
     - name: Run Test Suite
       run: |
         cd http/tests/${{ matrix.suite }}
-        ISSUER_NAME="Spruce" KEY_SEED_DB=z1Aaj5A4UCsdMpXwdYAReXa4bxWYiKJtdAvB1zMzCHtCbtD npm test
+        npm test
 
   build_ios:
     runs-on: macos-latest

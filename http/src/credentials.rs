@@ -251,4 +251,89 @@ mod test {
 
         let _ = issue(Extension(keys), CustomErrorJson(req)).await.unwrap();
     }
+
+    #[test]
+    fn deserialize_body_issuer_test_suite() {
+        let _: IssueRequest = serde_json::from_value(json!({
+          "credential": {
+            "@context": [
+              "https://www.w3.org/2018/credentials/v1"
+            ],
+            "type": [
+              "VerifiableCredential"
+            ],
+            "credentialSubject": {
+              "id": "did:key:z6MkhTNL7i2etLerDK8Acz5t528giE5KA4p75T6ka1E1D74r"
+            },
+            "issuanceDate": "2024-06-01T09:09:48Z",
+            "id": "urn:uuid:7a6cafb9-11c3-41a8-98d8-8b5a45c2548f",
+            "issuer": "did:key:z6MkgYAGxLBSXa6Ygk1PnUbK2F7zya8juE9nfsZhrvY7c9GD"
+          },
+          "options": {
+            "type": "Ed25519Signature2020"
+          }
+        }
+        ))
+        .unwrap();
+    }
+
+    #[tokio::test]
+    async fn validate_valid_vc_verifier_test_suite() {
+        let req = serde_json::from_value(json!({
+          "verifiableCredential": {
+            "@context": [
+              "https://www.w3.org/2018/credentials/v1",
+              "https://w3id.org/security/suites/ed25519-2020/v1"
+            ],
+            "id": "urn:uuid:0c71c76a-5dca-4537-a86d-7851b8f85c25",
+            "type": [
+              "VerifiableCredential"
+            ],
+            "credentialSubject": {
+              "id": "did:key:z6MkhTNL7i2etLerDK8Acz5t528giE5KA4p75T6ka1E1D74r"
+            },
+            "issuer": "did:key:z6MkgND5U5Kedizov5nxeh2ZCVUTDRSmAfbNqPhzCq8b72Ra",
+            "issuanceDate": "2024-06-01T09:34:12.834Z",
+            "proof": {
+              "type": "Ed25519Signature2020",
+              "proofPurpose": "assertionMethod",
+              "proofValue": "zB6pd365FSMVZbkn51nhEtLCyuxLj5qGFaZi6uv1dweLUiR1qvCqM1cqaAFMgjyB5ZATvU2brPDn6z6XwxoFyeHD",
+              "verificationMethod": "did:key:z6MkgND5U5Kedizov5nxeh2ZCVUTDRSmAfbNqPhzCq8b72Ra#z6MkgND5U5Kedizov5nxeh2ZCVUTDRSmAfbNqPhzCq8b72Ra",
+              "created": "2024-06-01T09:34:12.834Z"
+            }
+          },
+          "options": {
+            "checks": [
+              "proof"
+            ]
+          }
+        })).unwrap();
+        let _ = verify(CustomErrorJson(req)).await.unwrap();
+    }
+
+    #[tokio::test]
+    async fn issue_valid_di_eddsa_test_suite() {
+        let keys = default_keys();
+        let req = serde_json::from_value(json!({
+          "credential": {
+            "@context": [
+              "https://www.w3.org/2018/credentials/v1"
+            ],
+            "id": "urn:uuid:991721d2-2336-4979-aa10-1709061b7261",
+            "type": [
+              "VerifiableCredential"
+            ],
+            "issuer": "did:key:z6MkgYAGxLBSXa6Ygk1PnUbK2F7zya8juE9nfsZhrvY7c9GD",
+            "issuanceDate": "2020-03-16T22:37:26.544Z",
+            "credentialSubject": {
+              "id": "did:key:z6MktKwz7Ge1Yxzr4JHavN33wiwa8y81QdcMRLXQsrH9T53b"
+            }
+          },
+          "options": {
+            "type": "DataIntegrityProof"
+          }
+        }))
+        .unwrap();
+        let _ = issue(Extension(keys), CustomErrorJson(req)).await.unwrap();
+    }
 }

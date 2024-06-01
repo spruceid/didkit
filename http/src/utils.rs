@@ -8,6 +8,7 @@ use axum::{
 };
 use axum_extra::headers::Header;
 use serde::{Deserialize, Serialize};
+use tracing::debug;
 
 pub struct CustomErrorJson<T>(pub T);
 
@@ -35,6 +36,7 @@ where
                 } else {
                     rejection.status()
                 };
+                debug!("JSON rejection: {message}");
                 Err((code, message))
             }
         }
