@@ -3,13 +3,17 @@ use std::ffi::CString;
 use std::os::raw::c_char;
 use std::ptr;
 
-use ssi::JWK;
-
-use crate::did_methods::DID_METHODS;
 use crate::error::Error;
 #[cfg(doc)]
 use crate::error::{didkit_error_code, didkit_error_message};
+use crate::get_verification_method;
 use crate::runtime;
+use crate::Source;
+use crate::VerifiableCredential;
+use crate::VerifiablePresentation;
+use crate::DID_METHODS;
+use crate::JWK;
+use crate::{dereference, DereferencingInputMetadata, ResolutionInputMetadata, ResolutionResult};
 use crate::{JWTOrLDPOptions, ProofFormat};
 
 /// The version of the DIDKit library, as a NULL-terminated string
@@ -40,9 +44,7 @@ fn ccchar_or_error(result: Result<*const c_char, Error>) -> *const c_char {
 // Generate Ed25519 key
 fn generate_ed25519_key() -> Result<*const c_char, Error> {
     let jwk = JWK::generate_ed25519()?;
-    Ok(CString::new(serde_json::to_string(&jwk).unwrap())
-        .unwrap()
-        .into_raw())
+    Ok(CString::new(serde_json::to_string(&jwk)?)?.into_raw())
 }
 /// Generate a new Ed25519 keypair in JWK format. On success, returns a pointer to a
 /// newly-allocated string containing the JWK. The string must be freed with [`didkit_free_string`]. On
@@ -59,9 +61,11 @@ fn key_to_did(
 ) -> Result<*const c_char, Error> {
     let method_pattern = unsafe { CStr::from_ptr(method_pattern_ptr) }.to_str()?;
     let key_json = unsafe { CStr::from_ptr(key_json_ptr) }.to_str()?;
-    let key: JWK = key_json.parse().map_err(Error::JWKSyntax)?;
-    let did = DID_METHODS.generate(&key, method_pattern)?;
-    Ok(CString::new(did.into_string()).unwrap().into_raw())
+    let key: JWK = serde_json::from_str(key_json)?;
+    let did = DID_METHODS
+        .generate(&Source::KeyAndPattern(&key, &method_pattern))
+        .ok_or(Error::UnableToGenerateDID)?;
+    Ok(CString::new(did)?.into_raw())
 }
 #[no_mangle]
 /// Convert a key in JWK format to a did:key DID. Input should be a JWK containing public key

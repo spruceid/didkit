@@ -12,9 +12,9 @@ thread_local! {
 #[derive(thiserror::Error, Debug)]
 pub enum Error {
     #[error(transparent)]
-    Zcap(#[from] ssi::zcap_ld::Error),
-    #[error("JWK syntax error: {0}")]
-    JWKSyntax(serde_json::Error),
+    VC(#[from] ssi::vc::Error),
+    #[error(transparent)]
+    Zcap(#[from] ssi::zcap::Error),
     #[error(transparent)]
     JWK(#[from] ssi::jwk::Error),
     #[error(transparent)]
@@ -25,8 +25,8 @@ pub enum Error {
     Borrow(#[from] std::cell::BorrowError),
     #[error(transparent)]
     IO(#[from] std::io::Error),
-    #[error("Unable to generate DID: {0}")]
-    UnableToGenerateDID(#[from] ssi::dids::GenerateError),
+    #[error("Unable to generate DID")]
+    UnableToGenerateDID,
     #[error("Unknown DID method")]
     UnknownDIDMethod,
     #[error("Unable to get verification method")]
@@ -52,6 +52,7 @@ impl Error {
     fn get_code(&self) -> c_int {
         // TODO: try to give each individual error its own number
         match self {
+            Error::VC(_) => 1,
             Error::Null(_) => 2,
             Error::Utf8(_) => 3,
             Error::JWK(_) => 4,
@@ -86,6 +87,18 @@ pub extern "C" fn didkit_error_code() -> c_int {
         },
         Err(err) => Error::from(err).get_code(),
     })
+}
+
+impl From<serde_json::Error> for Error {
+    fn from(err: serde_json::Error) -> Error {
+        Error::VC(ssi::vc::Error::from(err))
+    }
+}
+
+impl From<ssi::ldp::Error> for Error {
+    fn from(e: ssi::ldp::Error) -> Error {
+        ssi::vc::Error::from(e).into()
+    }
 }
 
 #[cfg(test)]
