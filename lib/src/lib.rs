@@ -1,6 +1,6 @@
 // #[cfg(not(target_arch = "wasm32"))]
 // pub mod c;
-// mod did_methods;
+mod did_methods;
 // pub mod error;
 // #[cfg(not(target_arch = "wasm32"))]
 // pub mod jni;
@@ -12,28 +12,55 @@
 // #[macro_use]
 // extern crate lazy_static;
 //
+pub use did_methods::DID_METHODS;
 // pub use crate::error::Error;
 
 use core::str::FromStr;
 use serde::{Deserialize, Serialize};
 
 pub use ssi;
-use ssi::claims::data_integrity::AnyInputOptions;
+use ssi::{
+    claims::data_integrity::{AnyInputOptions, AnySuite},
+    JWK,
+};
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 #[non_exhaustive]
 #[serde(rename_all = "camelCase")]
-#[serde(deny_unknown_fields)]
 pub struct JWTOrLDPOptions {
     /// Linked data proof options from vc-api (vc-http-api)
     ///
     /// See: <https://w3c-ccg.github.io/vc-api/#options>
     #[serde(flatten)]
-    pub ldp_options: AnyInputOptions,
+    pub ldp_options: LDPOptions,
 
     /// Proof format (not standard in vc-api)
     #[serde(default, skip_serializing_if = "ProofFormat::is_default")]
     pub proof_format: ProofFormat,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct LDPOptions {
+    #[serde(rename = "type")]
+    pub type_: Option<String>,
+
+    pub cryptosuite: Option<String>,
+
+    #[serde(flatten)]
+    pub input_options: AnyInputOptions,
+}
+
+impl LDPOptions {
+    pub fn select_suite(&self, jwk: &JWK) -> Option<AnySuite> {
+        match self.type_.clone() {
+            Some(type_) => Some(
+                ssi::claims::data_integrity::Type::new(type_, self.cryptosuite.clone())
+                    .unwrap()
+                    .into(),
+            ),
+            None => AnySuite::pick(jwk, self.input_options.verification_method.as_ref()),
+        }
+    }
 }
 
 #[derive(Debug, Default, Serialize, Deserialize, Clone)]
@@ -41,9 +68,18 @@ pub struct JWTOrLDPOptions {
 #[serde(rename_all = "camelCase")]
 #[serde(deny_unknown_fields)]
 pub struct VerificationOptions {
+    #[serde(skip_serializing_if = "Vec::is_empty")]
+    pub checks: Vec<Check>,
+
     /// Proof format (not standard in vc-api)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub proof_format: Option<ProofFormat>,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+#[serde(rename_all = "camelCase")]
+pub enum Check {
+    Proof,
 }
 
 // impl JWTOrLDPOptions {

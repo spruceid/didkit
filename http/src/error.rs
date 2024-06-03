@@ -2,7 +2,10 @@ use axum::{
     http::StatusCode,
     response::{IntoResponse, Response},
 };
-use didkit::ssi::{dids::resolution, verification_methods::VerificationMethodResolutionError};
+use didkit::ssi::{
+    dids::resolution,
+    verification_methods::{InvalidVerificationMethod, VerificationMethodResolutionError},
+};
 use tracing::{debug, error};
 
 #[derive(Debug, Clone)]
@@ -19,6 +22,15 @@ pub enum ErrorBody {
 
 impl From<VerificationMethodResolutionError> for Error {
     fn from(value: VerificationMethodResolutionError) -> Self {
+        Error {
+            status: StatusCode::INTERNAL_SERVER_ERROR,
+            body: ErrorBody::Text(value.to_string()),
+        }
+    }
+}
+
+impl From<InvalidVerificationMethod> for Error {
+    fn from(value: InvalidVerificationMethod) -> Self {
         Error {
             status: StatusCode::INTERNAL_SERVER_ERROR,
             body: ErrorBody::Text(value.to_string()),
@@ -80,6 +92,15 @@ impl From<(StatusCode, String)> for Error {
         Error {
             status: e.0,
             body: ErrorBody::Text(e.1),
+        }
+    }
+}
+
+impl<'a> From<(StatusCode, &'a str)> for Error {
+    fn from(e: (StatusCode, &'a str)) -> Error {
+        Error {
+            status: e.0,
+            body: ErrorBody::Text(e.1.to_owned()),
         }
     }
 }

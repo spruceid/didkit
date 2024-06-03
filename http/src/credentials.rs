@@ -1,18 +1,21 @@
+use std::borrow::Cow;
+
 use axum::{http::StatusCode, Extension, Json};
 use didkit::{
     ssi::{
         claims::{
-            data_integrity::{AnyInputContext, AnySuite, CryptographicSuite},
+            data_integrity::{AnyInputContext, CryptographicSuite},
             vc::ToJwtClaims,
             Credential, JsonCredential, JsonCredentialOrJws, ValidationEnvironment,
             VerifiableClaims,
         },
-        dids::{AnyDidMethod, VerificationMethodDIDResolver},
+        dids::{AnyDidMethod, DIDResolver, VerificationMethodDIDResolver, DID},
         prelude::JWSPayload,
         verification_methods::{
-            AnyMethod, MaybeJwkVerificationMethod, ReferenceOrOwned, ReferenceOrOwnedRef,
+            AnyMethod, GenericVerificationMethod, MaybeJwkVerificationMethod, ReferenceOrOwned,
             VerificationMethodResolver,
         },
+        xsd_types::DateTime,
     },
     JWTOrLDPOptions, ProofFormat, VerificationOptions,
 };
@@ -44,23 +47,55 @@ pub async fn issue(
 ) -> Result<(StatusCode, Json<IssueResponse>), Error> {
     let resolver = VerificationMethodDIDResolver::<_, AnyMethod>::new(AnyDidMethod::default());
 
-    req.options.ldp_options.verification_method = Some(ReferenceOrOwned::Reference(
-        req.credential.issuer.id().to_owned().into_iri(),
-    ));
+    // Find an appropriate verification method.
+    let method = match &req.options.ldp_options.input_options.verification_method {
+        Some(method) => {
+            resolver
+                .resolve_verification_method(
+                    Some(req.credential.issuer.id().as_iri()),
+                    Some(method.borrowed()),
+                )
+                .await?
+        }
+        None => {
+            let did = DID::new(req.credential.issuer.id()).map_err(|_| {
+                (
+                    StatusCode::INTERNAL_SERVER_ERROR,
+                    "Could not get any verification method for issuer URI".to_string(),
+                )
+            })?;
 
-    let method = resolver
-        .resolve_verification_method(
-            Some(req.credential.issuer.id().as_iri()),
-            Some(ReferenceOrOwnedRef::Reference(
-                req.credential.issuer.id().as_iri(),
-            )),
-        )
-        .await?;
+            let output = resolver.resolve(did).await.map_err(|_| {
+                (
+                    StatusCode::INTERNAL_SERVER_ERROR,
+                    "Could not fetch issuer DID document".to_string(),
+                )
+            })?;
+
+            let method = output
+                .document
+                .into_document()
+                .into_any_verification_method()
+                .ok_or((
+                    StatusCode::INTERNAL_SERVER_ERROR,
+                    "Could not get any verification method for issuer DID document",
+                ))?;
+
+            req.options.ldp_options.input_options.verification_method =
+                Some(ReferenceOrOwned::Reference(method.id.clone().into_iri()));
+
+            Cow::Owned(GenericVerificationMethod::from(method).try_into()?)
+        }
+    };
 
     let public_jwk = method.try_to_jwk().ok_or((
         StatusCode::INTERNAL_SERVER_ERROR,
         "Could not get any verification method for issuer DID".to_string(),
     ))?;
+
+    if req.credential.issuance_date.is_none() {
+        req.credential.issuance_date = Some(DateTime::now_ms());
+    }
 
     if let Err(err) = req
         .credential
@@ -83,11 +118,7 @@ pub async fn issue(
                 .unwrap(),
         ),
         ProofFormat::LDP => {
-            let suite = AnySuite::pick(
-                &public_jwk,
-                req.options.ldp_options.verification_method.as_ref(),
-            )
-            .unwrap();
+            let suite = req.options.ldp_options.select_suite(&public_jwk).unwrap();
 
             let signer = KeyMapSigner(keys).into_local();
             let vc = suite
@@ -96,7 +127,7 @@ pub async fn issue(
                     AnyInputContext::default(),
                     resolver,
                     signer,
-                    req.options.ldp_options,
+                    req.options.ldp_options.input_options,
                 )
                 .await
                 .unwrap();

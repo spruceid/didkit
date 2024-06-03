@@ -13,10 +13,11 @@ use axum::{
 };
 use axum_extra::TypedHeader;
 use didkit::ssi::dids::{
-    document::representation, http::ResolutionResult, resolution, AnyDidMethod, DIDResolver,
-    DIDURLBuf, InvalidDIDURL, DID,
+    document::representation, http::ResolutionResult, resolution, DIDResolver, DIDURLBuf,
+    InvalidDIDURL, DID,
 };
 use percent_encoding::percent_decode;
+use tracing::info;
 
 pub const DID_RESOLUTION_MEDIA_TYPE: &str =
     "application/ld+json;profile=\"https://w3id.org/did-resolution\"";
@@ -71,7 +72,7 @@ pub async fn resolve(
         None => ContentType::Other(representation::MediaType::JsonLd),
     };
 
-    let resolver = AnyDidMethod::default();
+    let resolver = &didkit::DID_METHODS;
 
     let mut headers = HeaderMap::new();
     headers.insert(CONTENT_TYPE, content_type.header());

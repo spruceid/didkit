@@ -1,14 +1,16 @@
+use std::borrow::Cow;
+
 use axum::{http::StatusCode, Extension, Json};
 use didkit::{
     ssi::{
         claims::{
-            data_integrity::{AnyInputContext, AnySuite, CryptographicSuite},
+            data_integrity::{AnyInputContext, CryptographicSuite},
             vc::ToJwtClaims,
             JWSPayload, JsonPresentation, JsonPresentationOrJws, VerifiableClaims,
         },
-        dids::{AnyDidMethod, VerificationMethodDIDResolver},
+        dids::{AnyDidMethod, DIDResolver, VerificationMethodDIDResolver, DID},
         verification_methods::{
-            AnyMethod, MaybeJwkVerificationMethod, ReferenceOrOwned, ReferenceOrOwnedRef,
+            AnyMethod, GenericVerificationMethod, MaybeJwkVerificationMethod, ReferenceOrOwned,
             VerificationMethodResolver,
         },
     },
@@ -47,15 +49,43 @@ pub async fn issue(
         .as_deref()
         .ok_or_else(|| (StatusCode::BAD_REQUEST, "Missing holder".to_string()))?;
 
-    req.options.ldp_options.verification_method =
-        Some(ReferenceOrOwned::Reference(holder.to_owned().into_iri()));
+    // Find an appropriate verification method.
+    let method = match &req.options.ldp_options.input_options.verification_method {
+        Some(method) => {
+            resolver
+                .resolve_verification_method(Some(holder.as_iri()), Some(method.borrowed()))
+                .await?
+        }
+        None => {
+            let did = DID::new(holder).map_err(|_| {
+                (
+                    StatusCode::INTERNAL_SERVER_ERROR,
+                    "Could not get any verification method for holder URI".to_string(),
+                )
+            })?;
 
-    let method = resolver
-        .resolve_verification_method(
-            Some(holder.as_iri()),
-            Some(ReferenceOrOwnedRef::Reference(holder.as_iri())),
-        )
-        .await?;
+            let output = resolver.resolve(did).await.map_err(|_| {
+                (
+                    StatusCode::INTERNAL_SERVER_ERROR,
+                    "Could not fetch holder DID document".to_string(),
+                )
+            })?;
+
+            let method = output
+                .document
+                .into_document()
+                .into_any_verification_method()
+                .ok_or((
+                    StatusCode::INTERNAL_SERVER_ERROR,
+                    "Could not get any verification method for holder DID document",
+                ))?;
+
+            req.options.ldp_options.input_options.verification_method =
+                Some(ReferenceOrOwned::Reference(method.id.clone().into_iri()));
+
+            Cow::Owned(GenericVerificationMethod::from(method).try_into()?)
+        }
+    };
 
     let public_jwk = method.try_to_jwk().ok_or((
         StatusCode::INTERNAL_SERVER_ERROR,
@@ -72,11 +102,7 @@ pub async fn issue(
                 .unwrap(),
         ),
         ProofFormat::LDP => {
-            let suite = AnySuite::pick(
-                &public_jwk,
-                req.options.ldp_options.verification_method.as_ref(),
-            )
-            .unwrap();
+            let suite = req.options.ldp_options.select_suite(&public_jwk).unwrap();
 
             let signer = KeyMapSigner(keys).into_local();
             let vp = suite
@@ -85,7 +111,7 @@ pub async fn issue(
                     AnyInputContext::default(),
                     resolver,
                     signer,
-                    req.options.ldp_options,
+                    req.options.ldp_options.input_options,
                 )
                 .await
                 .unwrap();
