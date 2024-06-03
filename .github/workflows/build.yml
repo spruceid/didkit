@@ -129,7 +129,14 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        suite: ["vc-api-issuer-test-suite", "vc-api-verifier-test-suite", "vc-di-eddsa-test-suite", "vc-di-ed25519-suite", "did-key-test-suite", "vc-data-model-2.0-test-suite"]
+        suite:
+          - "vc-api-issuer-test-suite"
+          - "vc-api-verifier-test-suite"
+          - "vc-di-ecdsa-test-suite"
+          - "vc-di-eddsa-test-suite"
+          - "vc-di-ed25519signature2020-test-suite"
+          - "did-key-test-suite"
+          - "vc-data-model-2.0-test-suite"
     steps:
     - name: Checkout DIDKit repository
       uses: actions/checkout@v4
