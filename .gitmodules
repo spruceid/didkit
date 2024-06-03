@@ -16,3 +16,6 @@
 [submodule "http/tests/vc-di-eddsa-test-suite"]
 	path = http/tests/vc-di-eddsa-test-suite
 	url = https://github.com/w3c/vc-di-eddsa-test-suite.git
+[submodule "http/tests/vc-di-ecdsa-test-suite"]
+	path = http/tests/vc-di-ecdsa-test-suite
+	url = https://github.com/w3c/vc-di-ecdsa-test-suite.git
