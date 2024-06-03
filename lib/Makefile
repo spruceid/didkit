@@ -9,7 +9,7 @@ endif
 
 ifeq ($(OS_NAME),darwin)
 	LIB_NAME=libdidkit.dylib
-else 
+else
 	LIB_NAME=libdidkit.so
 endif
 
@@ -17,6 +17,7 @@ endif
 test: $(TARGET)/test/c.stamp \
 	$(TARGET)/test/java.stamp \
 	$(TARGET)/test/android.stamp \
+	$(TARGET)/test/ios.stamp \
 	$(TARGET)/test/flutter.stamp \
 	$(TARGET)/test/wasm.stamp
 
@@ -61,10 +62,10 @@ $(TARGET)/test/java.stamp: \
 	touch $@
 
 $(TARGET)/jvm/%.class: java/main/%.java | $(TARGET)/jvm
-	javac $^ -d $(TARGET)/jvm -cp java/main -source 1.7 -target 1.7
+	javac $^ -d $(TARGET)/jvm -cp java/main -source 1.8 -target 1.8
 
 $(TARGET)/jvm/%.class: java/test/%.java | $(TARGET)/jvm
-	javac $^ -d $(TARGET)/jvm -cp java/main -source 1.7 -target 1.7
+	javac $^ -d $(TARGET)/jvm -cp java/main -source 1.8 -target 1.8
 
 $(TARGET)/com_spruceid_DIDKit.h: java/main/com/spruceid/DIDKit.java
 	javac -h $(TARGET) $<
@@ -97,8 +98,9 @@ $(TARGET)/test/android.stamp: $(TARGET)/didkit.jar $(ANDROID_LIBS) | $(TARGET)/t
 
 $(TARGET)/%/release/libdidkit.so: $(RUST_SRC)
 	PATH=$(TOOLCHAIN)/bin:"$(PATH)" \
-	cargo build --lib --release --target $*
-	$(TOOLCHAIN)/bin/llvm-strip $@
+	cargo ndk --target $* build --lib --release
+	# cargo build --lib --release --target $*
+	# $(TOOLCHAIN)/bin/llvm-strip $@
 
 ## iOS
 

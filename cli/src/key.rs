@@ -50,6 +50,8 @@ pub enum KeyGenerateCmd {
     Secp256k1,
     /// Generate and output a P-256 keypair in JWK format
     Secp256r1,
+    /// Generate and output a P-384 keypair in JWK format
+    Secp384r1,
 }
 
 #[derive(Args)]
@@ -104,6 +106,7 @@ pub async fn generate(cmd: KeyGenerateCmd) -> Result<()> {
         KeyGenerateCmd::Ed25519 => JWK::generate_ed25519().unwrap(),
         KeyGenerateCmd::Secp256k1 => JWK::generate_secp256k1().unwrap(),
         KeyGenerateCmd::Secp256r1 => JWK::generate_p256().unwrap(),
+        KeyGenerateCmd::Secp384r1 => JWK::generate_p384().unwrap(),
     };
     let jwk_str = serde_json::to_string(&jwk).unwrap();
     println!("{jwk_str}");
