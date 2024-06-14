@@ -17,7 +17,6 @@ use didkit::ssi::dids::{
     InvalidDIDURL, DID,
 };
 use percent_encoding::percent_decode;
-use tracing::info;
 
 pub const DID_RESOLUTION_MEDIA_TYPE: &str =
     "application/ld+json;profile=\"https://w3id.org/did-resolution\"";

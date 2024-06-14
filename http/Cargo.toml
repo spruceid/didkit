@@ -34,3 +34,4 @@ percent-encoding = "2.2.0"
 
 [dev-dependencies]
 didkit = { version = "0.6", path = "../lib", features = ["ed25519"] }
+test-log = "0.2.16"

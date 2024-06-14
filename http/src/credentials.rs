@@ -1,5 +1,6 @@
 use std::borrow::Cow;
 
+use anyhow::Context;
 use axum::{http::StatusCode, Extension, Json};
 use didkit::{
     ssi::{
@@ -20,15 +21,16 @@ use didkit::{
     JWTOrLDPOptions, ProofFormat, VerificationOptions,
 };
 use serde::{Deserialize, Serialize};
+use tracing::info;
 
 use crate::{
     error::Error,
     keys::KeyMapSigner,
-    utils::{Check, CustomErrorJson, VerificationResult},
+    utils::{self, Check, CustomErrorJson, VerificationResult},
     KeyMap,
 };
 
-#[derive(Deserialize)]
+#[derive(Deserialize, Debug)]
 pub struct IssueRequest {
     pub credential: JsonCredential,
     pub options: JWTOrLDPOptions,
@@ -45,6 +47,8 @@ pub async fn issue(
     Extension(keys): Extension<KeyMap>,
     CustomErrorJson(mut req): CustomErrorJson<IssueRequest>,
 ) -> Result<(StatusCode, Json<IssueResponse>), Error> {
+    info!("{req:?}");
+
     let resolver = VerificationMethodDIDResolver::<_, AnyMethod>::new(AnyDidMethod::default());
 
     // Find an appropriate verification method.
@@ -96,6 +100,21 @@ pub async fn issue(
     if req.credential.issuance_date.is_none() {
         req.credential.issuance_date = Some(DateTime::now_ms());
     }
+    if req.options.ldp_options.type_ == Some("DataIntegrityProof".to_string()) {
+        if req.options.ldp_options.cryptosuite.is_none() {
+            req.options.ldp_options.cryptosuite =
+                Some(utils::pick_from_jwk(&public_jwk).context("Could not pick cryptosuite")?)
+        }
+        // TODO check if main context is v1 and data-integrity context isn't already present
+        req.options
+            .ldp_options
+            .input_options
+            .extra_properties
+            .insert(
+                "@context".to_string(),
+                "https://w3id.org/security/data-integrity/v1".into(),
+            );
+    }
 
     if let Err(err) = req
         .credential
@@ -130,7 +149,7 @@ pub async fn issue(
                     req.options.ldp_options.input_options,
                 )
                 .await
-                .unwrap();
+                .context("Failed to sign VC")?;
 
             // serde_json::to_value(&vc).expect("Could not serialize VC")
             JsonCredentialOrJws::Credential(vc.unprepare())
@@ -226,12 +245,13 @@ pub async fn verify(
 #[cfg(test)]
 mod test {
     use serde_json::json;
+    use test_log::test;
 
     use crate::test::default_keys;
 
     use super::*;
 
-    #[tokio::test]
+    #[test(tokio::test)]
     async fn issue_ed25519() {
         let keys = default_keys();
         let req = serde_json::from_value(json!({
@@ -257,7 +277,7 @@ mod test {
         let _ = issue(Extension(keys), CustomErrorJson(req)).await.unwrap();
     }
 
-    #[tokio::test]
+    #[test(tokio::test)]
     async fn issue_p256() {
         let keys = default_keys();
         let req = serde_json::from_value(json!({
@@ -308,7 +328,7 @@ mod test {
         .unwrap();
     }
 
-    #[tokio::test]
+    #[test(tokio::test)]
     async fn validate_valid_vc_verifier_test_suite() {
         let req = serde_json::from_value(json!({
           "verifiableCredential": {
@@ -342,7 +362,7 @@ mod test {
         let _ = verify(CustomErrorJson(req)).await.unwrap();
     }
 
-    #[tokio::test]
+    #[test(tokio::test)]
     async fn issue_valid_di_eddsa_test_suite() {
         let keys = default_keys();
         let req = serde_json::from_value(json!({

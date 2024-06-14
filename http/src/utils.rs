@@ -1,12 +1,13 @@
 use std::str::FromStr;
 
-use anyhow::anyhow;
+use anyhow::{anyhow, bail};
 use axum::{
     async_trait,
     extract::{rejection::JsonRejection, FromRequest},
     http::{header::ACCEPT, Request, StatusCode},
 };
 use axum_extra::headers::Header;
+use didkit::ssi::jwk::{Algorithm, JWK};
 use serde::{Deserialize, Serialize};
 use tracing::debug;
 
@@ -141,5 +142,20 @@ impl PartialEq<str> for Accept {
 impl<'a> PartialEq<&'a str> for Accept {
     fn eq(&self, other: &&'a str) -> bool {
         self.0 == *other
+    }
+}
+
+pub fn pick_from_jwk(jwk: &JWK) -> Result<String, anyhow::Error> {
+    match jwk.get_algorithm() {
+        Some(Algorithm::EdDSA) => Ok(vec!["eddsa-2022", "eddsa-jcs-2022"]
+            .first()
+            .unwrap()
+            .to_string()),
+        Some(Algorithm::ES256) | Some(Algorithm::ES384) => Ok(vec!["ecdsa-2019", "ecdsa-jcs-2019"]
+            .first()
+            .unwrap()
+            .to_string()),
+        Some(Algorithm::None) | None => bail!("Missing algorithm"),
+        Some(_) => bail!("Unsupported cryptosuite"),
     }
 }
