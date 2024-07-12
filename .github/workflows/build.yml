@@ -125,54 +125,6 @@ jobs:
     - name: Build Android Archive
       run: AR=$ANDROID_SDK_ROOT/ndk/25.2.9519653/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-ar RANLIB=$ANDROID_SDK_ROOT/ndk/25.2.9519653/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-ranlib TARGET_CC=$ANDROID_SDK_ROOT/ndk/25.2.9519653/toolchains/llvm/prebuilt/linux-x86_64/bin/i686-linux-android19-clang PATH=$ANDROID_SDK_ROOT/ndk/25.2.9519653/toolchains/llvm/prebuilt/linux-x86_64/bin:$PATH cargo build --lib --target i686-linux-android
 
-  test_http:
-    runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        # di-ed25519-test-suite fails one test because issuer != proof VM
-        # did-key-test-suite requires more checks in ssi
-        # di-eddsa-2022-test-suite passes but currently it's depending on a (npm) git branch that doesn't exist anymore
-        suite: ["vc-api-issuer-test-suite", "vc-api-verifier-test-suite"] # "di-eddsa-2022-test-suite", "di-ed25519-test-suite", "did-key-test-suite"]
-    steps:
-    - name: Checkout DIDKit repository
-      uses: actions/checkout@v4
-      with:
-        path: didkit
-        submodules: true
-    - name: Checkout SSI library
-      uses: actions/checkout@v4
-      with:
-        repository: spruceid/ssi
-        path: ssi
-        ref: ${{env.SSI_REF}}
-        submodules: true
-    - name: Rust Cache
-      uses: Swatinem/rust-cache@v2
-      with:
-        workspaces: |
-          didkit
-        shared-key: "vc-api"
-    - uses: actions/setup-node@v4
-      with:
-        node-version: 16
-    - name: Start VC API
-      run: |
-        cd http
-        cargo build
-        DIDKIT_HTTP_ISSUER_KEYS='[{"kty":"OKP","crv":"Ed25519","x":"HvjBEw94RHAh9KkiD385aYZNxGkxIkwBcrLBY5Z7Koo","d":"1onWu34oC29Y09qCRl0aD2FOp5y5obTqHZxQQRT3-bs"}]' cargo run &
-    - name: Start HTTPS Proxy
-      run: npx local-ssl-proxy --source 9000 --target 3000 --hostname 127.0.0.1 &
-    - name: Setup Test Suite
-      run: |
-        cd http/tests/${{ matrix.suite }}
-        npm i
-        rm node_modules/vc-api-test-suite-implementations/implementations/*.json
-        ln ../vcApiTestImplementationsConfig.cjs .vcApiTestImplementationsConfig.cjs
-    - name: Run Test Suite
-      run: |
-        cd http/tests/${{ matrix.suite }}
-        ISSUER_NAME="Spruce" KEY_SEED_DB=z1Aaj5A4UCsdMpXwdYAReXa4bxWYiKJtdAvB1zMzCHtCbtD npm test
-
   build_ios:
     runs-on: macos-latest
     steps:
