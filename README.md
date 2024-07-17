@@ -29,11 +29,6 @@ process is in place.
 
 DIDKit is written in [Rust][]. To get Rust, you can use [Rustup][].
 
-Spruce's [ssi][] library must be cloned alongside the `didkit` repository:
-```sh
-$ git clone https://github.com/spruceid/ssi ../ssi --recurse-submodules
-```
-
 Build DIDKit using [Cargo][]:
 ```sh
 $ cargo build
