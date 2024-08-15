@@ -1,6 +1,7 @@
 <script lang="ts">
   import { Link } from "svelte-navigator";
   import { installHandler } from "web-credential-handler";
+  import { getVersion } from "didkit-wasm";
 
   import Config from "../../config.ts";
 
@@ -31,11 +32,7 @@
     "border border-gray-300 rounded " +
     "w-full px-4 py-2 my-1";
 
-  let version = "";
-  DIDKitLoader.loadDIDKit().then(({ getVersion }) => {
-    console.log("Loaded DIDKit v" + getVersion());
-    version = getVersion();
-  });
+  let version = getVersion();
 </script>
 
 <div

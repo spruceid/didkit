@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { NavItem } from "../component";
+  import NavItem from "./NavItem.svelte";
   import { walletState } from "../../store.ts";
   import { navigate } from "svelte-navigator";
 

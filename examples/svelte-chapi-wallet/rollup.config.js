@@ -1,11 +1,14 @@
 import svelte from "rollup-plugin-svelte";
 import commonjs from "@rollup/plugin-commonjs";
-import resolve from "@rollup/plugin-node-resolve";
+import { nodeResolve } from '@rollup/plugin-node-resolve';
+import copy from 'rollup-plugin-copy';
 import typescript from "@rollup/plugin-typescript";
 import livereload from "rollup-plugin-livereload";
 import { terser } from "rollup-plugin-terser";
-import css from "rollup-plugin-css-only";
 import sveltePreprocess from "svelte-preprocess";
+import { wasm } from '@rollup/plugin-wasm';
+import styles from "rollup-plugin-styles";
+import nodePolyfills from 'rollup-plugin-polyfill-node';
 
 const production = !process.env.ROLLUP_WATCH;
 
@@ -34,7 +37,6 @@ export default {
   input: "src/main.ts",
   output: {
     sourcemap: !production,
-    format: "iife",
     name: "app",
     file: "public/build/bundle.js"
   },
@@ -52,16 +54,23 @@ export default {
         dev: !production
       }
     }),
-    css({ output: "bundle.css" }),
-    resolve({
-      browser: true,
-      dedupe: ["svelte"]
-    }),
-    commonjs(),
     typescript({
       sourceMap: !production,
       inlineSources: !production
     }),
+    copy({
+      targets: [{
+        src: 'node_modules/didkit-wasm/didkit_wasm_bg.wasm',
+        dest: 'public/build',
+        rename: 'didkit_wasm_bg.wasm'
+      }]
+    }),
+    wasm(),
+    commonjs(),
+    nodePolyfills(),
+    nodeResolve({
+    }),
+    styles(),
     !production && serve(),
     !production && livereload("public"),
     production && terser()
