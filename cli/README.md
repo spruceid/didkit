@@ -349,7 +349,7 @@ See also the following shell scripts demonstrating create, update, recover and d
 [Ed25519VerificationKey2018]: https://w3c-ccg.github.io/lds-ed25519-2018/
 [Ed25519]: https://tools.ietf.org/html/rfc8037#appendix-A.2
 [P-256]: https://tools.ietf.org/html/rfc7518#section-6.2.1.1
-[Secp256k1]: https://tools.ietf.org/html/rfc8812#section-3.1
+[Secp256k1]: https://datatracker.ietf.org/doc/html/rfc8812#section-3.1
 
 [did:key]: https://w3c-ccg.github.io/did-method-key/
 [did:web]: https://w3c-ccg.github.io/did-method-web/
