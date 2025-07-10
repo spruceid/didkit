@@ -1,3 +1,6 @@
+> [!IMPORTANT]
+> As we do not use the DIDKit bindings internally anymore, we have decided to archive their respective repositories. If you are looking for alternatives, our Rust library [`ssi`](https://github.com/spruceid/ssi/) (on which DIDKit was built) is still in active deployment, and we have new mobile-focused libraries with [`sprucekit-mobile`](https://github.com/spruceid/sprucekit-mobile). And as always, you are welcome to fork our repositories.
+
 [![](https://img.shields.io/github/actions/workflow/status/spruceid/didkit/build.yml?branch=main)](https://github.com/spruceid/didkit/actions?query=workflow%3Aci+branch%3Amain)
 [![](https://img.shields.io/badge/Docker-19.03.x-blue)](https://www.docker.com/)
 [![](https://img.shields.io/badge/ssi-v0.1-green)](https://www.github.com/spruceid/ssi)
